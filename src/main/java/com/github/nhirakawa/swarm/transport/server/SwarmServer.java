@@ -1,9 +1,16 @@
 package com.github.nhirakawa.swarm.transport.server;
 
+import java.net.InetSocketAddress;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.nhirakawa.swarm.config.ImmutableSwarmNode;
+import com.github.nhirakawa.swarm.model.ImmutableUuidSwarmMessage;
+import com.github.nhirakawa.swarm.model.SwarmMessageType;
+import com.github.nhirakawa.swarm.transport.client.SwarmClient;
 import com.google.inject.Inject;
 
 import io.netty.bootstrap.Bootstrap;
@@ -19,17 +26,20 @@ public class SwarmServer {
   private final EventLoopGroup eventLoopGroup;
   private final SwarmServerChannelInitializer swarmServerChannelInitializer;
   private final ImmutableSwarmNode localSwarmNode;
+  private final SwarmClient swarmClient;
 
   @Inject
   SwarmServer(SwarmServerChannelInitializer swarmServerChannelInitializer,
-              ImmutableSwarmNode localSwarmNode) {
+              ImmutableSwarmNode localSwarmNode,
+              SwarmClient swarmClient) {
     this.swarmServerChannelInitializer = swarmServerChannelInitializer;
     this.localSwarmNode = localSwarmNode;
+    this.swarmClient = swarmClient;
 
     this.eventLoopGroup = new NioEventLoopGroup();
   }
 
-  public void start() {
+  public void start() throws JsonProcessingException {
     try {
       Bootstrap bootstrap = new Bootstrap();
       Channel channel = bootstrap.group(eventLoopGroup)
@@ -42,6 +52,14 @@ public class SwarmServer {
       LOG.info("Listening on {}", localSwarmNode.getSocketAddress());
 
       Runtime.getRuntime().addShutdownHook(new Thread(new ServerShutdownHook(channel)));
+
+      ImmutableUuidSwarmMessage message = ImmutableUuidSwarmMessage.builder()
+          .uuid(UUID.randomUUID())
+          .type(SwarmMessageType.UUID)
+          .build();
+
+      InetSocketAddress address = new InetSocketAddress("127.0.0.1", 8080);
+      swarmClient.send(address, message);
 
     } catch (InterruptedException e) {
       throw new RuntimeException(e);

@@ -22,21 +22,11 @@ public class Runner {
 
   private static final Logger LOG = LoggerFactory.getLogger(Runner.class);
 
-  public static void main(String... args) throws InterruptedException, JsonProcessingException {
+  public static void main(String... args) throws JsonProcessingException {
     LOG.info("{}", getBanner());
 
     Injector injector = Guice.createInjector(new SwarmModule());
     injector.getInstance(SwarmServer.class).start();
-
-    SwarmClient swarmClient = injector.getInstance(SwarmClient.class);
-
-    ImmutableUuidSwarmMessage message = ImmutableUuidSwarmMessage.builder()
-        .uuid(UUID.randomUUID())
-        .type(SwarmMessageType.UUID)
-        .build();
-
-    InetSocketAddress address = new InetSocketAddress("127.0.0.1", 8080);
-    swarmClient.send(address, message);
 
     System.exit(0);
   }
