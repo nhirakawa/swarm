@@ -3,6 +3,8 @@ package com.github.nhirakawa.swarm.transport.server;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
+import javax.inject.Inject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,7 +13,6 @@ import com.github.nhirakawa.swarm.config.ImmutableSwarmNode;
 import com.github.nhirakawa.swarm.model.ImmutableUuidSwarmMessage;
 import com.github.nhirakawa.swarm.model.SwarmMessageType;
 import com.github.nhirakawa.swarm.transport.client.SwarmClient;
-import com.google.inject.Inject;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;

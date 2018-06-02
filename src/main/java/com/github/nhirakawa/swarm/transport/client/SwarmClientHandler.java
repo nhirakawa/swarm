@@ -2,13 +2,14 @@ package com.github.nhirakawa.swarm.transport.client;
 
 import java.util.concurrent.BlockingQueue;
 
+import javax.inject.Inject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.nhirakawa.swarm.guice.IncomingQueue;
+import com.github.nhirakawa.swarm.dagger.IncomingQueue;
 import com.github.nhirakawa.swarm.model.BaseSwarmMessage;
-import com.google.inject.Inject;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;

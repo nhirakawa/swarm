@@ -1,4 +1,4 @@
-package com.github.nhirakawa.swarm.guice;
+package com.github.nhirakawa.swarm.dagger;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
@@ -8,10 +8,10 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.google.inject.BindingAnnotation;
+import javax.inject.Qualifier;
 
-@BindingAnnotation
+@Qualifier
 @Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface OutgoingQueue {
+public @interface IncomingQueue {
 }
