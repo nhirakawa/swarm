@@ -3,10 +3,11 @@ package com.github.nhirakawa.swarm.transport.client;
 import java.io.Closeable;
 import java.net.InetSocketAddress;
 
+import javax.inject.Inject;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.nhirakawa.swarm.model.BaseSwarmMessage;
-import com.google.inject.Inject;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;

@@ -3,7 +3,7 @@ package com.github.nhirakawa.swarm.protocol;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 public class FailureDetector {
 

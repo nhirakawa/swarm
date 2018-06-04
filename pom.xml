@@ -8,10 +8,11 @@
 
   <properties>
     <config.version>1.3.2</config.version>
+    <dagger.version>2.16</dagger.version>
     <errorprone.version>2.0.18</errorprone.version>
     <findbugs.version>1.3.9</findbugs.version>
     <guava.version>23.4-jre</guava.version>
-    <guice.version>4.1.0</guice.version>
+    <immutables.version>2.5.5</immutables.version>
     <jackson.version>2.9.0</jackson.version>
     <logback.version>1.0.13</logback.version>
     <maven.compiler.source>1.8</maven.compiler.source>
@@ -22,7 +23,6 @@
   </properties>
 
   <dependencies>
-
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
@@ -54,6 +54,11 @@
       <version>${findbugs.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.google.dagger</groupId>
+      <artifactId>dagger</artifactId>
+      <version>${dagger.version}</version>
+    </dependency>
+    <dependency>
       <groupId>com.google.errorprone</groupId>
       <artifactId>error_prone_annotations</artifactId>
       <version>${errorprone.version}</version>
@@ -64,19 +69,21 @@
       <version>${guava.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.google.inject</groupId>
-      <artifactId>guice</artifactId>
-      <version>${guice.version}</version>
-    </dependency>
-    <dependency>
       <groupId>com.typesafe</groupId>
       <artifactId>config</artifactId>
       <version>${config.version}</version>
     </dependency>
+
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-all</artifactId>
       <version>${netty-version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.inject</groupId>
+      <artifactId>javax.inject</artifactId>
+      <version>1</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -87,7 +94,7 @@
     <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
-      <version>2.5.5</version>
+      <version>${immutables.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -118,14 +125,6 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <version>3.0.2</version>
         <executions>
@@ -143,6 +142,29 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.6.1</version>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.immutables</groupId>
+              <artifactId>value</artifactId>
+              <version>${immutables.version}</version>
+            </path>
+            <path>
+              <groupId>com.google.dagger</groupId>
+              <artifactId>dagger-compiler</artifactId>
+              <version>${dagger.version}</version>
+            </path>
+          </annotationProcessorPaths>
+          <showWarnings>true</showWarnings>
+          <compilerArgs>
+            <arg>-Xlint</arg>
+          </compilerArgs>
+        </configuration>
       </plugin>
     </plugins>
   </build>

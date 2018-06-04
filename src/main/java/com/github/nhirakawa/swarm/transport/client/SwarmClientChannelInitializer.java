@@ -1,6 +1,6 @@
 package com.github.nhirakawa.swarm.transport.client;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.DatagramChannel;
