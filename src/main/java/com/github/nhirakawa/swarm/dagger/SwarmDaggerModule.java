@@ -10,11 +10,9 @@ import javax.inject.Singleton;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.nhirakawa.swarm.config.ConfigPath;
-import com.github.nhirakawa.swarm.config.ConfigValidator;
 import com.github.nhirakawa.swarm.config.SwarmNode;
 import com.github.nhirakawa.swarm.model.BaseSwarmMessage;
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
 
 import dagger.Module;
@@ -25,11 +23,15 @@ public class SwarmDaggerModule {
 
   private static final TypeReference<Set<SwarmNode>> SET_SWARM_NODE = new TypeReference<Set<SwarmNode>>() {};
 
+  private final Config config;
+
+  public SwarmDaggerModule(Config config) {
+    this.config = config;
+  }
+
   @Provides
   @Singleton
-  static Config provideConfig() {
-    Config config = ConfigFactory.load();
-    ConfigValidator.validate(config);
+  Config provideConfig() {
     return config;
   }
 

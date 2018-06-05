@@ -7,7 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.github.nhirakawa.swarm.config.ConfigValidator;
+import com.github.nhirakawa.swarm.dagger.SwarmDaggerModule;
 import com.google.common.io.Resources;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 
 public class Runner {
 
@@ -16,7 +20,13 @@ public class Runner {
   public static void main(String... args) throws JsonProcessingException {
     LOG.info("{}", getBanner());
 
-    SwarmComponent swarmComponent = DaggerSwarmComponent.create();
+    Config config = ConfigFactory.load();
+    ConfigValidator.validate(config);
+
+    SwarmComponent swarmComponent = DaggerSwarmComponent.builder()
+        .swarmDaggerModule(new SwarmDaggerModule(config))
+        .build();
+    
     swarmComponent.buildServer().start();
 
     System.exit(0);
