@@ -49,6 +49,11 @@
       <version>${jackson.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.github.nhirakawa</groupId>
+      <artifactId>immutable-style</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
       <version>${findbugs.version}</version>

@@ -9,9 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.github.nhirakawa.swarm.config.ImmutableSwarmNode;
-import com.github.nhirakawa.swarm.model.ImmutableUuidSwarmMessage;
+import com.github.nhirakawa.swarm.config.SwarmNode;
 import com.github.nhirakawa.swarm.model.SwarmMessageType;
+import com.github.nhirakawa.swarm.model.UuidSwarmMessage;
 import com.github.nhirakawa.swarm.transport.client.SwarmClient;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -27,12 +27,12 @@ public class SwarmServer {
 
   private final EventLoopGroup eventLoopGroup;
   private final SwarmServerChannelInitializer swarmServerChannelInitializer;
-  private final ImmutableSwarmNode localSwarmNode;
+  private final SwarmNode localSwarmNode;
   private final SwarmClient swarmClient;
 
   @Inject
   SwarmServer(SwarmServerChannelInitializer swarmServerChannelInitializer,
-              ImmutableSwarmNode localSwarmNode,
+              SwarmNode localSwarmNode,
               SwarmClient swarmClient) {
     this.swarmServerChannelInitializer = swarmServerChannelInitializer;
     this.localSwarmNode = localSwarmNode;
@@ -58,9 +58,9 @@ public class SwarmServer {
 
       Runtime.getRuntime().addShutdownHook(new Thread(new ServerShutdownHook(channel)));
 
-      ImmutableUuidSwarmMessage message = ImmutableUuidSwarmMessage.builder()
-          .uuid(UUID.randomUUID())
-          .type(SwarmMessageType.UUID)
+      UuidSwarmMessage message = UuidSwarmMessage.builder()
+          .setUuid(UUID.randomUUID())
+          .setType(SwarmMessageType.UUID)
           .build();
 
       InetSocketAddress address = new InetSocketAddress("127.0.0.1", 8080);

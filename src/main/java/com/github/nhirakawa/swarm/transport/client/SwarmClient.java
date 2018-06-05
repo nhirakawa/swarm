@@ -7,7 +7,7 @@ import javax.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.nhirakawa.swarm.config.ImmutableSwarmNode;
+import com.github.nhirakawa.swarm.config.SwarmNode;
 import com.github.nhirakawa.swarm.model.BaseSwarmMessage;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -28,7 +28,7 @@ public class SwarmClient implements Closeable {
   @Inject
   SwarmClient(SwarmClientChannelInitializer swarmClientChannelInitializer,
               ObjectMapper objectMapper,
-              ImmutableSwarmNode localSwarmNode) {
+              SwarmNode localSwarmNode) {
     this.swarmClientChannelInitializer = swarmClientChannelInitializer;
     this.objectMapper = objectMapper;
 

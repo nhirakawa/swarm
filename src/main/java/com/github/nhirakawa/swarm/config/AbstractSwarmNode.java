@@ -7,10 +7,12 @@ import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.github.nhirakawa.immutable.style.ImmutableStyle;
 
 @Value.Immutable
+@ImmutableStyle
 @JsonSerialize
-public interface SwarmNode {
+public interface AbstractSwarmNode {
 
   String getHost();
   int getPort();
