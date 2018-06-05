@@ -13,6 +13,7 @@ import com.github.nhirakawa.swarm.config.ImmutableSwarmNode;
 import com.github.nhirakawa.swarm.model.ImmutableUuidSwarmMessage;
 import com.github.nhirakawa.swarm.model.SwarmMessageType;
 import com.github.nhirakawa.swarm.transport.client.SwarmClient;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -37,7 +38,12 @@ public class SwarmServer {
     this.localSwarmNode = localSwarmNode;
     this.swarmClient = swarmClient;
 
-    this.eventLoopGroup = new NioEventLoopGroup();
+    this.eventLoopGroup = new NioEventLoopGroup(
+        Runtime.getRuntime().availableProcessors(),
+        new ThreadFactoryBuilder()
+            .setNameFormat(String.format("%s-%s", localSwarmNode.getHost(), localSwarmNode.getPort()) + "-%s")
+            .build()
+    );
   }
 
   public void start() throws JsonProcessingException {
@@ -49,8 +55,6 @@ public class SwarmServer {
           .bind(localSwarmNode.getSocketAddress())
           .sync()
           .channel();
-
-      LOG.info("Listening on {}", localSwarmNode.getSocketAddress());
 
       Runtime.getRuntime().addShutdownHook(new Thread(new ServerShutdownHook(channel)));
 

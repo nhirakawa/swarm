@@ -7,7 +7,9 @@ import javax.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.nhirakawa.swarm.config.ImmutableSwarmNode;
 import com.github.nhirakawa.swarm.model.BaseSwarmMessage;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
@@ -25,15 +27,20 @@ public class SwarmClient implements Closeable {
 
   @Inject
   SwarmClient(SwarmClientChannelInitializer swarmClientChannelInitializer,
-              ObjectMapper objectMapper) {
+              ObjectMapper objectMapper,
+              ImmutableSwarmNode localSwarmNode) {
     this.swarmClientChannelInitializer = swarmClientChannelInitializer;
     this.objectMapper = objectMapper;
 
-    this.eventLoopGroup = new NioEventLoopGroup();
+    this.eventLoopGroup = new NioEventLoopGroup(
+        0,
+        new ThreadFactoryBuilder()
+            .setNameFormat(String.format("%s-%s", localSwarmNode.getHost(), localSwarmNode.getPort()) + "-%s")
+            .build()
+    );
   }
 
-  public <M extends BaseSwarmMessage> void send(InetSocketAddress address,
-                                                M message) throws InterruptedException, JsonProcessingException {
+  public <M extends BaseSwarmMessage> void send(InetSocketAddress address, M message) throws InterruptedException, JsonProcessingException {
     Bootstrap bootstrap = new Bootstrap();
     Channel channel = bootstrap.group(eventLoopGroup)
         .channel(NioDatagramChannel.class)
