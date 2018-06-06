@@ -13,6 +13,7 @@ import com.github.nhirakawa.swarm.config.SwarmNode;
 import com.github.nhirakawa.swarm.model.SwarmMessageType;
 import com.github.nhirakawa.swarm.model.UuidSwarmMessage;
 import com.github.nhirakawa.swarm.transport.client.SwarmClient;
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import io.netty.bootstrap.Bootstrap;
@@ -46,7 +47,7 @@ public class SwarmServer {
     );
   }
 
-  public void start() throws JsonProcessingException {
+  public void start() {
     try {
       Bootstrap bootstrap = new Bootstrap();
       Channel channel = bootstrap.group(eventLoopGroup)
@@ -63,10 +64,16 @@ public class SwarmServer {
           .setType(SwarmMessageType.UUID)
           .build();
 
-      InetSocketAddress address = new InetSocketAddress("127.0.0.1", 8080);
+      InetSocketAddress address = new InetSocketAddress(localSwarmNode.getHost(), localSwarmNode.getPort());
+
       swarmClient.send(address, message);
 
     } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      Throwables.throwIfUnchecked(e);
+      throw new RuntimeException(e);
+    } catch (JsonProcessingException e) {
+      Throwables.throwIfUnchecked(e);
       throw new RuntimeException(e);
     }
   }

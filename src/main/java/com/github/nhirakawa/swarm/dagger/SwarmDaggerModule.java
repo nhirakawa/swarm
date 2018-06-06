@@ -1,19 +1,16 @@
 package com.github.nhirakawa.swarm.dagger;
 
-import java.io.IOException;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import javax.inject.Singleton;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.nhirakawa.swarm.config.ConfigPath;
 import com.github.nhirakawa.swarm.config.SwarmNode;
 import com.github.nhirakawa.swarm.model.BaseSwarmMessage;
+import com.google.common.collect.Sets;
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigRenderOptions;
 
 import dagger.Module;
 import dagger.Provides;
@@ -21,24 +18,22 @@ import dagger.Provides;
 @Module
 public class SwarmDaggerModule {
 
-  private static final TypeReference<Set<SwarmNode>> SET_SWARM_NODE = new TypeReference<Set<SwarmNode>>() {};
-
   private final Config config;
+  private final SwarmNode localSwarmNode;
+  private final Set<SwarmNode> clusterNodes;
 
-  public SwarmDaggerModule(Config config) {
+  public SwarmDaggerModule(Config config,
+                           SwarmNode localSwarmNode,
+                           Set<SwarmNode> clusterNodes) {
     this.config = config;
+    this.localSwarmNode = localSwarmNode;
+    this.clusterNodes = Sets.difference(clusterNodes, Collections.singleton(localSwarmNode));
   }
 
   @Provides
   @Singleton
   Config provideConfig() {
     return config;
-  }
-
-  @Provides
-  @Singleton
-  static ObjectMapper provideObjectMapper() {
-    return new ObjectMapper();
   }
 
   @Provides
@@ -57,36 +52,13 @@ public class SwarmDaggerModule {
 
   @Provides
   @Singleton
-  static SwarmNode provideLocalSwarmNode(ObjectMapper objectMapper,
-                                         Config config) {
-    try {
-      return objectMapper.readValue(
-          config.getObject(
-              ConfigPath.LOCAL.getConfigPath()
-          )
-              .render(ConfigRenderOptions.concise().setJson(true)),
-          SwarmNode.class
-      );
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+  SwarmNode provideLocalSwarmNode() {
+    return localSwarmNode;
   }
 
   @Provides
   @Singleton
-  Set<SwarmNode> provideSwarmClusterNodes(ObjectMapper objectMapper,
-                                          Config config) {
-    try {
-      return objectMapper.readValue(
-          config.getObject(
-              ConfigPath.CLUSTER.getConfigPath()
-          )
-              .render(ConfigRenderOptions.concise().setJson(true)),
-          SET_SWARM_NODE
-      );
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+  Set<SwarmNode> provideSwarmClusterNodes() {
+    return clusterNodes;
   }
-
 }
