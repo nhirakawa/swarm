@@ -6,7 +6,7 @@ import java.net.InetSocketAddress;
 import javax.inject.Inject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.nhirakawa.swarm.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.config.SwarmNode;
 import com.github.nhirakawa.swarm.model.BaseSwarmMessage;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -21,16 +21,15 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 
 public class SwarmClient implements Closeable {
 
-  private final EventLoopGroup eventLoopGroup;
   private final SwarmClientChannelInitializer swarmClientChannelInitializer;
-  private final ObjectMapper objectMapper;
+  private final SwarmNode localSwarmNode;
+  private final EventLoopGroup eventLoopGroup;
 
   @Inject
   SwarmClient(SwarmClientChannelInitializer swarmClientChannelInitializer,
-              ObjectMapper objectMapper,
               SwarmNode localSwarmNode) {
     this.swarmClientChannelInitializer = swarmClientChannelInitializer;
-    this.objectMapper = objectMapper;
+    this.localSwarmNode = localSwarmNode;
 
     this.eventLoopGroup = new NioEventLoopGroup(
         0,
@@ -45,11 +44,11 @@ public class SwarmClient implements Closeable {
     Channel channel = bootstrap.group(eventLoopGroup)
         .channel(NioDatagramChannel.class)
         .handler(swarmClientChannelInitializer)
-        .bind("localhost", 8081)
+        .bind(0)
         .channel();
 
     DatagramPacket packet = new DatagramPacket(
-        Unpooled.copiedBuffer(objectMapper.writeValueAsBytes(message)),
+        Unpooled.copiedBuffer(ObjectMapperWrapper.instance().writeValueAsBytes(message)),
         address
     );
 

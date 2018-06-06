@@ -8,9 +8,11 @@ public enum ConfigPath {
 
   SWARM_FAILURE_SUBGROUP("swarm.protocol.failureSubGroup"),
 
-  CLUSTER("swarm.cluster"),
+  CLUSTER_NODES("swarm.clusterNodes"),
 
-  LOCAL("swarm.local"),
+  LOCAL_NODE("swarm.localNode"),
+
+  RUN_ENTIRE_CLUSTER_LOCALLY("swarm.runEntireClusterLocally")
 
   ;
 
