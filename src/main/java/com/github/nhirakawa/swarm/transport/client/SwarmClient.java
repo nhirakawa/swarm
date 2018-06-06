@@ -45,6 +45,7 @@ public class SwarmClient implements Closeable {
         .channel(NioDatagramChannel.class)
         .handler(swarmClientChannelInitializer)
         .bind(0)
+        .sync()
         .channel();
 
     DatagramPacket packet = new DatagramPacket(

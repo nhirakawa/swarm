@@ -1,6 +1,7 @@
 package com.github.nhirakawa.swarm.transport.server;
 
 import java.net.InetSocketAddress;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -29,14 +30,17 @@ public class SwarmServer {
   private final EventLoopGroup eventLoopGroup;
   private final SwarmServerChannelInitializer swarmServerChannelInitializer;
   private final SwarmNode localSwarmNode;
+  private final Set<SwarmNode> clusterNodes;
   private final SwarmClient swarmClient;
 
   @Inject
   SwarmServer(SwarmServerChannelInitializer swarmServerChannelInitializer,
               SwarmNode localSwarmNode,
+              Set<SwarmNode> clusterNodes,
               SwarmClient swarmClient) {
     this.swarmServerChannelInitializer = swarmServerChannelInitializer;
     this.localSwarmNode = localSwarmNode;
+    this.clusterNodes = clusterNodes;
     this.swarmClient = swarmClient;
 
     this.eventLoopGroup = new NioEventLoopGroup(
@@ -64,9 +68,10 @@ public class SwarmServer {
           .setType(SwarmMessageType.UUID)
           .build();
 
-      InetSocketAddress address = new InetSocketAddress(localSwarmNode.getHost(), localSwarmNode.getPort());
-
-      swarmClient.send(address, message);
+      for (SwarmNode swarmNode : clusterNodes) {
+        InetSocketAddress address = new InetSocketAddress(swarmNode.getHost(), swarmNode.getPort());
+        swarmClient.send(address, message);
+      }
 
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
