@@ -23,7 +23,7 @@ class SwarmClientHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 
   @Inject
   SwarmClientHandler(@IncomingQueue BlockingQueue<BaseSwarmMessage> incomingQueue) {
-    super(true);
+//    super(true);
     this.incomingQueue = incomingQueue;
   }
 

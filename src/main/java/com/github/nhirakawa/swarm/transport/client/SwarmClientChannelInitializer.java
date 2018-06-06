@@ -1,6 +1,7 @@
 package com.github.nhirakawa.swarm.transport.client;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.DatagramChannel;
@@ -9,10 +10,10 @@ import io.netty.handler.logging.LoggingHandler;
 
 public class SwarmClientChannelInitializer extends ChannelInitializer<DatagramChannel> {
 
-  private final SwarmClientHandler swarmClientHandler;
+  private final Provider<SwarmClientHandler> swarmClientHandler;
 
   @Inject
-  SwarmClientChannelInitializer(SwarmClientHandler swarmClientHandler) {
+  SwarmClientChannelInitializer(Provider<SwarmClientHandler> swarmClientHandler) {
     this.swarmClientHandler = swarmClientHandler;
   }
 
@@ -20,6 +21,6 @@ public class SwarmClientChannelInitializer extends ChannelInitializer<DatagramCh
   protected void initChannel(DatagramChannel channel) {
     channel.pipeline()
         .addLast("LoggingHandler", new LoggingHandler("SwarmClient", LogLevel.TRACE))
-        .addLast("SwarmClientHandler", swarmClientHandler);
+        .addLast("SwarmClientHandler", swarmClientHandler.get());
   }
 }
