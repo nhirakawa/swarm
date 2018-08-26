@@ -25,8 +25,6 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 
 public class SwarmServer {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SwarmServer.class);
-
   private final EventLoopGroup eventLoopGroup;
   private final SwarmServerChannelInitializer swarmServerChannelInitializer;
   private final SwarmNode localSwarmNode;
@@ -61,7 +59,7 @@ public class SwarmServer {
           .sync()
           .channel();
 
-      Runtime.getRuntime().addShutdownHook(new Thread(new ServerShutdownHook(channel)));
+      Runtime.getRuntime().addShutdownHook(new Thread(new ServerShutdownHook(channel, eventLoopGroup)));
 
       UuidSwarmMessage message = UuidSwarmMessage.builder()
           .setUuid(UUID.randomUUID())
@@ -83,12 +81,16 @@ public class SwarmServer {
     }
   }
 
-  private final class ServerShutdownHook implements Runnable {
+  private static final class ServerShutdownHook implements Runnable {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ServerShutdownHook.class);
 
     private final Channel channel;
+    private final EventLoopGroup eventLoopGroup;
 
-    private ServerShutdownHook(Channel channel) {
+    private ServerShutdownHook(Channel channel, EventLoopGroup eventLoopGroup) {
       this.channel = channel;
+      this.eventLoopGroup = eventLoopGroup;
     }
 
     @Override
