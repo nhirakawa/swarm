@@ -1,7 +1,5 @@
 package com.github.nhirakawa.swarm.model;
 
-import java.util.UUID;
-
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -11,14 +9,12 @@ import com.github.nhirakawa.immutable.style.ImmutableStyle;
 @Value.Immutable
 @ImmutableStyle
 @JsonSerialize
-public interface AbstractUuidSwarmMessage extends BaseSwarmMessage {
-
-  UUID getUuid();
+public abstract class AbstractPingMessage implements BaseSwarmMessage{
 
   @Override
   @Value.Auxiliary
   @JsonIgnore
-  default SwarmMessageType getType() {
-    return SwarmMessageType.UUID;
+  public SwarmMessageType getType() {
+    return SwarmMessageType.PING;
   }
 }

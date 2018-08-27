@@ -1,15 +1,14 @@
 package com.github.nhirakawa.swarm.transport.client;
 
-import java.util.concurrent.BlockingQueue;
-
 import javax.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.nhirakawa.swarm.ObjectMapperWrapper;
-import com.github.nhirakawa.swarm.dagger.IncomingQueue;
 import com.github.nhirakawa.swarm.model.BaseSwarmMessage;
+import com.github.nhirakawa.swarm.model.PingAckMessage;
+import com.github.nhirakawa.swarm.protocol.SwarmProtocol;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -19,12 +18,11 @@ class SwarmClientHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 
   private static final Logger LOG = LoggerFactory.getLogger(SwarmClientHandler.class);
 
-  private final BlockingQueue<BaseSwarmMessage> incomingQueue;
+  private final SwarmProtocol swarmProtocol;
 
   @Inject
-  SwarmClientHandler(@IncomingQueue BlockingQueue<BaseSwarmMessage> incomingQueue) {
-//    super(true);
-    this.incomingQueue = incomingQueue;
+  SwarmClientHandler(SwarmProtocol swarmProtocol) {
+    this.swarmProtocol = swarmProtocol;
   }
 
   @Override
@@ -33,8 +31,10 @@ class SwarmClientHandler extends SimpleChannelInboundHandler<DatagramPacket> {
     message.content().getBytes(message.content().readerIndex(), messageBytes);
 
     BaseSwarmMessage incomingMessage = ObjectMapperWrapper.instance().readValue(messageBytes, BaseSwarmMessage.class);
-    LOG.info("Received message {}", incomingMessage);
-    incomingQueue.put(incomingMessage);
+
+    if (incomingMessage instanceof PingAckMessage) {
+      swarmProtocol.handle((PingAckMessage) incomingMessage);
+    }
   }
 
   @Override

@@ -1,7 +1,6 @@
 package com.github.nhirakawa.swarm.config;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 
 import org.immutables.value.Value;
 
@@ -19,7 +18,7 @@ public interface AbstractSwarmNode {
 
   @Value.Lazy
   @JsonIgnore
-  default SocketAddress getSocketAddress() {
+  default InetSocketAddress getSocketAddress() {
     return new InetSocketAddress(getHost(), getPort());
   }
 

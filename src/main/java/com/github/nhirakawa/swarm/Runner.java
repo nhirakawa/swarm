@@ -41,10 +41,6 @@ public class Runner {
     } else {
       runSingle(config);
     }
-
-    EXECUTOR.shutdown();
-
-    System.exit(0);
   }
 
   private static void runSingle(Config config) throws IOException {
