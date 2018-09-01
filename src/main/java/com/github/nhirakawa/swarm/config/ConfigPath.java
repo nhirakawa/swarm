@@ -6,6 +6,8 @@ public enum ConfigPath {
 
   SWARM_MESSAGE_TIMEOUT("swarm.protocol.messageTimeout"),
 
+  SWARM_PROTOCOL_TICK("swarm.protocol.tick"),
+
   SWARM_FAILURE_SUBGROUP("swarm.protocol.failureSubGroup"),
 
   CLUSTER_NODES("swarm.clusterNodes"),
