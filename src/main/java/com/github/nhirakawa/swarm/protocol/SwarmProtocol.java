@@ -48,9 +48,7 @@ public class SwarmProtocol {
       int randomIndex = ThreadLocalRandom.current().nextInt(0, clusterNodes.size());
       SwarmNode randomNode = clusterNodes.get(randomIndex);
 
-      LOG.info("Starting future");
       swarmClient.sendPing(randomNode).join();
-      LOG.info("Future returned");
       lastPingSent = Instant.now();
     }
   }
