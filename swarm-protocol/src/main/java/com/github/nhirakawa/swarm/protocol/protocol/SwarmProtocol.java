@@ -39,7 +39,7 @@ public class SwarmProtocol {
 
   }
 
-  public Optional<?> handle(SwarmTimeoutMessage timeoutMessage) throws JsonProcessingException, InterruptedException {
+  public Optional<?> handle(SwarmTimeoutMessage timeoutMessage) {
     if (timeoutMessage.getTImestamp().isAfter(lastPingSent.plus(config.getDuration(ConfigPath.SWARM_PROTOCOL_PERIOD.getConfigPath())))) {
       int randomIndex = ThreadLocalRandom.current().nextInt(0, clusterNodes.size());
       SwarmNode randomNode = clusterNodes.get(randomIndex);

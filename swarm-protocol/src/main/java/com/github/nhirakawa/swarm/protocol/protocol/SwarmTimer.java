@@ -12,6 +12,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
 import com.typesafe.config.Config;
 
 public class SwarmTimer {
@@ -51,7 +52,8 @@ public class SwarmTimer {
               .setTImestamp(Instant.now())
               .build()
       );
-    } catch (JsonProcessingException | InterruptedException e) {
+    } catch (Exception e) {
+      Throwables.throwIfUnchecked(e);
       throw new RuntimeException(e);
     }
   }
