@@ -10,9 +10,10 @@ public final class ConfigValidator {
   public static void validate(Config config) {
     for (ConfigPath configPath : ConfigPath.values()) {
       Preconditions.checkState(
-          config.hasPath(configPath.getConfigPath()),
-          "Could not find config path %s (%s)",
-          configPath, configPath.getConfigPath()
+        config.hasPath(configPath.getConfigPath()),
+        "Could not find config path %s (%s)",
+        configPath,
+        configPath.getConfigPath()
       );
     }
   }
