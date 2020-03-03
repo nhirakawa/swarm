@@ -1,17 +1,5 @@
 package com.github.nhirakawa.swarm;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.github.nhirakawa.swarm.dagger.SwarmDaggerModule;
 import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
@@ -23,9 +11,18 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.List;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Runner {
-
   private static final Logger LOG = LoggerFactory.getLogger(Runner.class);
   private static final ExecutorService EXECUTOR = buildExecutor();
   private static final TypeReference<Set<SwarmNode>> SET_SWARM_NODE = new TypeReference<Set<SwarmNode>>() {};
@@ -36,7 +33,9 @@ public class Runner {
     Config config = ConfigFactory.load();
     ConfigValidator.validate(config);
 
-    if (config.getBoolean(ConfigPath.RUN_ENTIRE_CLUSTER_LOCALLY.getConfigPath())) {
+    if (
+      config.getBoolean(ConfigPath.RUN_ENTIRE_CLUSTER_LOCALLY.getConfigPath())
+    ) {
       runCluster(config);
     } else {
       runSingle(config);
@@ -44,47 +43,74 @@ public class Runner {
   }
 
   private static void runSingle(Config config) throws IOException {
-    SwarmNode localSwarmNode = ObjectMapperWrapper.instance().readValue(
-        config.getObject(ConfigPath.LOCAL_NODE.getConfigPath()).render(ConfigRenderOptions.concise()),
+    SwarmNode localSwarmNode = ObjectMapperWrapper
+      .instance()
+      .readValue(
+        config
+          .getObject(ConfigPath.LOCAL_NODE.getConfigPath())
+          .render(ConfigRenderOptions.concise()),
         SwarmNode.class
-    );
-    Set<SwarmNode> clusterNodes = ObjectMapperWrapper.instance().readValue(
-        config.getList(ConfigPath.CLUSTER_NODES.getConfigPath()).render(ConfigRenderOptions.concise()),
+      );
+    Set<SwarmNode> clusterNodes = ObjectMapperWrapper
+      .instance()
+      .readValue(
+        config
+          .getList(ConfigPath.CLUSTER_NODES.getConfigPath())
+          .render(ConfigRenderOptions.concise()),
         SET_SWARM_NODE
-    );
+      );
 
-    SwarmComponent swarmComponent = DaggerSwarmComponent.builder()
-        .swarmDaggerModule(new SwarmDaggerModule(config, localSwarmNode, clusterNodes))
-        .build();
+    SwarmComponent swarmComponent = DaggerSwarmComponent
+      .builder()
+      .swarmDaggerModule(
+        new SwarmDaggerModule(config, localSwarmNode, clusterNodes)
+      )
+      .build();
 
     swarmComponent.buildServer().start();
   }
 
   private static void runCluster(Config config) throws IOException {
-    Set<SwarmNode> clusterNodes = ObjectMapperWrapper.instance().readValue(
-        config.getList(ConfigPath.CLUSTER_NODES.getConfigPath()).render(ConfigRenderOptions.concise()),
+    Set<SwarmNode> clusterNodes = ObjectMapperWrapper
+      .instance()
+      .readValue(
+        config
+          .getList(ConfigPath.CLUSTER_NODES.getConfigPath())
+          .render(ConfigRenderOptions.concise()),
         SET_SWARM_NODE
-    );
+      );
 
     List<CompletableFuture<?>> futures = new ArrayList<>();
 
     for (SwarmNode swarmNode : clusterNodes) {
-      Config nodeSpecificConfig = ConfigFactory.parseMap(
+      Config nodeSpecificConfig = ConfigFactory
+        .parseMap(
           ImmutableMap.of(
-              "wilson.localNode.host", swarmNode.getHost(),
-              "wilson.localNode.port", swarmNode.getPort()
+            "wilson.localNode.host",
+            swarmNode.getHost(),
+            "wilson.localNode.port",
+            swarmNode.getPort()
           )
-      ).withFallback(config);
+        )
+        .withFallback(config);
 
-      SwarmComponent swarmComponent = DaggerSwarmComponent.builder()
-          .swarmDaggerModule(new SwarmDaggerModule(nodeSpecificConfig, swarmNode, clusterNodes))
-          .build();
+      SwarmComponent swarmComponent = DaggerSwarmComponent
+        .builder()
+        .swarmDaggerModule(
+          new SwarmDaggerModule(nodeSpecificConfig, swarmNode, clusterNodes)
+        )
+        .build();
 
-      CompletableFuture<?> future = CompletableFuture.runAsync(() -> swarmComponent.buildServer().start(), EXECUTOR);
-      future.exceptionally(t -> {
-        LOG.error("Caught exception", t);
-        return null;
-      });
+      CompletableFuture<?> future = CompletableFuture.runAsync(
+        () -> swarmComponent.buildServer().start(),
+        EXECUTOR
+      );
+      future.exceptionally(
+        t -> {
+          LOG.error("Caught exception", t);
+          return null;
+        }
+      );
       futures.add(future);
     }
 
@@ -95,7 +121,10 @@ public class Runner {
 
   private static String getBanner() {
     try {
-      return Resources.toString(Resources.getResource("banner.txt"), StandardCharsets.UTF_8);
+      return Resources.toString(
+        Resources.getResource("banner.txt"),
+        StandardCharsets.UTF_8
+      );
     } catch (IOException ignored) {
       return "swarm";
     }
@@ -103,11 +132,13 @@ public class Runner {
 
   private static ExecutorService buildExecutor() {
     return Executors.newFixedThreadPool(
-        4,
-        new ThreadFactoryBuilder()
-            .setNameFormat("swarm-runner-%s")
-            .setUncaughtExceptionHandler((ignored, t) -> LOG.error("Caught exception", t))
-            .build()
+      4,
+      new ThreadFactoryBuilder()
+        .setNameFormat("swarm-runner-%s")
+        .setUncaughtExceptionHandler(
+          (ignored, t) -> LOG.error("Caught exception", t)
+        )
+        .build()
     );
   }
 }

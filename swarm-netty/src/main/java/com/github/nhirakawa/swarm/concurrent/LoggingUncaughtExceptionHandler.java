@@ -1,13 +1,14 @@
 package com.github.nhirakawa.swarm.concurrent;
 
 import java.lang.Thread.UncaughtExceptionHandler;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LoggingUncaughtExceptionHandler implements UncaughtExceptionHandler {
-
-  private static final Logger LOG = LoggerFactory.getLogger(LoggingUncaughtExceptionHandler.class);
+public class LoggingUncaughtExceptionHandler
+  implements UncaughtExceptionHandler {
+  private static final Logger LOG = LoggerFactory.getLogger(
+    LoggingUncaughtExceptionHandler.class
+  );
 
   @Override
   public void uncaughtException(Thread t, Throwable e) {
