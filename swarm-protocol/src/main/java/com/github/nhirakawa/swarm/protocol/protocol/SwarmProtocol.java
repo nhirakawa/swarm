@@ -2,12 +2,12 @@ package com.github.nhirakawa.swarm.protocol.protocol;
 
 import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.protocol.model.local.PingAckResponse;
-import com.github.nhirakawa.swarm.protocol.model.local.PingResponse;
-import com.github.nhirakawa.swarm.protocol.model.local.TimeoutResponse;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
+import com.github.nhirakawa.swarm.protocol.model.PingAckResponse;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
+import com.github.nhirakawa.swarm.protocol.model.PingResponse;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
+import com.github.nhirakawa.swarm.protocol.model.TimeoutResponse;
 import com.github.nhirakawa.swarm.protocol.model.TimeoutResponses;
 import com.google.common.collect.ImmutableList;
 import com.typesafe.config.Config;

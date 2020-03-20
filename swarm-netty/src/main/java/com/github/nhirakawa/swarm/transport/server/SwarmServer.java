@@ -9,6 +9,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import java.net.InetSocketAddress;
 import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,7 @@ public class SwarmServer {
         .group(eventLoopGroup)
         .channel(NioDatagramChannel.class)
         .handler(swarmServerChannelInitializer)
-        .bind(localSwarmNode.getSocketAddress())
+        .bind(toSocketAddress(localSwarmNode))
         .sync();
 
       Runtime
@@ -63,6 +64,10 @@ public class SwarmServer {
       Throwables.throwIfUnchecked(e);
       throw new RuntimeException(e);
     }
+  }
+
+  private static InetSocketAddress toSocketAddress(SwarmNode swarmNode) {
+    return new InetSocketAddress(swarmNode.getHost(), swarmNode.getPort());
   }
 
   private static final class ServerShutdownHook implements Runnable {

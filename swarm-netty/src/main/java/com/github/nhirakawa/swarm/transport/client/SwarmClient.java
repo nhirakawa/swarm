@@ -60,7 +60,7 @@ public class SwarmClient implements Closeable {
       .builder()
       .setSender(localSwarmNode)
       .build();
-    return send(swarmNode.getSocketAddress(), pingMessage);
+    return send(swarmNode, pingMessage);
   }
 
   public CompletableFuture<Void> sendPingAck(SwarmNode swarmNode)
@@ -69,11 +69,11 @@ public class SwarmClient implements Closeable {
       .builder()
       .setSender(localSwarmNode)
       .build();
-    return send(swarmNode.getSocketAddress(), pingAckMessage);
+    return send(swarmNode, pingAckMessage);
   }
 
   private <M extends BaseSwarmMessage> CompletableFuture<Void> send(
-    InetSocketAddress address,
+    SwarmNode swarmNode,
     M message
   )
     throws InterruptedException, JsonProcessingException {
@@ -86,11 +86,16 @@ public class SwarmClient implements Closeable {
       .sync()
       .channel();
 
+    InetSocketAddress inetSocketAddress = new InetSocketAddress(
+      swarmNode.getHost(),
+      swarmNode.getPort()
+    );
+
     DatagramPacket packet = new DatagramPacket(
       Unpooled.copiedBuffer(
         ObjectMapperWrapper.instance().writeValueAsBytes(message)
       ),
-      address
+      inetSocketAddress
     );
 
     ChannelFuture channelFuture = channel.writeAndFlush(packet);

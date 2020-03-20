@@ -6,10 +6,12 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableStyle
-public interface AbstractPingMessage extends BaseSwarmMessage {
-  @Override
-  @Value.Auxiliary
-  default SwarmMessageType getType() {
-    return SwarmMessageType.PING;
+public interface AbstractSwarmEnvelope {
+  SwarmNode getToSwarmNode();
+  BaseSwarmMessage getBaseSwarmMessage();
+
+  @Value.Derived
+  default SwarmNode getFromSwarmNode() {
+    return getBaseSwarmMessage().getSender();
   }
 }
