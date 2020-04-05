@@ -4,7 +4,7 @@ import com.github.nhirakawa.swarm.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
-import com.github.nhirakawa.swarm.protocol.protocol.SwarmProtocol;
+import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageApplier;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
@@ -19,10 +19,10 @@ public class SwarmServerHandler
     SwarmServerHandler.class
   );
 
-  private final SwarmProtocol swarmProtocol;
+  private final SwarmMessageApplier swarmProtocol;
 
   @Inject
-  SwarmServerHandler(SwarmProtocol swarmProtocol) {
+  SwarmServerHandler(SwarmMessageApplier swarmProtocol) {
     super(false);
     this.swarmProtocol = swarmProtocol;
   }
@@ -41,9 +41,9 @@ public class SwarmServerHandler
       .readValue(bytes, BaseSwarmMessage.class);
 
     if (baseSwarmMessage instanceof PingMessage) {
-      swarmProtocol.handle((PingMessage) baseSwarmMessage);
+      swarmProtocol.apply((PingMessage) baseSwarmMessage);
     } else if (baseSwarmMessage instanceof PingAckMessage) {
-      swarmProtocol.handle((PingAckMessage) baseSwarmMessage);
+      swarmProtocol.apply((PingAckMessage) baseSwarmMessage);
     }
   }
 

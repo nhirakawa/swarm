@@ -3,7 +3,7 @@ package com.github.nhirakawa.swarm.transport.client;
 import com.github.nhirakawa.swarm.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
-import com.github.nhirakawa.swarm.protocol.protocol.SwarmProtocol;
+import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageApplier;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
@@ -16,10 +16,10 @@ class SwarmClientHandler extends SimpleChannelInboundHandler<DatagramPacket> {
     SwarmClientHandler.class
   );
 
-  private final SwarmProtocol swarmProtocol;
+  private final SwarmMessageApplier swarmProtocol;
 
   @Inject
-  SwarmClientHandler(SwarmProtocol swarmProtocol) {
+  SwarmClientHandler(SwarmMessageApplier swarmProtocol) {
     this.swarmProtocol = swarmProtocol;
   }
 
@@ -37,7 +37,7 @@ class SwarmClientHandler extends SimpleChannelInboundHandler<DatagramPacket> {
       .readValue(messageBytes, BaseSwarmMessage.class);
 
     if (incomingMessage instanceof PingAckMessage) {
-      swarmProtocol.handle((PingAckMessage) incomingMessage);
+      swarmProtocol.apply((PingAckMessage) incomingMessage);
     }
   }
 

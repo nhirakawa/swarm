@@ -2,7 +2,7 @@ package com.github.nhirakawa.swarm.transport.server;
 
 import com.github.nhirakawa.swarm.concurrent.SwarmThreadFactoryFactory;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.protocol.protocol.SwarmProtocol;
+import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageApplier;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmTimer;
 import com.google.common.base.Throwables;
 import io.netty.bootstrap.Bootstrap;
@@ -19,19 +19,19 @@ public class SwarmServer {
   private final SwarmServerChannelInitializer swarmServerChannelInitializer;
   private final SwarmNode localSwarmNode;
   private final SwarmTimer swarmTimer;
-  SwarmProtocol swarmProtocol;
+  private final SwarmMessageApplier swarmMessageApplier;
 
   @Inject
   SwarmServer(
     SwarmServerChannelInitializer swarmServerChannelInitializer,
     SwarmNode localSwarmNode,
     SwarmTimer swarmTimer,
-    SwarmProtocol swarmProtocol
+    SwarmMessageApplier swarmMessageApplier
   ) {
     this.swarmServerChannelInitializer = swarmServerChannelInitializer;
     this.localSwarmNode = localSwarmNode;
     this.swarmTimer = swarmTimer;
-    this.swarmProtocol = swarmProtocol;
+    this.swarmMessageApplier = swarmMessageApplier;
 
     this.eventLoopGroup =
       new NioEventLoopGroup(
@@ -55,9 +55,14 @@ public class SwarmServer {
 
       Runtime
         .getRuntime()
-        .addShutdownHook(new Thread(new ServerShutdownHook(eventLoopGroup)));
+        .addShutdownHook(
+          new Thread(
+            new ServerShutdownHook(eventLoopGroup),
+            threadName(localSwarmNode)
+          )
+        );
 
-      swarmProtocol.start();
+      swarmMessageApplier.init();
       swarmTimer.start();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
@@ -68,6 +73,12 @@ public class SwarmServer {
 
   private static InetSocketAddress toSocketAddress(SwarmNode swarmNode) {
     return new InetSocketAddress(swarmNode.getHost(), swarmNode.getPort());
+  }
+
+  private static String threadName(SwarmNode swarmNode) {
+    return (
+      "swarm-server-shutdown-" + swarmNode.getHost() + "-" + swarmNode.getPort()
+    );
   }
 
   private static final class ServerShutdownHook implements Runnable {

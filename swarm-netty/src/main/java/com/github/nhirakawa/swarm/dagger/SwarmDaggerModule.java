@@ -1,8 +1,10 @@
 package com.github.nhirakawa.swarm.dagger;
 
+import com.github.nhirakawa.swarm.concurrent.SwarmThreadFactoryFactory;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.google.common.collect.Sets;
+import com.google.common.eventbus.EventBus;
 import com.typesafe.config.Config;
 import dagger.Module;
 import dagger.Provides;
@@ -65,7 +67,18 @@ public class SwarmDaggerModule {
 
   @Provides
   @Singleton
-  ScheduledExecutorService provideScheduledExecutorService() {
-    return Executors.newScheduledThreadPool(4);
+  ScheduledExecutorService provideScheduledExecutorService(
+    SwarmNode swarmNode
+  ) {
+    return Executors.newScheduledThreadPool(
+      4,
+      SwarmThreadFactoryFactory.forNode("swarm-scheduled", swarmNode)
+    );
+  }
+
+  @Provides
+  @Singleton
+  EventBus provideEventBus() {
+    return new EventBus("swarm");
   }
 }

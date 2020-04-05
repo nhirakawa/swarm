@@ -12,10 +12,14 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.Optional;
 import javax.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SwarmTimer {
+  private static final Logger LOG = LoggerFactory.getLogger(SwarmTimer.class);
+
   private final ScheduledExecutorService scheduledExecutorService;
-  private final SwarmProtocol swarmProtocol;
+  private final SwarmMessageApplier swarmMessageApplier;
   private final Config config;
 
   private Optional<ScheduledFuture<?>> scheduledFuture = Optional.empty();
@@ -23,11 +27,11 @@ public class SwarmTimer {
   @Inject
   public SwarmTimer(
     ScheduledExecutorService scheduledExecutorService,
-    SwarmProtocol swarmProtocol,
+    SwarmMessageApplier swarmMessageApplier,
     Config config
   ) {
     this.scheduledExecutorService = scheduledExecutorService;
-    this.swarmProtocol = swarmProtocol;
+    this.swarmMessageApplier = swarmMessageApplier;
     this.config = config;
   }
 
@@ -51,8 +55,10 @@ public class SwarmTimer {
   }
 
   private void doTimeout() {
+    LOG.trace("timeout");
+
     try {
-      swarmProtocol.handle(
+      swarmMessageApplier.apply(
         SwarmTimeoutMessage.builder().setTImestamp(Instant.now()).build()
       );
     } catch (Exception e) {

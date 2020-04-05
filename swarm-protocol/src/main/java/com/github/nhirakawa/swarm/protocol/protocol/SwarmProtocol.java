@@ -19,7 +19,7 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SwarmProtocol {
+class SwarmProtocol {
   private static final Logger LOG = LoggerFactory.getLogger(
     SwarmProtocol.class
   );
@@ -41,9 +41,9 @@ public class SwarmProtocol {
     this.config = config;
   }
 
-  public void start() {}
+  void start() {}
 
-  public TimeoutResponse handle(SwarmTimeoutMessage timeoutMessage) {
+  TimeoutResponse handle(SwarmTimeoutMessage timeoutMessage) {
     if (
       timeoutMessage
         .getTImestamp()
@@ -66,15 +66,11 @@ public class SwarmProtocol {
     return TimeoutResponses.empty();
   }
 
-  public PingResponse handle(PingMessage pingMessage) {
-    return PingResponse
-      .builder()
-      .setLocalSwarmNode(localSwarmNode)
-      .setTargetNode(pingMessage.getSender())
-      .build();
+  PingAckMessage handle(PingMessage pingMessage) {
+    return PingAckMessage.builder().setSender(localSwarmNode).build();
   }
 
-  public PingAckResponse handle(PingAckMessage pingAckMessage) {
+  PingAckResponse handle(PingAckMessage pingAckMessage) {
     LOG.info("{} has acknowledged ping", pingAckMessage.getSender());
 
     return PingAckResponse.builder().setTimestamp(Instant.now()).build();
