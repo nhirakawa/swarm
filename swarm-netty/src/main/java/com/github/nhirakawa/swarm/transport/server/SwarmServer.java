@@ -2,14 +2,14 @@ package com.github.nhirakawa.swarm.transport.server;
 
 import com.github.nhirakawa.swarm.concurrent.SwarmThreadFactoryFactory;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageApplier;
-import com.github.nhirakawa.swarm.protocol.protocol.SwarmTimer;
+import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.google.common.base.Throwables;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import java.net.InetSocketAddress;
+import java.util.Set;
 import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,20 +18,17 @@ public class SwarmServer {
   private final EventLoopGroup eventLoopGroup;
   private final SwarmServerChannelInitializer swarmServerChannelInitializer;
   private final SwarmNode localSwarmNode;
-  private final SwarmTimer swarmTimer;
-  private final SwarmMessageApplier swarmMessageApplier;
+  private final Set<Initializable> initializables;
 
   @Inject
   SwarmServer(
     SwarmServerChannelInitializer swarmServerChannelInitializer,
     SwarmNode localSwarmNode,
-    SwarmTimer swarmTimer,
-    SwarmMessageApplier swarmMessageApplier
+    Set<Initializable> initializables
   ) {
     this.swarmServerChannelInitializer = swarmServerChannelInitializer;
     this.localSwarmNode = localSwarmNode;
-    this.swarmTimer = swarmTimer;
-    this.swarmMessageApplier = swarmMessageApplier;
+    this.initializables = initializables;
 
     this.eventLoopGroup =
       new NioEventLoopGroup(
@@ -44,6 +41,8 @@ public class SwarmServer {
   }
 
   public void start() {
+    initializables.forEach(Initializable::initialize);
+
     try {
       Bootstrap bootstrap = new Bootstrap();
       bootstrap
@@ -61,9 +60,6 @@ public class SwarmServer {
             threadName(localSwarmNode)
           )
         );
-
-      swarmMessageApplier.init();
-      swarmTimer.start();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       Throwables.throwIfUnchecked(e);

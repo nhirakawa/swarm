@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.nhirakawa.swarm.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
-import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
-import com.github.nhirakawa.swarm.protocol.model.PingMessage;
+import com.github.nhirakawa.swarm.protocol.model.SwarmEnvelope;
+import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageSender;
 import com.github.nhirakawa.swarm.transport.NettyFutureAdapter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.Bootstrap;
@@ -19,24 +19,18 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import java.io.Closeable;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
-import java.util.Set;
 import javax.inject.Inject;
 
-public class SwarmClient implements Closeable {
+public class SwarmClient implements Closeable, SwarmMessageSender {
   private final SwarmClientChannelInitializer swarmClientChannelInitializer;
-  private final SwarmNode localSwarmNode;
-  private final Set<SwarmNode> clusterNodes;
   private final EventLoopGroup eventLoopGroup;
 
   @Inject
   SwarmClient(
     SwarmClientChannelInitializer swarmClientChannelInitializer,
-    SwarmNode localSwarmNode,
-    Set<SwarmNode> clusterNodes
+    SwarmNode localSwarmNode
   ) {
     this.swarmClientChannelInitializer = swarmClientChannelInitializer;
-    this.localSwarmNode = localSwarmNode;
-    this.clusterNodes = clusterNodes;
 
     this.eventLoopGroup =
       new NioEventLoopGroup(
@@ -54,56 +48,57 @@ public class SwarmClient implements Closeable {
       );
   }
 
-  public CompletableFuture<Void> sendPing(SwarmNode swarmNode)
-    throws JsonProcessingException, InterruptedException {
-    PingMessage pingMessage = PingMessage
-      .builder()
-      .setSender(localSwarmNode)
-      .build();
-    return send(swarmNode, pingMessage);
+  @Override
+  public void close() {
+    eventLoopGroup.shutdownGracefully();
   }
 
-  public CompletableFuture<Void> sendPingAck(SwarmNode swarmNode)
-    throws JsonProcessingException, InterruptedException {
-    PingAckMessage pingAckMessage = PingAckMessage
-      .builder()
-      .setSender(localSwarmNode)
-      .build();
-    return send(swarmNode, pingAckMessage);
+  @Override
+  public CompletableFuture<?> send(SwarmEnvelope swarmEnvelope) {
+    Channel channel = buildChannel();
+    DatagramPacket datagramPacket = wrapInDatagramPacket(
+      swarmEnvelope.getToSwarmNode(),
+      swarmEnvelope.getBaseSwarmMessage()
+    );
+
+    ChannelFuture channelFuture = channel.writeAndFlush(datagramPacket);
+    return NettyFutureAdapter.of(channelFuture);
   }
 
-  private <M extends BaseSwarmMessage> CompletableFuture<Void> send(
+  private Channel buildChannel() {
+    try {
+      Bootstrap bootstrap = new Bootstrap();
+      return bootstrap
+        .group(eventLoopGroup)
+        .channel(NioDatagramChannel.class)
+        .handler(swarmClientChannelInitializer)
+        .bind(0)
+        .sync()
+        .channel();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
+  }
+
+  private <M extends BaseSwarmMessage> DatagramPacket wrapInDatagramPacket(
     SwarmNode swarmNode,
     M message
-  )
-    throws InterruptedException, JsonProcessingException {
-    Bootstrap bootstrap = new Bootstrap();
-    Channel channel = bootstrap
-      .group(eventLoopGroup)
-      .channel(NioDatagramChannel.class)
-      .handler(swarmClientChannelInitializer)
-      .bind(0)
-      .sync()
-      .channel();
-
+  ) {
     InetSocketAddress inetSocketAddress = new InetSocketAddress(
       swarmNode.getHost(),
       swarmNode.getPort()
     );
 
-    DatagramPacket packet = new DatagramPacket(
-      Unpooled.copiedBuffer(
-        ObjectMapperWrapper.instance().writeValueAsBytes(message)
-      ),
-      inetSocketAddress
-    );
-
-    ChannelFuture channelFuture = channel.writeAndFlush(packet);
-    return NettyFutureAdapter.of(channelFuture);
-  }
-
-  @Override
-  public void close() {
-    eventLoopGroup.shutdownGracefully();
+    try {
+      return new DatagramPacket(
+        Unpooled.copiedBuffer(
+          ObjectMapperWrapper.instance().writeValueAsBytes(message)
+        ),
+        inetSocketAddress
+      );
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

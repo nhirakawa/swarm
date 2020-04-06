@@ -1,7 +1,7 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
+import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
@@ -15,7 +15,7 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SwarmTimer {
+public class SwarmTimer implements Initializable {
   private static final Logger LOG = LoggerFactory.getLogger(SwarmTimer.class);
 
   private final ScheduledExecutorService scheduledExecutorService;
@@ -65,5 +65,10 @@ public class SwarmTimer {
       Throwables.throwIfUnchecked(e);
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public void initialize() {
+    start();
   }
 }

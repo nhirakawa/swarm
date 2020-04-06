@@ -2,11 +2,19 @@ package com.github.nhirakawa.swarm.dagger;
 
 import com.github.nhirakawa.swarm.concurrent.SwarmThreadFactoryFactory;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
+import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
+import com.github.nhirakawa.swarm.protocol.protocol.SwarmDisseminator;
+import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageApplier;
+import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageSender;
+import com.github.nhirakawa.swarm.protocol.protocol.SwarmTimer;
+import com.github.nhirakawa.swarm.transport.client.SwarmClient;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
 import com.typesafe.config.Config;
 import dagger.Module;
+import dagger.multibindings.ElementsIntoSet;
 import dagger.Provides;
 import java.util.Collections;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -80,5 +88,20 @@ public class SwarmDaggerModule {
   @Singleton
   EventBus provideEventBus() {
     return new EventBus("swarm");
+  }
+
+  @Provides
+  @ElementsIntoSet
+  Set<Initializable> provideEventBusRegisters(
+    SwarmTimer swarmTimer,
+    SwarmMessageApplier swarmMessageApplier,
+    SwarmDisseminator swarmDisseminator
+  ) {
+    return ImmutableSet.of(swarmTimer, swarmMessageApplier, swarmDisseminator);
+  }
+
+  @Provides
+  SwarmMessageSender provideSwarmMessageSender(SwarmClient swarmClient) {
+    return swarmClient;
   }
 }

@@ -1,13 +1,16 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
-import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.protocol.EventBusRegister;
+import com.github.nhirakawa.swarm.protocol.Initializable;
+import com.github.nhirakawa.swarm.protocol.model.SwarmEnvelope;
 import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
+import javax.inject.Inject;
 
-public class SwarmDisseminator implements EventBusRegister {
+public class SwarmDisseminator implements Initializable {
   private final SwarmMessageSender swarmMessageSender;
   private final EventBus eventBus;
 
+  @Inject
   public SwarmDisseminator(
     SwarmMessageSender swarmMessageSender,
     EventBus eventBus
@@ -17,7 +20,12 @@ public class SwarmDisseminator implements EventBusRegister {
   }
 
   @Override
-  public void register() {
+  public void initialize() {
     eventBus.register(this);
+  }
+
+  @Subscribe
+  public void handle(SwarmEnvelope swarmEnvelope) {
+    swarmMessageSender.send(swarmEnvelope);
   }
 }

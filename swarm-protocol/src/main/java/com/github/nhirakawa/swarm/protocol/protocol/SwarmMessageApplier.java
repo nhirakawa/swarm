@@ -1,7 +1,7 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.protocol.EventBusRegister;
+import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
 import com.github.nhirakawa.swarm.protocol.model.SwarmEnvelope;
@@ -12,7 +12,7 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SwarmMessageApplier implements EventBusRegister {
+public class SwarmMessageApplier implements Initializable {
   private static final Logger LOG = LoggerFactory.getLogger(
     SwarmMessageApplier.class
   );
@@ -70,10 +70,8 @@ public class SwarmMessageApplier implements EventBusRegister {
     eventBus.post(swarmProtocol.handle(pingAckMessage));
   }
 
-  public void init() {}
-
   @Override
-  public void register() {
+  public void initialize() {
     eventBus.register(this);
   }
 }

@@ -3,9 +3,14 @@ package com.github.nhirakawa.swarm.protocol.model;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonTypeInfo(
+  use = JsonTypeInfo.Id.NAME,
+  property = "type",
+  include = As.EXISTING_PROPERTY
+)
 @JsonSubTypes(
   {
     @Type(name = "PING", value = PingMessage.class),
