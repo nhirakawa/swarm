@@ -1,17 +1,21 @@
 package com.github.nhirakawa.swarm.transport.server;
 
+import java.io.IOException;
+
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.nhirakawa.swarm.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageApplier;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
-import java.io.IOException;
-import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SwarmServerHandler
   extends SimpleChannelInboundHandler<DatagramPacket> {
@@ -19,12 +23,12 @@ public class SwarmServerHandler
     SwarmServerHandler.class
   );
 
-  private final SwarmMessageApplier swarmProtocol;
+  private final SwarmMessageApplier swarmMessageApplier;
 
   @Inject
-  SwarmServerHandler(SwarmMessageApplier swarmProtocol) {
+  SwarmServerHandler(SwarmMessageApplier swarmMessageApplier) {
     super(false);
-    this.swarmProtocol = swarmProtocol;
+    this.swarmMessageApplier = swarmMessageApplier;
   }
 
   @Override
@@ -41,9 +45,9 @@ public class SwarmServerHandler
       .readValue(bytes, BaseSwarmMessage.class);
 
     if (baseSwarmMessage instanceof PingMessage) {
-      swarmProtocol.apply((PingMessage) baseSwarmMessage);
+      swarmMessageApplier.apply((PingMessage) baseSwarmMessage);
     } else if (baseSwarmMessage instanceof PingAckMessage) {
-      swarmProtocol.apply((PingAckMessage) baseSwarmMessage);
+      swarmMessageApplier.apply((PingAckMessage) baseSwarmMessage);
     }
   }
 
