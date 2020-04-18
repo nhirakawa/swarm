@@ -29,6 +29,7 @@
     <logback.version>1.0.13</logback.version>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.dependency.plugin.version>3.1.2</maven.dependency.plugin.version>
     <netty-version>4.1.42.Final</netty-version>
     <prettier.skip>false</prettier.skip>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -146,7 +147,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.0.2</version>
+        <version>3.1.2</version>
         <executions>
           <execution>
             <id>analyze</id>
@@ -183,6 +184,7 @@
           <compilerArgs>
             <arg>-Xlint</arg>
           </compilerArgs>
+          <release>11</release>
         </configuration>
       </plugin>
     </plugins>

@@ -2,6 +2,7 @@ package com.github.nhirakawa.swarm.dagger;
 
 import com.github.nhirakawa.swarm.concurrent.SwarmThreadFactoryFactory;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
+import com.github.nhirakawa.swarm.protocol.dagger.SwarmProtocolModule;
 import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmDisseminator;
@@ -24,7 +25,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.Set;
 import javax.inject.Singleton;
 
-@Module
+@Module(includes = SwarmProtocolModule.class)
 public class SwarmDaggerModule {
   private final Config config;
   private final SwarmNode localSwarmNode;
