@@ -22,8 +22,10 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Runner {
-  private static final Logger LOG = LoggerFactory.getLogger(Runner.class);
+public class SwarmNettyRunner {
+  private static final Logger LOG = LoggerFactory.getLogger(
+    SwarmNettyRunner.class
+  );
   private static final ExecutorService EXECUTOR = buildExecutor();
   private static final TypeReference<Set<SwarmNode>> SET_SWARM_NODE = new TypeReference<Set<SwarmNode>>() {};
 
