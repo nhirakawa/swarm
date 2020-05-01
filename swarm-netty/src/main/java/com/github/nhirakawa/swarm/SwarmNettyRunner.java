@@ -14,11 +14,8 @@ import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
-import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,23 +82,23 @@ public class SwarmNettyRunner {
 
     for (SwarmNode swarmNode : clusterNodes) {
       Config nodeSpecificConfig = ConfigFactory
-          .parseMap(
-              ImmutableMap.of(
-                  "wilson.localNode.host",
-                  swarmNode.getHost(),
-                  "wilson.localNode.port",
-                  swarmNode.getPort()
-              )
+        .parseMap(
+          ImmutableMap.of(
+            "wilson.localNode.host",
+            swarmNode.getHost(),
+            "wilson.localNode.port",
+            swarmNode.getPort()
           )
-          .withFallback(config);
+        )
+        .withFallback(config);
 
       SwarmServer swarmServer = DaggerSwarmComponent
-          .builder()
-          .swarmDaggerModule(
-              new SwarmDaggerModule(nodeSpecificConfig, swarmNode, clusterNodes)
-          )
-          .build()
-          .buildServer();
+        .builder()
+        .swarmDaggerModule(
+          new SwarmDaggerModule(nodeSpecificConfig, swarmNode, clusterNodes)
+        )
+        .build()
+        .buildServer();
 
       EXECUTOR.execute(swarmServer::start);
     }
