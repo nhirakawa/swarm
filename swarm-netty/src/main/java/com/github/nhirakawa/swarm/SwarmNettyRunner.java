@@ -5,6 +5,7 @@ import com.github.nhirakawa.swarm.dagger.SwarmDaggerModule;
 import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
 import com.github.nhirakawa.swarm.protocol.config.ConfigValidator;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
+import com.github.nhirakawa.swarm.transport.server.SwarmServer;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -82,42 +83,27 @@ public class SwarmNettyRunner {
         SET_SWARM_NODE
       );
 
-    List<CompletableFuture<?>> futures = new ArrayList<>();
-
     for (SwarmNode swarmNode : clusterNodes) {
       Config nodeSpecificConfig = ConfigFactory
-        .parseMap(
-          ImmutableMap.of(
-            "wilson.localNode.host",
-            swarmNode.getHost(),
-            "wilson.localNode.port",
-            swarmNode.getPort()
+          .parseMap(
+              ImmutableMap.of(
+                  "wilson.localNode.host",
+                  swarmNode.getHost(),
+                  "wilson.localNode.port",
+                  swarmNode.getPort()
+              )
           )
-        )
-        .withFallback(config);
+          .withFallback(config);
 
-      SwarmComponent swarmComponent = DaggerSwarmComponent
-        .builder()
-        .swarmDaggerModule(
-          new SwarmDaggerModule(nodeSpecificConfig, swarmNode, clusterNodes)
-        )
-        .build();
+      SwarmServer swarmServer = DaggerSwarmComponent
+          .builder()
+          .swarmDaggerModule(
+              new SwarmDaggerModule(nodeSpecificConfig, swarmNode, clusterNodes)
+          )
+          .build()
+          .buildServer();
 
-      CompletableFuture<?> future = CompletableFuture.runAsync(
-        () -> swarmComponent.buildServer().start(),
-        EXECUTOR
-      );
-      future.exceptionally(
-        t -> {
-          LOG.error("Caught exception", t);
-          return null;
-        }
-      );
-      futures.add(future);
-    }
-
-    for (CompletableFuture<?> future : futures) {
-      future.join();
+      EXECUTOR.execute(swarmServer::start);
     }
   }
 
