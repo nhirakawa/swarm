@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
@@ -51,6 +52,7 @@ class SwarmProtocol {
 
   TimeoutResponse handle(SwarmTimeoutMessage timeoutMessage) {
     SwarmState swarmState = swarmStateBuffer.getCurrent();
+    Instant now = Instant.now();
 
     if (
       timeoutMessage
@@ -71,7 +73,6 @@ class SwarmProtocol {
 
       SwarmNode randomNode = clusterNodes.get(randomIndex);
 
-      Instant now = Instant.now();
       SwarmState updatedSwarmState = SwarmState
         .builder()
         .from(swarmState)
@@ -84,6 +85,46 @@ class SwarmProtocol {
 
       return TimeoutResponse.builder().setTargetNode(randomNode).build();
     }
+
+    Instant earliestValidAckRequestTimestamp = now.minus(
+      config.getDuration(ConfigPath.SWARM_MESSAGE_TIMEOUT.getConfigPath())
+    );
+
+    Map<SwarmNode, Instant> timedOutSwarmNodes = Maps.filterValues(
+      swarmState.getLastAckRequestBySwarmNode(),
+      lastAckRequestTimestamp -> lastAckRequestTimestamp.isBefore(
+        earliestValidAckRequestTimestamp
+      )
+    );
+
+    if (timedOutSwarmNodes.isEmpty()) {
+      return TimeoutResponses.empty();
+    }
+
+    for (Entry<SwarmNode, Instant> entry : timedOutSwarmNodes.entrySet()) {
+      SwarmNode swarmNode = entry.getKey();
+      Instant timestamp = entry.getValue();
+
+      LOG.debug(
+        "{} was sent ack request at {} but has not responded",
+        swarmNode,
+        timestamp
+      );
+    }
+
+    Map<SwarmNode, MemberStatus> updatedMemberStatuses = Maps.transformValues(
+      timedOutSwarmNodes,
+      ignored -> MemberStatus.FAILED
+    );
+
+    SwarmState updatedSwarmState = SwarmState
+      .builder()
+      .from(swarmState)
+      .setTimestamp(now)
+      .putAllMemberStatusBySwarmNode(updatedMemberStatuses)
+      .build();
+
+    swarmStateBuffer.add(updatedSwarmState);
 
     return TimeoutResponses.empty();
   }
