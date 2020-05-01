@@ -60,14 +60,15 @@ public class SwarmNettyRunner {
         SET_SWARM_NODE
       );
 
-    SwarmComponent swarmComponent = DaggerSwarmComponent
+    SwarmServer swarmServer = DaggerSwarmComponent
       .builder()
       .swarmDaggerModule(
         new SwarmDaggerModule(config, localSwarmNode, clusterNodes)
       )
-      .build();
+      .build()
+        .buildServer();
 
-    swarmComponent.buildServer().start();
+    swarmServer.start();
   }
 
   private static void runCluster(Config config) throws IOException {
