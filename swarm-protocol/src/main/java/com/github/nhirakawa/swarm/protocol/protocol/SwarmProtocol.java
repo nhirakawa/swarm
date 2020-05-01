@@ -11,10 +11,12 @@ import com.github.nhirakawa.swarm.protocol.model.TimeoutResponse;
 import com.github.nhirakawa.swarm.protocol.model.TimeoutResponses;
 import com.github.nhirakawa.swarm.protocol.util.SwarmStateBuffer;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 import com.typesafe.config.Config;
 import java.time.Instant;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
@@ -70,9 +72,14 @@ class SwarmProtocol {
       SwarmNode randomNode = clusterNodes.get(randomIndex);
 
       Instant now = Instant.now();
-      SwarmState updatedSwarmState = swarmState
-        .withLastProtocolPeriodStarted(now)
-        .withTimestamp(now);
+      SwarmState updatedSwarmState = SwarmState
+        .builder()
+        .from(swarmState)
+        .setLastProtocolPeriodStarted(now)
+        .setTimestamp(now)
+        .putLastAckRequestBySwarmNode(randomNode, now)
+        .build();
+
       swarmStateBuffer.add(updatedSwarmState);
 
       return TimeoutResponse.builder().setTargetNode(randomNode).build();
@@ -86,7 +93,39 @@ class SwarmProtocol {
   }
 
   PingAckResponse handle(PingAckMessage pingAckMessage) {
+    SwarmState currentSwarmState = swarmStateBuffer.getCurrent();
+
+    Instant now = Instant.now();
+
+    PingAckResponse pingAckResponse = PingAckResponse
+      .builder()
+      .setTimestamp(now)
+      .build();
+
+    if (
+      !currentSwarmState
+        .getLastAckRequestBySwarmNode()
+        .containsKey(pingAckMessage.getSender())
+    ) {
+      LOG.warn("No outstanding ping for {}", pingAckMessage.getSender());
+      return pingAckResponse;
+    }
+
     LOG.info("{} has acknowledged ping", pingAckMessage.getSender());
+
+    Map<SwarmNode, Instant> updatedOutstandingPingAckBySwarmNode = Maps.filterKeys(
+      currentSwarmState.getLastAckRequestBySwarmNode(),
+      swarmNode -> !swarmNode.equals(pingAckMessage.getSender())
+    );
+
+    SwarmState updatedSwarmState = SwarmState
+      .builder()
+      .from(currentSwarmState)
+      .setTimestamp(now)
+      .setLastAckRequestBySwarmNode(updatedOutstandingPingAckBySwarmNode)
+      .build();
+
+    swarmStateBuffer.add(updatedSwarmState);
 
     return PingAckResponse.builder().setTimestamp(Instant.now()).build();
   }

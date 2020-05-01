@@ -12,10 +12,6 @@ import org.slf4j.LoggerFactory;
 
 @NotThreadSafe
 public class SwarmStateBuffer {
-  private static final Logger LOG = LoggerFactory.getLogger(
-    SwarmStateBuffer.class
-  );
-
   private final Deque<SwarmState> delegate;
   private final int bufferSize;
 
@@ -31,8 +27,6 @@ public class SwarmStateBuffer {
     if (delegate.size() > bufferSize) {
       delegate.removeLast();
     }
-
-    LOG.trace("SwarmState history - {}", delegate);
   }
 
   public SwarmState getCurrent() {
