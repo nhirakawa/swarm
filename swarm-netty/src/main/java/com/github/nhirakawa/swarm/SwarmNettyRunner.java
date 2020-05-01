@@ -1,10 +1,10 @@
 package com.github.nhirakawa.swarm;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.github.nhirakawa.swarm.dagger.SwarmDaggerModule;
 import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
 import com.github.nhirakawa.swarm.protocol.config.ConfigValidator;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
+import com.github.nhirakawa.swarm.protocol.dagger.SwarmProtocolModule;
 import com.github.nhirakawa.swarm.transport.server.SwarmServer;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
@@ -62,11 +62,11 @@ public class SwarmNettyRunner {
 
     SwarmServer swarmServer = DaggerSwarmComponent
       .builder()
-      .swarmDaggerModule(
-        new SwarmDaggerModule(config, localSwarmNode, clusterNodes)
+      .swarmProtocolModule(
+        new SwarmProtocolModule(config, localSwarmNode, clusterNodes)
       )
       .build()
-        .buildServer();
+      .buildServer();
 
     swarmServer.start();
   }
@@ -95,8 +95,8 @@ public class SwarmNettyRunner {
 
       SwarmServer swarmServer = DaggerSwarmComponent
         .builder()
-        .swarmDaggerModule(
-          new SwarmDaggerModule(nodeSpecificConfig, swarmNode, clusterNodes)
+        .swarmProtocolModule(
+          new SwarmProtocolModule(nodeSpecificConfig, swarmNode, clusterNodes)
         )
         .build()
         .buildServer();

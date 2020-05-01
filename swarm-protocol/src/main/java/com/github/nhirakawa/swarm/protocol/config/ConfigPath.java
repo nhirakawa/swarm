@@ -15,7 +15,8 @@ public enum ConfigPath {
   ),
   CLUSTER_NODES("swarm.clusterNodes"),
   LOCAL_NODE("swarm.localNode"),
-  RUN_ENTIRE_CLUSTER_LOCALLY("swarm.runEntireClusterLocally");
+  RUN_ENTIRE_CLUSTER_LOCALLY("swarm.runEntireClusterLocally"),
+  SWARM_STATE_BUFFER_SIZE("swarm.stateBufferSize");
   private final String configPath;
 
   ConfigPath(String configPath) {

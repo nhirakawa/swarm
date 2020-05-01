@@ -1,6 +1,6 @@
 package com.github.nhirakawa.swarm.transport.server;
 
-import com.github.nhirakawa.swarm.concurrent.SwarmThreadFactoryFactory;
+import com.github.nhirakawa.swarm.protocol.concurrent.SwarmThreadFactoryFactory;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.google.common.base.Throwables;

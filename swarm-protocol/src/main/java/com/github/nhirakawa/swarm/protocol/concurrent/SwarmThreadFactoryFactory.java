@@ -1,4 +1,4 @@
-package com.github.nhirakawa.swarm.concurrent;
+package com.github.nhirakawa.swarm.protocol.concurrent;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;

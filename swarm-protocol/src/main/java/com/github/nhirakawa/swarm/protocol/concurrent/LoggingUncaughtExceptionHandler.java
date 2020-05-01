@@ -1,4 +1,4 @@
-package com.github.nhirakawa.swarm.concurrent;
+package com.github.nhirakawa.swarm.protocol.concurrent;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import org.slf4j.Logger;

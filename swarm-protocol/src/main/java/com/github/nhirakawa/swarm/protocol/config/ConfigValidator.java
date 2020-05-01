@@ -7,7 +7,7 @@ public final class ConfigValidator {
 
   private ConfigValidator() {}
 
-  public static void validate(Config config) {
+  public static Config validate(Config config) {
     for (ConfigPath configPath : ConfigPath.values()) {
       Preconditions.checkState(
         config.hasPath(configPath.getConfigPath()),
@@ -16,5 +16,7 @@ public final class ConfigValidator {
         configPath.getConfigPath()
       );
     }
+
+    return config;
   }
 }

@@ -5,20 +5,23 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckResponse;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
-import com.github.nhirakawa.swarm.protocol.model.PingResponse;
+import com.github.nhirakawa.swarm.protocol.model.SwarmState;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.TimeoutResponse;
 import com.github.nhirakawa.swarm.protocol.model.TimeoutResponses;
+import com.github.nhirakawa.swarm.protocol.util.SwarmStateBuffer;
 import com.google.common.collect.ImmutableList;
 import com.typesafe.config.Config;
 import java.time.Instant;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.List;
 import java.util.Set;
+import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@NotThreadSafe
 class SwarmProtocol {
   private static final Logger LOG = LoggerFactory.getLogger(
     SwarmProtocol.class
@@ -27,38 +30,50 @@ class SwarmProtocol {
   private final List<SwarmNode> clusterNodes;
   private final SwarmNode localSwarmNode;
   private final Config config;
-
-  private Instant lastPingSent = Instant.now();
+  private final SwarmStateBuffer swarmStateBuffer;
 
   @Inject
   SwarmProtocol(
     Set<SwarmNode> clusterNodes,
     SwarmNode localSwarmNode,
-    Config config
+    Config config,
+    SwarmStateBuffer swarmStateBuffer
   ) {
     this.clusterNodes = ImmutableList.copyOf(clusterNodes);
     this.localSwarmNode = localSwarmNode;
     this.config = config;
+    this.swarmStateBuffer = swarmStateBuffer;
   }
 
   void start() {}
 
   TimeoutResponse handle(SwarmTimeoutMessage timeoutMessage) {
+    SwarmState swarmState = swarmStateBuffer.getCurrent();
+
     if (
       timeoutMessage
         .getTImestamp()
         .isAfter(
-          lastPingSent.plus(
-            config.getDuration(ConfigPath.SWARM_PROTOCOL_PERIOD.getConfigPath())
-          )
+          swarmState
+            .getLastProtocolPeriodStarted()
+            .plus(
+              config.getDuration(
+                ConfigPath.SWARM_PROTOCOL_PERIOD.getConfigPath()
+              )
+            )
         )
     ) {
       int randomIndex = ThreadLocalRandom
         .current()
         .nextInt(0, clusterNodes.size());
+
       SwarmNode randomNode = clusterNodes.get(randomIndex);
 
-      lastPingSent = Instant.now();
+      Instant now = Instant.now();
+      SwarmState updatedSwarmState = swarmState
+        .withLastProtocolPeriodStarted(now)
+        .withTimestamp(now);
+      swarmStateBuffer.add(updatedSwarmState);
 
       return TimeoutResponse.builder().setTargetNode(randomNode).build();
     }
@@ -66,7 +81,7 @@ class SwarmProtocol {
     return TimeoutResponses.empty();
   }
 
-  PingAckMessage handle(PingMessage pingMessage) {
+  PingAckMessage handle(PingMessage ignored) {
     return PingAckMessage.builder().setSender(localSwarmNode).build();
   }
 
