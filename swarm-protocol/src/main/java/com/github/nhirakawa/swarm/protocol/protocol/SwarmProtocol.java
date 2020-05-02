@@ -10,6 +10,7 @@ import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.TimeoutResponse;
 import com.github.nhirakawa.swarm.protocol.model.TimeoutResponses;
 import com.github.nhirakawa.swarm.protocol.util.SwarmStateBuffer;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -115,7 +116,7 @@ class SwarmProtocol {
 
     Map<SwarmNode, Instant> filteredTimestamps = Maps.filterKeys(
       swarmState.getLastAckRequestBySwarmNode(),
-      timedOutSwarmNodes::containsKey
+      Predicates.not(timedOutSwarmNodes::containsKey)
     );
 
     Set<SwarmNode> alreadyFailedSwarmNodes = Maps
