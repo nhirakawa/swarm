@@ -6,6 +6,8 @@ public class InjectableThreadLocalRandom extends InjectableRandom {
 
   @Override
   protected int nextInt() {
-    return ThreadLocalRandom.current().nextInt(VALID_PERCENTS.lowerEndpoint(), VALID_PERCENTS.upperEndpoint());
+    return ThreadLocalRandom
+      .current()
+      .nextInt(VALID_PERCENTS.lowerEndpoint(), VALID_PERCENTS.upperEndpoint());
   }
 }

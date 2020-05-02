@@ -22,6 +22,8 @@ public class SwarmFailureInjector {
 
     int rand = injectableRandom.getRandomInt();
 
-    return rand < config.getInt(ConfigPath.FAILURE_INJECTION_PERCENT.getConfigPath());
+    return (
+      rand < config.getInt(ConfigPath.FAILURE_INJECTION_PERCENT.getConfigPath())
+    );
   }
 }

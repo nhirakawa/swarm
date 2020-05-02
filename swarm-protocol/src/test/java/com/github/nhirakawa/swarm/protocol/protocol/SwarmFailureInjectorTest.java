@@ -4,16 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
+import com.github.nhirakawa.swarm.protocol.util.InjectableThreadLocalRandom;
+import com.typesafe.config.Config;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.assertj.core.data.Offset;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
-import com.github.nhirakawa.swarm.protocol.util.InjectableThreadLocalRandom;
-import com.typesafe.config.Config;
 
 public class SwarmFailureInjectorTest {
   private static final AtomicInteger RANDOM = new AtomicInteger(0);
@@ -26,14 +24,19 @@ public class SwarmFailureInjectorTest {
     RANDOM.set(0);
 
     Config config = mock(Config.class);
-    when(config.getInt(Mockito.eq(ConfigPath.FAILURE_INJECTION_PERCENT.getConfigPath()))).thenAnswer(ignored -> RANDOM.get());
-    when(config.getBoolean(Mockito.eq(ConfigPath.DEBUG_ENABLED.getConfigPath()))).thenReturn(true);
+    when(
+        config.getInt(
+          Mockito.eq(ConfigPath.FAILURE_INJECTION_PERCENT.getConfigPath())
+        )
+      )
+      .thenAnswer(ignored -> RANDOM.get());
+    when(
+        config.getBoolean(Mockito.eq(ConfigPath.DEBUG_ENABLED.getConfigPath()))
+      )
+      .thenReturn(true);
 
     swarmFailureInjector =
-      new SwarmFailureInjector(
-        config,
-        new InjectableThreadLocalRandom()
-      );
+      new SwarmFailureInjector(config, new InjectableThreadLocalRandom());
   }
 
   @Test

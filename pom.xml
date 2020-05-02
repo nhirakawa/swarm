@@ -32,11 +32,11 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.dependency.plugin.version>3.1.2</maven.dependency.plugin.version>
+    <mockito.core.version>3.3.3</mockito.core.version>
     <netty-version>4.1.42.Final</netty-version>
     <prettier.skip>false</prettier.skip>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j.version>1.7.25</slf4j.version>
-    <mockito.core.version>3.3.3</mockito.core.version>
   </properties>
 
   <dependencyManagement>
