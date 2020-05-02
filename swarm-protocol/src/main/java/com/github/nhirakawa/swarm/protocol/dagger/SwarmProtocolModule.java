@@ -20,6 +20,7 @@ import com.typesafe.config.Config;
 import dagger.Module;
 import dagger.multibindings.ElementsIntoSet;
 import dagger.Provides;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.concurrent.Executors;
@@ -65,6 +66,12 @@ public class SwarmProtocolModule {
 
   @Provides
   @Singleton
+  static Clock provideClock() {
+    return Clock.systemUTC();
+  }
+
+  @Provides
+  @Singleton
   static InjectableRandom provideInjectableRandom() {
     return new InjectableThreadLocalRandom();
   }
@@ -98,8 +105,8 @@ public class SwarmProtocolModule {
 
   @Provides
   @Singleton
-  static SwarmState provideInitialSwarmState() {
-    Instant now = Instant.now();
+  static SwarmState provideInitialSwarmState(Clock clock) {
+    Instant now = clock.instant();
     return SwarmState
       .builder()
       .setLastProtocolPeriodStarted(now)

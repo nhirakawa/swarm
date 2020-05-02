@@ -6,6 +6,7 @@ import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.typesafe.config.Config;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -23,6 +24,7 @@ public class SwarmTimer implements Initializable {
   private final ScheduledExecutorService scheduledExecutorService;
   private final SwarmMessageApplier swarmMessageApplier;
   private final Config config;
+  private final Clock clock;
 
   private Optional<ScheduledFuture<?>> scheduledFuture = Optional.empty();
 
@@ -30,11 +32,13 @@ public class SwarmTimer implements Initializable {
   public SwarmTimer(
     ScheduledExecutorService scheduledExecutorService,
     SwarmMessageApplier swarmMessageApplier,
-    Config config
+    Config config,
+    Clock clock
   ) {
     this.scheduledExecutorService = scheduledExecutorService;
     this.swarmMessageApplier = swarmMessageApplier;
     this.config = config;
+    this.clock = clock;
   }
 
   public void start() {
@@ -63,7 +67,7 @@ public class SwarmTimer implements Initializable {
 
     try {
       swarmMessageApplier.apply(
-        SwarmTimeoutMessage.builder().setTImestamp(Instant.now()).build()
+        SwarmTimeoutMessage.builder().setTImestamp(clock.instant()).build()
       );
     } catch (Exception e) {
       LOG.error("Uncaught exception in timer", e);

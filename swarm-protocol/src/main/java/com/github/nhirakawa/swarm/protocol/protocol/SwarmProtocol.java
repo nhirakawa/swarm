@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.typesafe.config.Config;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.List;
@@ -36,25 +37,28 @@ class SwarmProtocol {
   private final SwarmNode localSwarmNode;
   private final Config config;
   private final SwarmStateBuffer swarmStateBuffer;
+  private final Clock clock;
 
   @Inject
   SwarmProtocol(
     Set<SwarmNode> clusterNodes,
     SwarmNode localSwarmNode,
     Config config,
-    SwarmStateBuffer swarmStateBuffer
+    SwarmStateBuffer swarmStateBuffer,
+    Clock clock
   ) {
     this.clusterNodes = ImmutableList.copyOf(clusterNodes);
     this.localSwarmNode = localSwarmNode;
     this.config = config;
     this.swarmStateBuffer = swarmStateBuffer;
+    this.clock = clock;
   }
 
   void start() {}
 
   TimeoutResponse handle(SwarmTimeoutMessage timeoutMessage) {
     SwarmState swarmState = swarmStateBuffer.getCurrent();
-    Instant now = Instant.now();
+    Instant now = clock.instant();
 
     if (
       timeoutMessage
@@ -156,7 +160,7 @@ class SwarmProtocol {
   PingAckResponse handle(PingAckMessage pingAckMessage) {
     SwarmState currentSwarmState = swarmStateBuffer.getCurrent();
 
-    Instant now = Instant.now();
+    Instant now = clock.instant();
 
     PingAckResponse pingAckResponse = PingAckResponse
       .builder()
@@ -188,6 +192,6 @@ class SwarmProtocol {
 
     swarmStateBuffer.add(updatedSwarmState);
 
-    return PingAckResponse.builder().setTimestamp(Instant.now()).build();
+    return PingAckResponse.builder().setTimestamp(clock.instant()).build();
   }
 }
