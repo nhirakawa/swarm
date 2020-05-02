@@ -10,6 +10,8 @@ import com.github.nhirakawa.swarm.protocol.protocol.SwarmDisseminator;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageApplier;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageSender;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmTimer;
+import com.github.nhirakawa.swarm.protocol.util.InjectableRandom;
+import com.github.nhirakawa.swarm.protocol.util.InjectableThreadLocalRandom;
 import com.github.nhirakawa.swarm.protocol.util.SwarmStateBuffer;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -22,6 +24,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.Set;
 import javax.inject.Singleton;
 
@@ -62,11 +65,17 @@ public class SwarmProtocolModule {
 
   @Provides
   @Singleton
+  static InjectableRandom provideInjectableRandom() {
+    return new InjectableThreadLocalRandom();
+  }
+
+  @Provides
+  @Singleton
   static ScheduledExecutorService provideScheduledExecutorService(
     SwarmNode swarmNode
   ) {
     return Executors.newScheduledThreadPool(
-      4,
+      1,
       SwarmThreadFactoryFactory.forNode("swarm-scheduled", swarmNode)
     );
   }

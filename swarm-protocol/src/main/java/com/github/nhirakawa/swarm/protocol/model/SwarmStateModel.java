@@ -1,6 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.model;
 
-import com.github.nhirakawa.immutable.style.guava.ImmutableStyle;
+import com.github.nhirakawa.immutable.style.ImmutableStyle;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.protocol.MemberStatus;
 import java.time.Instant;

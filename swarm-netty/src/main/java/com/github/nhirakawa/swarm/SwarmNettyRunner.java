@@ -34,6 +34,7 @@ public class SwarmNettyRunner {
     ConfigValidator.validate(config);
 
     if (
+      config.getBoolean(ConfigPath.DEBUG_ENABLED.getConfigPath()) &&
       config.getBoolean(ConfigPath.RUN_ENTIRE_CLUSTER_LOCALLY.getConfigPath())
     ) {
       runCluster(config);
@@ -112,7 +113,7 @@ public class SwarmNettyRunner {
         StandardCharsets.UTF_8
       );
     } catch (IOException ignored) {
-      return "swarm";
+      return "swqarm";
     }
   }
 

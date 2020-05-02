@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 public class SwarmTimer implements Initializable {
   private static final Logger LOG = LoggerFactory.getLogger(SwarmTimer.class);
 
+  private final Object lock = new Object();
+
   private final ScheduledExecutorService scheduledExecutorService;
   private final SwarmMessageApplier swarmMessageApplier;
   private final Config config;
@@ -35,23 +37,25 @@ public class SwarmTimer implements Initializable {
     this.config = config;
   }
 
-  public synchronized void start() {
-    Preconditions.checkState(
-      !scheduledFuture.isPresent(),
-      "Timer has already been started"
-    );
-
-    scheduledFuture =
-      Optional.of(
-        scheduledExecutorService.scheduleAtFixedRate(
-          this::doTimeout,
-          0L,
-          config
-            .getDuration(ConfigPath.SWARM_PROTOCOL_TICK.getConfigPath())
-            .toMillis(),
-          TimeUnit.MILLISECONDS
-        )
+  public void start() {
+    synchronized (lock) {
+      Preconditions.checkState(
+        !scheduledFuture.isPresent(),
+        "Timer has already been started"
       );
+
+      scheduledFuture =
+        Optional.of(
+          scheduledExecutorService.scheduleAtFixedRate(
+            this::doTimeout,
+            0L,
+            config
+              .getDuration(ConfigPath.SWARM_PROTOCOL_TICK.getConfigPath())
+              .toMillis(),
+            TimeUnit.MILLISECONDS
+          )
+        );
+    }
   }
 
   private void doTimeout() {
@@ -62,8 +66,7 @@ public class SwarmTimer implements Initializable {
         SwarmTimeoutMessage.builder().setTImestamp(Instant.now()).build()
       );
     } catch (Exception e) {
-      Throwables.throwIfUnchecked(e);
-      throw new RuntimeException(e);
+      LOG.error("Uncaught exception in timer", e);
     }
   }
 

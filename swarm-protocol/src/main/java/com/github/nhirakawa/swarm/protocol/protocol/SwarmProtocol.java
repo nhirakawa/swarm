@@ -12,6 +12,7 @@ import com.github.nhirakawa.swarm.protocol.model.TimeoutResponses;
 import com.github.nhirakawa.swarm.protocol.util.SwarmStateBuffer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.typesafe.config.Config;
 import java.time.Instant;
 import java.util.concurrent.ThreadLocalRandom;
@@ -112,8 +113,25 @@ class SwarmProtocol {
       );
     }
 
-    Map<SwarmNode, MemberStatus> updatedMemberStatuses = Maps.transformValues(
-      timedOutSwarmNodes,
+    Map<SwarmNode, Instant> filteredTimestamps = Maps.filterKeys(
+      swarmState.getLastAckRequestBySwarmNode(),
+      timedOutSwarmNodes::containsKey
+    );
+
+    Set<SwarmNode> alreadyFailedSwarmNodes = Maps
+      .filterValues(
+        swarmState.getMemberStatusBySwarmNode(),
+        MemberStatus.FAILED::equals
+      )
+      .keySet();
+
+    Set<SwarmNode> failedSwarmNodes = Sets.union(
+      timedOutSwarmNodes.keySet(),
+      alreadyFailedSwarmNodes
+    );
+
+    Map<SwarmNode, MemberStatus> updatedMemberStatuses = Maps.toMap(
+      failedSwarmNodes,
       ignored -> MemberStatus.FAILED
     );
 
@@ -121,7 +139,8 @@ class SwarmProtocol {
       .builder()
       .from(swarmState)
       .setTimestamp(now)
-      .putAllMemberStatusBySwarmNode(updatedMemberStatuses)
+      .setMemberStatusBySwarmNode(updatedMemberStatuses)
+      .setLastAckRequestBySwarmNode(filteredTimestamps)
       .build();
 
     swarmStateBuffer.add(updatedSwarmState);
