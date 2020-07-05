@@ -4,6 +4,7 @@ import com.github.nhirakawa.swarm.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
+import com.github.nhirakawa.swarm.protocol.model.PingProxyRequest;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageApplier;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -44,6 +45,8 @@ public class SwarmServerHandler
       swarmMessageApplier.apply((PingMessage) baseSwarmMessage);
     } else if (baseSwarmMessage instanceof PingAckMessage) {
       swarmMessageApplier.apply((PingAckMessage) baseSwarmMessage);
+    } else if (baseSwarmMessage instanceof PingProxyRequest) {
+      swarmMessageApplier.apply((PingProxyRequest) baseSwarmMessage);
     }
   }
 
