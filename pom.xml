@@ -29,6 +29,8 @@
     <jackson.version>2.10.0</jackson.version>
     <junit.version>4.8.2</junit.version>
     <logback.version>1.0.13</logback.version>
+    <maven.compiler.plugin.release>11</maven.compiler.plugin.release>
+    <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.dependency.plugin.version>3.1.2</maven.dependency.plugin.version>
@@ -202,7 +204,7 @@
           <compilerArgs>
             <arg>-Xlint</arg>
           </compilerArgs>
-          <release>11</release>
+          <release>${maven.compiler.plugin.release}</release>
         </configuration>
       </plugin>
     </plugins>

@@ -1,14 +1,22 @@
 package com.github.nhirakawa.swarm.protocol.dagger;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
+import javax.inject.Singleton;
+
+import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.concurrent.SwarmThreadFactoryFactory;
 import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
 import com.github.nhirakawa.swarm.protocol.config.ConfigValidator;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.model.SwarmState;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmDisseminator;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageApplier;
-import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageSender;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmTimer;
 import com.github.nhirakawa.swarm.protocol.util.InjectableRandom;
 import com.github.nhirakawa.swarm.protocol.util.InjectableThreadLocalRandom;
@@ -17,17 +25,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
 import com.typesafe.config.Config;
+
 import dagger.Module;
-import dagger.multibindings.ElementsIntoSet;
 import dagger.Provides;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.Set;
-import javax.inject.Singleton;
+import dagger.multibindings.ElementsIntoSet;
 
 @Module
 public class SwarmProtocolModule {

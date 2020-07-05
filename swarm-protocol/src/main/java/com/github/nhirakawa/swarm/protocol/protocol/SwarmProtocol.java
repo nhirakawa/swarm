@@ -5,6 +5,7 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckResponse;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
+import com.github.nhirakawa.swarm.protocol.model.PingProxyRequest;
 import com.github.nhirakawa.swarm.protocol.model.SwarmState;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.TimeoutResponse;
@@ -193,5 +194,9 @@ class SwarmProtocol {
     swarmStateBuffer.add(updatedSwarmState);
 
     return PingAckResponse.builder().setTimestamp(clock.instant()).build();
+  }
+
+  public PingAckResponse handle(PingProxyRequest pingProxyRequest) {
+    throw new UnsupportedOperationException();
   }
 }
