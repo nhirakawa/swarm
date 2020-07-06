@@ -22,4 +22,5 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 public interface BaseSwarmMessage {
   SwarmMessageType getType();
   SwarmNode getSender();
+  String getProtocolPeriodId();
 }
