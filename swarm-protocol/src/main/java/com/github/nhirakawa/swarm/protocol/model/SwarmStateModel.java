@@ -12,6 +12,7 @@ import org.immutables.value.Value;
 public interface SwarmStateModel {
   Instant getTimestamp();
   Instant getLastProtocolPeriodStarted();
+  String getLastProtocolPeriodId();
   Map<SwarmNode, MemberStatus> getMemberStatusBySwarmNode();
   Map<SwarmNode, Instant> getLastAckRequestBySwarmNode();
 }

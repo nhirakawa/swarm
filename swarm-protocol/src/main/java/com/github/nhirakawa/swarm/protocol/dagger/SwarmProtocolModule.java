@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.Set;
+import java.util.UUID;
 import javax.inject.Singleton;
 
 @Module
@@ -109,6 +110,7 @@ public class SwarmProtocolModule {
       .builder()
       .setLastProtocolPeriodStarted(now)
       .setTimestamp(now)
+      .setLastProtocolPeriodId(UUID.randomUUID().toString())
       .build();
   }
 

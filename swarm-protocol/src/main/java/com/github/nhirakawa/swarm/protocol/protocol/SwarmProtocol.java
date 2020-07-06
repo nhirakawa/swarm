@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
 import org.slf4j.Logger;
@@ -147,6 +148,7 @@ class SwarmProtocol {
       .setTimestamp(now)
       .setMemberStatusBySwarmNode(updatedMemberStatuses)
       .setLastAckRequestBySwarmNode(filteredTimestamps)
+      .setLastProtocolPeriodId(UUID.randomUUID().toString())
       .build();
 
     swarmStateBuffer.add(updatedSwarmState);
@@ -189,6 +191,7 @@ class SwarmProtocol {
       .from(currentSwarmState)
       .setTimestamp(now)
       .setLastAckRequestBySwarmNode(updatedOutstandingPingAckBySwarmNode)
+      .setLastProtocolPeriodId(UUID.randomUUID().toString())
       .build();
 
     swarmStateBuffer.add(updatedSwarmState);
