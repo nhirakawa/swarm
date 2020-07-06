@@ -150,6 +150,8 @@ class SwarmProtocol {
 
     swarmStateBuffer.add(updatedSwarmState);
 
+    // TODO return a proxy message here
+
     return TimeoutResponses.empty();
   }
 
