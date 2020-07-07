@@ -1,15 +1,22 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
+import com.github.nhirakawa.swarm.protocol.config.AbstractSwarmNode;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingProxyRequest;
+import com.github.nhirakawa.swarm.protocol.model.ProxyTarget;
+import com.github.nhirakawa.swarm.protocol.model.ProxyTargetsModel;
 import com.github.nhirakawa.swarm.protocol.model.SwarmEnvelope;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.TimeoutResponse;
+import com.github.nhirakawa.swarm.protocol.model.TimeoutResponses;
+import com.google.common.base.Suppliers;
 import com.google.common.eventbus.EventBus;
 import com.typesafe.config.Config;
+import java.util.function.Supplier;
+import java.util.Optional;
 import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,25 +55,51 @@ public class SwarmMessageApplier implements Initializable {
         swarmTimeoutMessage
       );
 
-      if (timeoutResponse.getTargetNode().isPresent()) {
-        PingMessage pingMessage = PingMessage
-          .builder()
-          .setSender(swarmNode)
-          .build();
-
-        SwarmEnvelope swarmEnvelope = SwarmEnvelope
-          .builder()
-          .setBaseSwarmMessage(pingMessage)
-          .setToSwarmNode(timeoutResponse.getTargetNode().get())
-          .build();
-
-        LOG.trace("Sending {}", swarmEnvelope);
-
-        eventBus.post(swarmEnvelope);
-      } else {
-        LOG.trace("No target node in timeout response");
-      }
+      TimeoutResponses
+        .caseOf(timeoutResponse)
+        .empty(() -> null)
+        .ping(this::sendPingRequest)
+        .proxy(this::sendProxyRequest);
     }
+  }
+
+  private Void sendPingRequest(AbstractSwarmNode targetModel) {
+    SwarmNode target = SwarmNode.builder().from(targetModel).build();
+
+    PingMessage pingMessage = PingMessage
+      .builder()
+      .setSender(swarmNode)
+      .build();
+
+    SwarmEnvelope swarmEnvelope = SwarmEnvelope
+      .builder()
+      .setBaseSwarmMessage(pingMessage)
+      .setToSwarmNode(target)
+      .build();
+
+    eventBus.post(swarmEnvelope);
+
+    return null;
+  }
+
+  private Void sendProxyRequest(ProxyTargetsModel proxyTargets) {
+    for (ProxyTarget proxyTarget : proxyTargets.getProxyTargets()) {
+      PingMessage pingMessage = PingMessage
+        .builder()
+        .setSender(swarmNode)
+          .setProxyFor(proxyTarget.getTargetNode())
+        .build();
+
+      SwarmEnvelope swarmEnvelope = SwarmEnvelope
+        .builder()
+        .setBaseSwarmMessage(pingMessage)
+        .setToSwarmNode(proxyTarget.getProxyNode())
+        .build();
+
+      eventBus.post(swarmEnvelope);
+    }
+
+    return null;
   }
 
   public void apply(PingMessage pingMessage) {

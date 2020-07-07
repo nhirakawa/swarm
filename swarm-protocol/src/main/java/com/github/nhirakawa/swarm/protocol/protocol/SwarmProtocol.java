@@ -6,24 +6,30 @@ import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckResponse;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingProxyRequest;
+import com.github.nhirakawa.swarm.protocol.model.ProxyTarget;
+import com.github.nhirakawa.swarm.protocol.model.ProxyTargets;
 import com.github.nhirakawa.swarm.protocol.model.SwarmState;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.TimeoutResponse;
 import com.github.nhirakawa.swarm.protocol.model.TimeoutResponses;
 import com.github.nhirakawa.swarm.protocol.util.SwarmStateBuffer;
-import com.google.common.base.Predicates;
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hubspot.algebra.Result;
 import com.typesafe.config.Config;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BiFunction;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -78,11 +84,7 @@ class SwarmProtocol {
             )
         )
     ) {
-      int randomIndex = ThreadLocalRandom
-        .current()
-        .nextInt(0, clusterNodes.size());
-
-      SwarmNode randomNode = clusterNodes.get(randomIndex);
+      SwarmNode randomNode = getRandomNode();
 
       LastAckRequest lastAckRequest = LastAckRequest
         .builder()
@@ -101,7 +103,7 @@ class SwarmProtocol {
 
       swarmStateBuffer.add(updatedSwarmState);
 
-      return TimeoutResponse.builder().setTargetNode(randomNode).build();
+      return TimeoutResponses.ping(randomNode);
     }
 
     Instant earliestValidAckRequestTimestamp = now.minus(
@@ -150,11 +152,65 @@ class SwarmProtocol {
 
     swarmStateBuffer.add(updatedSwarmState);
 
-    // TODO return a proxy message here
+    int failureSubgroup = config.getInt(
+      ConfigPath.SWARM_FAILURE_SUBGROUP.getConfigPath()
+    );
 
-    return TimeoutResponses.empty();
+    List<ProxyTarget> proxyTargetsList = getRandomNodes(failureSubgroup)
+      .stream()
+      .map(
+        swarmNode -> ProxyTarget
+          .builder()
+          .setTargetNode(lastAckRequest.getSwarmNode())
+          .setProxyNode(swarmNode)
+          .build()
+      )
+      .collect(ImmutableList.toImmutableList());
+
+    ProxyTargets proxyTargets = ProxyTargets
+      .builder()
+      .setProxyTargets(proxyTargetsList)
+      .build();
+
+    return TimeoutResponses.proxy(proxyTargets);
   }
 
+  private Collection<SwarmNode> getRandomNodes(int number) {
+    Preconditions.checkArgument(
+      number > 0,
+      "Must be greater than 0 (%s)",
+      number
+    );
+    Preconditions.checkArgument(
+      number <= clusterNodes.size(),
+      "Cannot request more than %s random nodes (%s)",
+      clusterNodes.size(),
+      number
+    );
+
+    if (number == clusterNodes.size()) {
+      return clusterNodes;
+    }
+
+    Set<SwarmNode> randomNodes = new HashSet<>(number);
+
+    while (randomNodes.size() < number) {
+      int randomIndex = ThreadLocalRandom
+        .current()
+        .nextInt(0, clusterNodes.size());
+
+      randomNodes.add(clusterNodes.get(randomIndex));
+    }
+
+    return randomNodes;
+  }
+
+  private SwarmNode getRandomNode() {
+    return Iterables.getOnlyElement(getRandomNodes(1));
+  }
+
+  // TODO handle proxies
+  // TODO add ADT
   PingAckMessage handle(PingMessage ignored) {
     return PingAckMessage.builder().setSender(localSwarmNode).build();
   }
