@@ -6,7 +6,6 @@ import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
-import com.github.nhirakawa.swarm.protocol.model.PingProxyRequest;
 import com.github.nhirakawa.swarm.protocol.model.PingResponse;
 import com.github.nhirakawa.swarm.protocol.model.PingResponses;
 import com.github.nhirakawa.swarm.protocol.model.ProxyTarget;
@@ -31,7 +30,6 @@ public class SwarmMessageApplier implements Initializable {
   private final SwarmNode swarmNode;
   private final SwarmProtocol swarmProtocol;
   private final EventBus eventBus;
-  private final Config config;
   private final SwarmFailureInjector swarmFailureInjector;
 
   @Inject
@@ -39,13 +37,11 @@ public class SwarmMessageApplier implements Initializable {
     SwarmNode swarmNode,
     SwarmProtocol swarmProtocol,
     EventBus eventBus,
-    Config config,
     SwarmFailureInjector swarmFailureInjector
   ) {
     this.swarmNode = swarmNode;
     this.swarmProtocol = swarmProtocol;
     this.eventBus = eventBus;
-    this.config = config;
     this.swarmFailureInjector = swarmFailureInjector;
   }
 
