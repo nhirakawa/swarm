@@ -2,10 +2,12 @@ package com.github.nhirakawa.swarm.protocol.protocol;
 
 import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
+import com.github.nhirakawa.swarm.protocol.model.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
-import com.github.nhirakawa.swarm.protocol.model.PingAckResponse;
+import com.github.nhirakawa.swarm.protocol.model.PingAcks;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
-import com.github.nhirakawa.swarm.protocol.model.PingProxyRequest;
+import com.github.nhirakawa.swarm.protocol.model.PingResponse;
+import com.github.nhirakawa.swarm.protocol.model.PingResponses;
 import com.github.nhirakawa.swarm.protocol.model.ProxyTarget;
 import com.github.nhirakawa.swarm.protocol.model.ProxyTargets;
 import com.github.nhirakawa.swarm.protocol.model.SwarmState;
@@ -13,20 +15,17 @@ import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.TimeoutResponse;
 import com.github.nhirakawa.swarm.protocol.model.TimeoutResponses;
 import com.github.nhirakawa.swarm.protocol.util.SwarmStateBuffer;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.hubspot.algebra.Result;
 import com.typesafe.config.Config;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.BiFunction;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -45,23 +44,23 @@ class SwarmProtocol {
   );
 
   private final List<SwarmNode> clusterNodes;
-  private final SwarmNode localSwarmNode;
   private final Config config;
   private final SwarmStateBuffer swarmStateBuffer;
+  private final SwarmNode localSwarmNode;
   private final Clock clock;
 
   @Inject
   SwarmProtocol(
     Set<SwarmNode> clusterNodes,
-    SwarmNode localSwarmNode,
     Config config,
     SwarmStateBuffer swarmStateBuffer,
+    SwarmNode localSwarmNode,
     Clock clock
   ) {
     this.clusterNodes = ImmutableList.copyOf(clusterNodes);
-    this.localSwarmNode = localSwarmNode;
     this.config = config;
     this.swarmStateBuffer = swarmStateBuffer;
+    this.localSwarmNode = localSwarmNode;
     this.clock = clock;
   }
 
@@ -209,20 +208,33 @@ class SwarmProtocol {
     return Iterables.getOnlyElement(getRandomNodes(1));
   }
 
-  // TODO handle proxies
-  // TODO add ADT
-  PingAckMessage handle(PingMessage ignored) {
-    return PingAckMessage.builder().setSender(localSwarmNode).build();
+  PingResponse handle(PingMessage pingMessage) {
+    if (
+      pingMessage.getProxyFor().isPresent() &&
+      pingMessage.getProxyFor().get().equals(pingMessage.getSender())
+    ) {
+      return PingResponses.proxy(pingMessage.getProxyFor().get());
+    }
+
+    return PingResponses.ack();
   }
 
-  Result<PingAckResponse, ProtocolError> handle(PingAckMessage pingAckMessage) {
+  PingAck handle(PingAckMessage pingAckMessage) {
+    if (pingAckMessage.getProxyFor().isPresent()) {
+      if (pingAckMessage.getProxyFor().get().equals(localSwarmNode)) {
+        // do nothing
+      } else {
+        return PingAcks.proxy(pingAckMessage.getProxyFor().get());
+      }
+    }
+
     SwarmState currentSwarmState = swarmStateBuffer.getCurrent();
 
     Instant now = clock.instant();
 
     if (!currentSwarmState.getLastAckRequest().isPresent()) {
       LOG.info("No outstanding ping request");
-      return Result.err(ProtocolError.NO_OUTSTANDING_PING_REQUEST);
+      return PingAcks.noOutstandingPingRequest();
     }
 
     LastAckRequest lastAckRequest = currentSwarmState.getLastAckRequest().get();
@@ -237,7 +249,7 @@ class SwarmProtocol {
         pingAckMessage.getProtocolPeriodId(),
         lastAckRequest.getProtocolPeriodId()
       );
-      return Result.err(ProtocolError.INVALID_PROTOCOL_PERIOD);
+      return PingAcks.invalidProtocolPeriod();
     }
 
     if (!pingAckMessage.getSender().equals(lastAckRequest.getSwarmNode())) {
@@ -246,7 +258,7 @@ class SwarmProtocol {
         pingAckMessage.getSender(),
         lastAckRequest.getSwarmNode()
       );
-      return Result.err(ProtocolError.INVALID_SENDER);
+      return PingAcks.invalidSender();
     }
 
     LOG.info("{} has acknowledged ping", pingAckMessage.getSender());
@@ -261,12 +273,6 @@ class SwarmProtocol {
 
     swarmStateBuffer.add(updatedSwarmState);
 
-    return Result.ok(
-      PingAckResponse.builder().setTimestamp(clock.instant()).build()
-    );
-  }
-
-  public PingAckResponse handle(PingProxyRequest pingProxyRequest) {
-    throw new UnsupportedOperationException();
+    return PingAcks.ack(Instant.now());
   }
 }

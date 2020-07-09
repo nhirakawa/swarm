@@ -45,8 +45,6 @@ public class SwarmServerHandler
       swarmMessageApplier.apply((PingMessage) baseSwarmMessage);
     } else if (baseSwarmMessage instanceof PingAckMessage) {
       swarmMessageApplier.apply((PingAckMessage) baseSwarmMessage);
-    } else if (baseSwarmMessage instanceof PingProxyRequest) {
-      swarmMessageApplier.apply((PingProxyRequest) baseSwarmMessage);
     }
   }
 

@@ -15,16 +15,5 @@ public interface AbstractPingAckMessage extends BaseSwarmMessage {
     return SwarmMessageType.PING_ACK;
   }
 
-  Optional<SwarmNode> getOnBehalfOf();
-
-  @Value.Check
-  default void check() {
-    if (getOnBehalfOf().isPresent()) {
-      Preconditions.checkArgument(
-        !getOnBehalfOf().get().equals(getSender()),
-        "Message cannot have same sender and onBehalfOf (%s)",
-        getSender().getUniqueId()
-      );
-    }
-  }
+  Optional<SwarmNode> getProxyFor();
 }
