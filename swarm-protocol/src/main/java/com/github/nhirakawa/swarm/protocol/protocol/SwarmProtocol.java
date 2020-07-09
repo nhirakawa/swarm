@@ -70,7 +70,7 @@ class SwarmProtocol {
 
     if (
       timeoutMessage
-        .getTImestamp()
+        .getTimestamp()
         .isAfter(
           swarmState
             .getLastProtocolPeriodStarted()

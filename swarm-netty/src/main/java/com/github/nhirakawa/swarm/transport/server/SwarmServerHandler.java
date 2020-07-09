@@ -1,18 +1,21 @@
 package com.github.nhirakawa.swarm.transport.server;
 
+import java.io.IOException;
+
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.nhirakawa.swarm.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
-import com.github.nhirakawa.swarm.protocol.model.PingProxyRequest;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageApplier;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
-import java.io.IOException;
-import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SwarmServerHandler
   extends SimpleChannelInboundHandler<DatagramPacket> {

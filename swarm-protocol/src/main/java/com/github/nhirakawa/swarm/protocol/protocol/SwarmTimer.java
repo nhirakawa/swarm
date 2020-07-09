@@ -67,7 +67,7 @@ public class SwarmTimer implements Initializable {
 
     try {
       swarmMessageApplier.apply(
-        SwarmTimeoutMessage.builder().setTImestamp(clock.instant()).build()
+        SwarmTimeoutMessage.builder().setTimestamp(clock.instant()).build()
       );
     } catch (Exception e) {
       LOG.error("Uncaught exception in timer", e);

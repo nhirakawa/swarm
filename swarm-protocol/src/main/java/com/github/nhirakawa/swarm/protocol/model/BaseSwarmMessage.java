@@ -15,8 +15,7 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
   {
     @Type(name = "PING", value = PingMessage.class),
     @Type(name = "PING_REQUEST", value = PingRequestMessage.class),
-    @Type(name = "PING_ACK", value = PingAckMessage.class),
-    @Type(name = "PING_PROXY", value = PingProxyRequest.class)
+    @Type(name = "PING_ACK", value = PingAckMessage.class)
   }
 )
 public interface BaseSwarmMessage {
