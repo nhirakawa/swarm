@@ -64,8 +64,6 @@ class SwarmProtocol {
     this.clock = clock;
   }
 
-  void start() {}
-
   TimeoutResponse handle(SwarmTimeoutMessage timeoutMessage) {
     SwarmState swarmState = swarmStateBuffer.getCurrent();
     Instant now = clock.instant();
