@@ -17,4 +17,5 @@ public interface SwarmStateModel {
   String getLastProtocolPeriodId();
   Map<SwarmNode, MemberStatus> getMemberStatusBySwarmNode();
   Optional<LastAckRequest> getLastAckRequest();
+  Optional<Instant> getLastProxySentTimestamp();
 }

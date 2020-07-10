@@ -82,10 +82,11 @@ class SwarmProtocol {
         )
     ) {
       SwarmNode randomNode = getRandomNode();
+      String nextProtocolPeriodId = UUID.randomUUID().toString();
 
       LastAckRequest lastAckRequest = LastAckRequest
         .builder()
-        .setProtocolPeriodId(swarmState.getLastProtocolPeriodId())
+        .setProtocolPeriodId(nextProtocolPeriodId)
         .setSwarmNode(randomNode)
         .setTimestamp(now)
         .build();
@@ -94,8 +95,10 @@ class SwarmProtocol {
         .builder()
         .from(swarmState)
         .setLastProtocolPeriodStarted(now)
+        .setLastProtocolPeriodId(nextProtocolPeriodId)
         .setTimestamp(now)
         .setLastAckRequest(lastAckRequest)
+        .setLastProxySentTimestamp(Optional.empty())
         .build();
 
       swarmStateBuffer.add(updatedSwarmState);
@@ -145,6 +148,7 @@ class SwarmProtocol {
       .from(swarmState)
       .setTimestamp(now)
       .setMemberStatusBySwarmNode(updatedMemberStatuses)
+      .setLastProxySentTimestamp(now)
       .build();
 
     swarmStateBuffer.add(updatedSwarmState);
