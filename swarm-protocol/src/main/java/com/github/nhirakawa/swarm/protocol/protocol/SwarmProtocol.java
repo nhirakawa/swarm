@@ -271,6 +271,6 @@ class SwarmProtocol {
 
     swarmStateBuffer.add(updatedSwarmState);
 
-    return PingAcks.ack(Instant.now());
+    return PingAcks.ack(clock.instant());
   }
 }
