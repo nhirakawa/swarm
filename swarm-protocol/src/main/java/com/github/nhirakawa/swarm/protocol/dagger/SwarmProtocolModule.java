@@ -8,7 +8,6 @@ import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.model.SwarmState;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmDisseminator;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageApplier;
-import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageSender;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmTimer;
 import com.github.nhirakawa.swarm.protocol.util.InjectableRandom;
 import com.github.nhirakawa.swarm.protocol.util.InjectableThreadLocalRandom;
@@ -25,8 +24,8 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.Set;
+import java.util.UUID;
 import javax.inject.Singleton;
 
 @Module
@@ -111,6 +110,7 @@ public class SwarmProtocolModule {
       .builder()
       .setLastProtocolPeriodStarted(now)
       .setTimestamp(now)
+      .setLastProtocolPeriodId(UUID.randomUUID().toString())
       .build();
   }
 

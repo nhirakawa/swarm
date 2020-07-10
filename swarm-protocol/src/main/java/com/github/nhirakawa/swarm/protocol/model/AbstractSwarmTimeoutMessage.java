@@ -8,5 +8,5 @@ import org.immutables.value.Value;
 @ImmutableStyle
 public abstract class AbstractSwarmTimeoutMessage {
 
-  public abstract Instant getTImestamp();
+  public abstract Instant getTimestamp();
 }

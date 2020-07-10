@@ -113,7 +113,7 @@ public class SwarmNettyRunner {
         StandardCharsets.UTF_8
       );
     } catch (IOException ignored) {
-      return "swqarm";
+      return "swarm";
     }
   }
 
