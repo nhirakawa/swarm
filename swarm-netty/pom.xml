@@ -9,6 +9,8 @@
 
   <artifactId>swarm-netty</artifactId>
 
+  <packaging>jar</packaging>
+
   <dependencies>
     <dependency>
       <groupId>ch.qos.logback</groupId>
@@ -55,5 +57,30 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.2.4</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.github.nhirakawa.swarm.SwarmNettyRunner</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
