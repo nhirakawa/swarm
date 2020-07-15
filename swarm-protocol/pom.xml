@@ -58,10 +58,6 @@
     </dependency>
     <dependency>
       <groupId>org.derive4j</groupId>
-      <artifactId>derive4j</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.derive4j</groupId>
       <artifactId>derive4j-annotation</artifactId>
     </dependency>
     <dependency>

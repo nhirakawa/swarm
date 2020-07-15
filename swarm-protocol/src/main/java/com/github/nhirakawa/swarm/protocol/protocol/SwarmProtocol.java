@@ -103,7 +103,10 @@ class SwarmProtocol {
 
       swarmStateBuffer.add(updatedSwarmState);
 
-      return TimeoutResponses.ping(randomNode);
+      return TimeoutResponses.ping(
+        swarmState.getLastProtocolPeriodId(),
+        randomNode
+      );
     }
 
     Instant earliestValidAckRequestTimestamp = now.minus(
@@ -173,7 +176,10 @@ class SwarmProtocol {
       .setProxyTargets(proxyTargetsList)
       .build();
 
-    return TimeoutResponses.proxy(proxyTargets);
+    return TimeoutResponses.proxy(
+      swarmState.getLastProtocolPeriodId(),
+      proxyTargets
+    );
   }
 
   private Collection<SwarmNode> getRandomNodes(int number) {

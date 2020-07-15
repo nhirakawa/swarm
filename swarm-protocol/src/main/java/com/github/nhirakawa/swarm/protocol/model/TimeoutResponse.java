@@ -9,8 +9,8 @@ public abstract class TimeoutResponse {
 
   public interface Cases<R> {
     R empty();
-    R ping(AbstractSwarmNode swarmNode);
-    R proxy(ProxyTargetsModel proxyTargets);
+    R ping(String protocolId, AbstractSwarmNode swarmNode);
+    R proxy(String protocolId, ProxyTargetsModel proxyTargets);
   }
 
   public abstract <R> R match(Cases<R> cases);

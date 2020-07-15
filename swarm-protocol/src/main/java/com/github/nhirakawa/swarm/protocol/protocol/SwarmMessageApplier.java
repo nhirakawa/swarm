@@ -59,12 +59,16 @@ public class SwarmMessageApplier implements Initializable {
     }
   }
 
-  private Void sendPingRequest(AbstractSwarmNode targetModel) {
+  private Void sendPingRequest(
+    String protocolId,
+    AbstractSwarmNode targetModel
+  ) {
     SwarmNode target = SwarmNode.builder().from(targetModel).build();
 
     PingMessage pingMessage = PingMessage
       .builder()
       .setSender(swarmNode)
+      .setProtocolPeriodId(protocolId)
       .build();
 
     SwarmEnvelope swarmEnvelope = SwarmEnvelope
@@ -78,12 +82,16 @@ public class SwarmMessageApplier implements Initializable {
     return null;
   }
 
-  private Void sendProxyRequest(ProxyTargetsModel proxyTargets) {
+  private Void sendProxyRequest(
+    String protocolId,
+    ProxyTargetsModel proxyTargets
+  ) {
     for (ProxyTarget proxyTarget : proxyTargets.getProxyTargets()) {
       PingMessage pingMessage = PingMessage
         .builder()
         .setSender(swarmNode)
         .setProxyFor(proxyTarget.getTargetNode())
+        .setProtocolPeriodId(protocolId)
         .build();
 
       SwarmEnvelope swarmEnvelope = SwarmEnvelope
