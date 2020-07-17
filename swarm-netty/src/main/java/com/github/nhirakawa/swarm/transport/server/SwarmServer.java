@@ -1,6 +1,7 @@
 package com.github.nhirakawa.swarm.transport.server;
 
 import com.github.nhirakawa.swarm.protocol.concurrent.SwarmThreadFactoryFactory;
+import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.google.common.base.Throwables;
@@ -17,17 +18,17 @@ import org.slf4j.LoggerFactory;
 public class SwarmServer {
   private final EventLoopGroup eventLoopGroup;
   private final SwarmServerChannelInitializer swarmServerChannelInitializer;
-  private final SwarmNode localSwarmNode;
+  private final SwarmConfig swarmConfig;
   private final Set<Initializable> initializables;
 
   @Inject
   SwarmServer(
     SwarmServerChannelInitializer swarmServerChannelInitializer,
-    SwarmNode localSwarmNode,
+    SwarmConfig swarmConfig,
     Set<Initializable> initializables
   ) {
     this.swarmServerChannelInitializer = swarmServerChannelInitializer;
-    this.localSwarmNode = localSwarmNode;
+    this.swarmConfig = swarmConfig;
     this.initializables = initializables;
 
     this.eventLoopGroup =
@@ -35,7 +36,7 @@ public class SwarmServer {
         Runtime.getRuntime().availableProcessors(),
         SwarmThreadFactoryFactory.forNode(
           "swarm-event-loop-group",
-          localSwarmNode
+          swarmConfig.getLocalNode()
         )
       );
   }
@@ -49,7 +50,7 @@ public class SwarmServer {
         .group(eventLoopGroup)
         .channel(NioDatagramChannel.class)
         .handler(swarmServerChannelInitializer)
-        .bind(toSocketAddress(localSwarmNode))
+        .bind(toSocketAddress(swarmConfig.getLocalNode()))
         .sync();
 
       Runtime
@@ -57,7 +58,7 @@ public class SwarmServer {
         .addShutdownHook(
           new Thread(
             new ServerShutdownHook(eventLoopGroup),
-            threadName(localSwarmNode)
+            threadName(swarmConfig.getLocalNode())
           )
         );
     } catch (InterruptedException e) {

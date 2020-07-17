@@ -1,46 +1,44 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
+import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
+import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.util.InjectableThreadLocalRandom;
-import com.typesafe.config.Config;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.time.Duration;
+import java.util.UUID;
 import org.assertj.core.data.Offset;
-import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 public class SwarmFailureInjectorTest {
-  private static final AtomicInteger RANDOM = new AtomicInteger(0);
   private static final int NUMBER_OF_SAMPLES = 100_000;
 
-  private SwarmFailureInjector swarmFailureInjector;
-
-  @Before
-  public void setup() {
-    RANDOM.set(0);
-
-    Config config = mock(Config.class);
-    when(
-        config.getInt(
-          Mockito.eq(ConfigPath.FAILURE_INJECTION_PERCENT.getConfigPath())
-        )
-      )
-      .thenAnswer(ignored -> RANDOM.get());
-    when(
-        config.getBoolean(Mockito.eq(ConfigPath.DEBUG_ENABLED.getConfigPath()))
-      )
-      .thenReturn(true);
-
-    swarmFailureInjector =
-      new SwarmFailureInjector(config, new InjectableThreadLocalRandom());
-  }
+  private static final SwarmConfig BASE = SwarmConfig
+    .builder()
+    .setProtocolPeriod(Duration.ofMillis(1))
+    .setMessageTimeout(Duration.ofMillis(1))
+    .setSwarmStateBufferSize(0)
+    .setDebugEnabled(true)
+    .setFailureInjectionPercent(0)
+    .setEntireClusterLocal(true)
+    .setLocalNode(
+      SwarmNode
+        .builder()
+        .setHost("host")
+        .setPort(1)
+        .setUniqueId(UUID.randomUUID())
+        .build()
+    )
+    .setProtocolTick(10)
+    .setFailureSubGroup(1)
+    .build();
 
   @Test
   public void testFailureInjectionWhenDisabled() {
+    SwarmFailureInjector swarmFailureInjector = new SwarmFailureInjector(
+      BASE,
+      new InjectableThreadLocalRandom()
+    );
     int failures = 0;
 
     for (int i = 0; i < NUMBER_OF_SAMPLES; i++) {
@@ -54,7 +52,10 @@ public class SwarmFailureInjectorTest {
 
   @Test
   public void testFailureInjectionWhenFullyEnabled() {
-    RANDOM.set(100);
+    SwarmFailureInjector swarmFailureInjector = new SwarmFailureInjector(
+      BASE.withFailureInjectionPercent(100),
+      new InjectableThreadLocalRandom()
+    );
 
     int failures = 0;
 
@@ -69,7 +70,11 @@ public class SwarmFailureInjectorTest {
 
   @Test
   public void testFailureInjectionWhenPartiallyEnabled() {
-    RANDOM.set(56);
+    SwarmConfig swarmConfig = BASE.withFailureInjectionPercent(56);
+    SwarmFailureInjector swarmFailureInjector = new SwarmFailureInjector(
+      swarmConfig,
+      new InjectableThreadLocalRandom()
+    );
 
     int failures = 0;
 
@@ -81,6 +86,7 @@ public class SwarmFailureInjectorTest {
 
     double failurePercent = ((double) failures / NUMBER_OF_SAMPLES) * 100;
 
-    assertThat(failurePercent).isCloseTo(RANDOM.get(), Offset.offset(1.0));
+    assertThat(failurePercent)
+      .isCloseTo(swarmConfig.getFailureInjectionPercent(), Offset.offset(1.0));
   }
 }

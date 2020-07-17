@@ -2,6 +2,7 @@ package com.github.nhirakawa.swarm.transport.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.nhirakawa.swarm.ObjectMapperWrapper;
+import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.SwarmEnvelope;
@@ -28,7 +29,7 @@ public class SwarmClient implements Closeable, SwarmMessageSender {
   @Inject
   SwarmClient(
     SwarmClientChannelInitializer swarmClientChannelInitializer,
-    SwarmNode localSwarmNode
+    SwarmConfig swarmConfig
   ) {
     this.swarmClientChannelInitializer = swarmClientChannelInitializer;
 
@@ -39,8 +40,8 @@ public class SwarmClient implements Closeable, SwarmMessageSender {
           .setNameFormat(
             String.format(
               "%s-%s",
-              localSwarmNode.getHost(),
-              localSwarmNode.getPort()
+              swarmConfig.getLocalNode().getHost(),
+              swarmConfig.getLocalNode().getPort()
             ) +
               "-%s"
           )

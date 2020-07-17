@@ -3,6 +3,8 @@ package com.github.nhirakawa.swarm;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
 import com.github.nhirakawa.swarm.protocol.config.ConfigValidator;
+import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
+import com.github.nhirakawa.swarm.protocol.config.SwarmConfigFactory;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.dagger.SwarmProtocolModule;
 import com.github.nhirakawa.swarm.transport.server.SwarmServer;
@@ -44,28 +46,11 @@ public class SwarmNettyRunner {
   }
 
   private static void runSingle(Config config) throws IOException {
-    SwarmNode localSwarmNode = ObjectMapperWrapper
-      .instance()
-      .readValue(
-        config
-          .getObject(ConfigPath.LOCAL_NODE.getConfigPath())
-          .render(ConfigRenderOptions.concise()),
-        SwarmNode.class
-      );
-    Set<SwarmNode> clusterNodes = ObjectMapperWrapper
-      .instance()
-      .readValue(
-        config
-          .getList(ConfigPath.CLUSTER_NODES.getConfigPath())
-          .render(ConfigRenderOptions.concise()),
-        SET_SWARM_NODE
-      );
+    SwarmConfig swarmConfig = SwarmConfigFactory.get(config);
 
     SwarmServer swarmServer = DaggerSwarmComponent
       .builder()
-      .swarmProtocolModule(
-        new SwarmProtocolModule(config, localSwarmNode, clusterNodes)
-      )
+      .swarmProtocolModule(new SwarmProtocolModule(swarmConfig))
       .build()
       .buildServer();
 
@@ -94,11 +79,11 @@ public class SwarmNettyRunner {
         )
         .withFallback(config);
 
+      SwarmConfig swarmConfig = SwarmConfigFactory.get(nodeSpecificConfig);
+
       SwarmServer swarmServer = DaggerSwarmComponent
         .builder()
-        .swarmProtocolModule(
-          new SwarmProtocolModule(nodeSpecificConfig, swarmNode, clusterNodes)
-        )
+        .swarmProtocolModule(new SwarmProtocolModule(swarmConfig))
         .build()
         .buildServer();
 

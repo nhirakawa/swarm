@@ -1,6 +1,7 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
 import com.github.nhirakawa.swarm.protocol.config.AbstractSwarmNode;
+import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
@@ -15,7 +16,6 @@ import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.TimeoutResponse;
 import com.github.nhirakawa.swarm.protocol.model.TimeoutResponses;
 import com.google.common.eventbus.EventBus;
-import com.typesafe.config.Config;
 import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,12 +34,12 @@ public class SwarmMessageApplier implements Initializable {
 
   @Inject
   public SwarmMessageApplier(
-    SwarmNode swarmNode,
+    SwarmConfig swarmConfig,
     SwarmProtocol swarmProtocol,
     EventBus eventBus,
     SwarmFailureInjector swarmFailureInjector
   ) {
-    this.swarmNode = swarmNode;
+    this.swarmNode = swarmConfig.getLocalNode();
     this.swarmProtocol = swarmProtocol;
     this.eventBus = eventBus;
     this.swarmFailureInjector = swarmFailureInjector;

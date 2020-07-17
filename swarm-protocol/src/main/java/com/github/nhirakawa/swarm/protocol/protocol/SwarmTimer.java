@@ -1,13 +1,10 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
-import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
+import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
-import com.typesafe.config.Config;
 import java.time.Clock;
-import java.time.Instant;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -23,7 +20,7 @@ public class SwarmTimer implements Initializable {
 
   private final ScheduledExecutorService scheduledExecutorService;
   private final SwarmMessageApplier swarmMessageApplier;
-  private final Config config;
+  private final SwarmConfig swarmConfig;
   private final Clock clock;
 
   private Optional<ScheduledFuture<?>> scheduledFuture = Optional.empty();
@@ -32,12 +29,12 @@ public class SwarmTimer implements Initializable {
   public SwarmTimer(
     ScheduledExecutorService scheduledExecutorService,
     SwarmMessageApplier swarmMessageApplier,
-    Config config,
+    SwarmConfig swarmConfig,
     Clock clock
   ) {
     this.scheduledExecutorService = scheduledExecutorService;
     this.swarmMessageApplier = swarmMessageApplier;
-    this.config = config;
+    this.swarmConfig = swarmConfig;
     this.clock = clock;
   }
 
@@ -53,9 +50,7 @@ public class SwarmTimer implements Initializable {
           scheduledExecutorService.scheduleAtFixedRate(
             this::doTimeout,
             0L,
-            config
-              .getDuration(ConfigPath.SWARM_PROTOCOL_TICK.getConfigPath())
-              .toMillis(),
+            swarmConfig.getProtocolTick(),
             TimeUnit.MILLISECONDS
           )
         );
