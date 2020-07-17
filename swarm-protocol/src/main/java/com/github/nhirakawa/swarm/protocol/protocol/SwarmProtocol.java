@@ -1,6 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
-import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
+import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.typesafe.config.Config;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
@@ -43,25 +42,21 @@ class SwarmProtocol {
     SwarmProtocol.class
   );
 
-  private final List<SwarmNode> clusterNodes;
-  private final Config config;
+  private final SwarmConfig swarmConfig;
   private final SwarmStateBuffer swarmStateBuffer;
-  private final SwarmNode localSwarmNode;
   private final Clock clock;
+  private final List<SwarmNode> clusterNodesList;
 
   @Inject
   SwarmProtocol(
-    Set<SwarmNode> clusterNodes,
-    Config config,
+    SwarmConfig swarmConfig,
     SwarmStateBuffer swarmStateBuffer,
-    SwarmNode localSwarmNode,
     Clock clock
   ) {
-    this.clusterNodes = ImmutableList.copyOf(clusterNodes);
-    this.config = config;
+    this.swarmConfig = swarmConfig;
     this.swarmStateBuffer = swarmStateBuffer;
-    this.localSwarmNode = localSwarmNode;
     this.clock = clock;
+    this.clusterNodesList = ImmutableList.copyOf(swarmConfig.getClusterNodes());
   }
 
   TimeoutResponse handle(SwarmTimeoutMessage timeoutMessage) {
@@ -74,11 +69,7 @@ class SwarmProtocol {
         .isAfter(
           swarmState
             .getLastProtocolPeriodStarted()
-            .plus(
-              config.getDuration(
-                ConfigPath.SWARM_PROTOCOL_PERIOD.getConfigPath()
-              )
-            )
+            .plus(swarmConfig.getProtocolPeriod())
         )
     ) {
       SwarmNode randomNode = getRandomNode();
@@ -110,7 +101,7 @@ class SwarmProtocol {
     }
 
     Instant earliestValidAckRequestTimestamp = now.minus(
-      config.getDuration(ConfigPath.SWARM_MESSAGE_TIMEOUT.getConfigPath())
+      swarmConfig.getMessageTimeout()
     );
 
     LastAckRequest lastAckRequest = swarmState
@@ -156,10 +147,7 @@ class SwarmProtocol {
 
     swarmStateBuffer.add(updatedSwarmState);
 
-    int failureSubgroup = config.getInt(
-      ConfigPath.SWARM_FAILURE_SUBGROUP.getConfigPath()
-    );
-
+    int failureSubgroup = swarmConfig.getFailureSubGroup();
     List<ProxyTarget> proxyTargetsList = getRandomNodes(failureSubgroup)
       .stream()
       .map(
@@ -189,14 +177,14 @@ class SwarmProtocol {
       number
     );
     Preconditions.checkArgument(
-      number <= clusterNodes.size(),
+      number <= clusterNodesList.size(),
       "Cannot request more than %s random nodes (%s)",
-      clusterNodes.size(),
+      clusterNodesList.size(),
       number
     );
 
-    if (number == clusterNodes.size()) {
-      return clusterNodes;
+    if (number == clusterNodesList.size()) {
+      return clusterNodesList;
     }
 
     Set<SwarmNode> randomNodes = new HashSet<>(number);
@@ -204,9 +192,9 @@ class SwarmProtocol {
     while (randomNodes.size() < number) {
       int randomIndex = ThreadLocalRandom
         .current()
-        .nextInt(0, clusterNodes.size());
+        .nextInt(0, clusterNodesList.size());
 
-      randomNodes.add(clusterNodes.get(randomIndex));
+      randomNodes.add(clusterNodesList.get(randomIndex));
     }
 
     return randomNodes;
@@ -229,7 +217,9 @@ class SwarmProtocol {
 
   PingAck handle(PingAckMessage pingAckMessage) {
     if (pingAckMessage.getProxyFor().isPresent()) {
-      if (pingAckMessage.getProxyFor().get().equals(localSwarmNode)) {
+      if (
+        pingAckMessage.getProxyFor().get().equals(swarmConfig.getLocalNode())
+      ) {
         // do nothing
       } else {
         return PingAcks.proxy(pingAckMessage.getProxyFor().get());

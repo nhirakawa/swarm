@@ -1,8 +1,7 @@
 package com.github.nhirakawa.swarm.protocol.dagger;
 
 import com.github.nhirakawa.swarm.protocol.concurrent.SwarmThreadFactoryFactory;
-import com.github.nhirakawa.swarm.protocol.config.ConfigPath;
-import com.github.nhirakawa.swarm.protocol.config.ConfigValidator;
+import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.model.SwarmState;
@@ -13,15 +12,13 @@ import com.github.nhirakawa.swarm.protocol.util.InjectableRandom;
 import com.github.nhirakawa.swarm.protocol.util.InjectableThreadLocalRandom;
 import com.github.nhirakawa.swarm.protocol.util.SwarmStateBuffer;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
-import com.typesafe.config.Config;
 import dagger.Module;
 import dagger.multibindings.ElementsIntoSet;
 import dagger.Provides;
+import java.security.cert.X509Certificate;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.Set;
@@ -30,37 +27,16 @@ import javax.inject.Singleton;
 
 @Module
 public class SwarmProtocolModule {
-  private final Config config;
-  private final SwarmNode localSwarmNode;
-  private final Set<SwarmNode> clusterNodes;
+  private final SwarmConfig swarmConfig;
 
-  public SwarmProtocolModule(
-    Config config,
-    SwarmNode localSwarmNode,
-    Set<SwarmNode> clusterNodes
-  ) {
-    this.config = ConfigValidator.validate(config);
-    this.localSwarmNode = localSwarmNode;
-    this.clusterNodes =
-      Sets.difference(clusterNodes, Collections.singleton(localSwarmNode));
+  public SwarmProtocolModule(SwarmConfig swarmConfig) {
+    this.swarmConfig = swarmConfig;
   }
 
   @Provides
   @Singleton
-  Config provideConfig() {
-    return config;
-  }
-
-  @Provides
-  @Singleton
-  SwarmNode provideLocalSwarmNode() {
-    return localSwarmNode;
-  }
-
-  @Provides
-  @Singleton
-  Set<SwarmNode> provideSwarmClusterNodes() {
-    return clusterNodes;
+  SwarmConfig provideSwarmConfig() {
+    return swarmConfig;
   }
 
   @Provides
@@ -78,11 +54,14 @@ public class SwarmProtocolModule {
   @Provides
   @Singleton
   static ScheduledExecutorService provideScheduledExecutorService(
-    SwarmNode swarmNode
+    SwarmConfig swarmConfig
   ) {
     return Executors.newScheduledThreadPool(
       1,
-      SwarmThreadFactoryFactory.forNode("swarm-scheduled", swarmNode)
+      SwarmThreadFactoryFactory.forNode(
+        "swarm-scheduled",
+        swarmConfig.getLocalNode()
+      )
     );
   }
 
@@ -118,11 +97,11 @@ public class SwarmProtocolModule {
   @Singleton
   static SwarmStateBuffer provideSwarmStateBuffer(
     SwarmState swarmState,
-    Config config
+    SwarmConfig swarmConfig
   ) {
     return new SwarmStateBuffer(
       swarmState,
-      config.getInt(ConfigPath.SWARM_STATE_BUFFER_SIZE.getConfigPath())
+      swarmConfig.getSwarmStateBufferSize()
     );
   }
 }
