@@ -6,9 +6,6 @@ import java.util.Collections;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.Deque;
 import javax.annotation.concurrent.NotThreadSafe;
-import javax.annotation.concurrent.ThreadSafe;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @NotThreadSafe
 public class SwarmStateBuffer {

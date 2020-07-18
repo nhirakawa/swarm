@@ -2,7 +2,6 @@ package com.github.nhirakawa.swarm.protocol.model;
 
 import com.github.nhirakawa.immutable.style.guava.ImmutableStyle;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.google.common.base.Preconditions;
 import java.util.Optional;
 import org.immutables.value.Value;
 

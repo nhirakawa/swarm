@@ -1,7 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.model;
 
 import com.github.nhirakawa.swarm.protocol.config.AbstractSwarmNode;
-import java.util.List;
 import org.derive4j.Data;
 
 @Data

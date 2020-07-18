@@ -2,7 +2,6 @@ package com.github.nhirakawa.swarm.protocol.dagger;
 
 import com.github.nhirakawa.swarm.protocol.concurrent.SwarmThreadFactoryFactory;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
-import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.model.SwarmState;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmDisseminator;
@@ -16,7 +15,6 @@ import com.google.common.eventbus.EventBus;
 import dagger.Module;
 import dagger.multibindings.ElementsIntoSet;
 import dagger.Provides;
-import java.security.cert.X509Certificate;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.concurrent.Executors;
