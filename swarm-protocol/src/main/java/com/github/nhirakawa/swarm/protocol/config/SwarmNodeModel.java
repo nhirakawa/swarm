@@ -8,7 +8,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableStyle
 @JsonSerialize
-public interface AbstractSwarmNode {
+public interface SwarmNodeModel {
   UUID getUniqueId();
   String getHost();
   int getPort();

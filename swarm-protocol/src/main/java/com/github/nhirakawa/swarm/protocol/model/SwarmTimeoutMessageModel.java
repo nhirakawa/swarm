@@ -6,7 +6,7 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableStyle
-public abstract class AbstractSwarmTimeoutMessage {
+public abstract class SwarmTimeoutMessageModel {
 
   public abstract Instant getTimestamp();
 }

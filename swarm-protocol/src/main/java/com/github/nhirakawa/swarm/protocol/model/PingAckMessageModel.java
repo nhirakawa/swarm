@@ -7,12 +7,12 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableStyle
-public interface AbstractPingRequestMessage extends BaseSwarmMessage {
+public interface PingAckMessageModel extends BaseSwarmMessage {
   @Override
   @Value.Auxiliary
   default SwarmMessageType getType() {
-    return SwarmMessageType.PING_REQUEST;
+    return SwarmMessageType.PING_ACK;
   }
 
-  Optional<SwarmNode> getOnBehalfOf();
+  Optional<SwarmNode> getProxyFor();
 }

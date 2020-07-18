@@ -1,6 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
-import com.github.nhirakawa.swarm.protocol.config.AbstractSwarmNode;
+import com.github.nhirakawa.swarm.protocol.config.SwarmNodeModel;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.Initializable;
@@ -61,7 +61,7 @@ public class SwarmMessageApplier implements Initializable {
 
   private Void sendPingRequest(
     String protocolId,
-    AbstractSwarmNode targetModel
+    SwarmNodeModel targetModel
   ) {
     SwarmNode target = SwarmNode.builder().from(targetModel).build();
 
@@ -134,8 +134,8 @@ public class SwarmMessageApplier implements Initializable {
     return PingAckMessage.builder().setSender(swarmNode).build();
   }
 
-  private BaseSwarmMessage toPingMessage(AbstractSwarmNode abstractSwarmNode) {
-    SwarmNode proxyFor = SwarmNode.builder().from(abstractSwarmNode).build();
+  private BaseSwarmMessage toPingMessage(SwarmNodeModel swarmNodeModel) {
+    SwarmNode proxyFor = SwarmNode.builder().from(swarmNodeModel).build();
 
     return PingMessage
       .builder()
