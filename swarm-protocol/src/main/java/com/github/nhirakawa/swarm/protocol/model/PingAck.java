@@ -1,7 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.model;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmNodeModel;
-
 import java.time.Instant;
 import org.derive4j.Data;
 
