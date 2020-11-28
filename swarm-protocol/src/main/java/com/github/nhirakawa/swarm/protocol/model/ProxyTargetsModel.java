@@ -8,7 +8,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableStyle
 public interface ProxyTargetsModel {
-  List<ProxyTarget> getProxyTargets();
+  List<ProxyTargetModel> getProxyTargets();
 
   @Value.Check
   default void check() {

@@ -104,6 +104,10 @@ class SwarmProtocol {
       swarmConfig.getMessageTimeout()
     );
 
+    if (swarmState.getLastAckRequest().isEmpty()) {
+      return TimeoutResponses.empty();
+    }
+
     LastAckRequest lastAckRequest = swarmState
       .getLastAckRequest()
       .orElseThrow();
