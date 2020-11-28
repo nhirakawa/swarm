@@ -7,15 +7,15 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNodeModel;
 import com.github.nhirakawa.swarm.protocol.model.SwarmState;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
-import com.github.nhirakawa.swarm.protocol.model.TimeoutResponse;
-import com.github.nhirakawa.swarm.protocol.model.TimeoutResponses;
+import com.github.nhirakawa.swarm.protocol.model.timeout.EmptyTimeoutResponse;
+import com.github.nhirakawa.swarm.protocol.model.timeout.PingTimeoutResponse;
+import com.github.nhirakawa.swarm.protocol.model.timeout.TimeoutResponse;
 import com.github.nhirakawa.swarm.protocol.util.SwarmStateBuffer;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
-import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 public class SwarmProtocolTest {
@@ -73,12 +73,7 @@ public class SwarmProtocolTest {
 
     TimeoutResponse timeoutResponse = swarmProtocol.handle(swarmTimeoutMessage);
 
-    boolean isEmpty = TimeoutResponses
-      .caseOf(timeoutResponse)
-      .empty_(true)
-      .otherwise_(false);
-
-    assertThat(isEmpty).isTrue();
+    assertThat(timeoutResponse).isInstanceOf(EmptyTimeoutResponse.class);
   }
 
   @Test
@@ -107,12 +102,6 @@ public class SwarmProtocolTest {
 
     TimeoutResponse timeoutResponse = swarmProtocol.handle(timeoutMessage);
 
-    Optional<? extends SwarmNodeModel> swarmNode = TimeoutResponses
-      .caseOf(timeoutResponse)
-      .empty(() -> Optional.<SwarmNodeModel>empty())
-      .ping((protocolId, innerSwarmNode) -> Optional.of(innerSwarmNode))
-      .proxy((ignored, ignored2) -> Optional.empty());
-
-    assertThat(swarmNode).isPresent();
+    assertThat(timeoutResponse).isInstanceOf(PingTimeoutResponse.class);
   }
 }

@@ -23,7 +23,6 @@
     <dagger.version>2.16</dagger.version>
     <derive4j.version>1.1.1</derive4j.version>
     <errorprone.version>2.0.18</errorprone.version>
-    <findbugs.version>1.3.9</findbugs.version>
     <guava.version>29.0-jre</guava.version>
     <immutable.style.version>4.0</immutable.style.version>
     <immutables.version>2.5.5</immutables.version>
@@ -73,11 +72,6 @@
         <groupId>com.github.nhirakawa</groupId>
         <artifactId>immutable-style</artifactId>
         <version>${immutable.style.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.code.findbugs</groupId>
-        <artifactId>jsr305</artifactId>
-        <version>${findbugs.version}</version>
       </dependency>
       <dependency>
         <groupId>com.google.dagger</groupId>

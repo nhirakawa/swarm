@@ -8,6 +8,9 @@
   </parent>
 
   <artifactId>swarm-protocol</artifactId>
+  <properties>
+    <hubspot.algebra.version>1.2</hubspot.algebra.version>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -36,7 +39,8 @@
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
+      <artifactId>annotations</artifactId>
+      <version>3.0.1</version>
     </dependency>
     <dependency>
       <groupId>com.google.dagger</groupId>
@@ -51,6 +55,11 @@
       <artifactId>guava</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.hubspot</groupId>
+      <artifactId>algebra</artifactId>
+      <version>${hubspot.algebra.version}</version>
+    </dependency>
+    <dependency>
       <groupId>com.typesafe</groupId>
       <artifactId>config</artifactId>
     </dependency>
@@ -59,10 +68,6 @@
       <groupId>javax.inject</groupId>
       <artifactId>javax.inject</artifactId>
       <version>1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.derive4j</groupId>
-      <artifactId>derive4j-annotation</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

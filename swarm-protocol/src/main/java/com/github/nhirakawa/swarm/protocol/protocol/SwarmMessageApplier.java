@@ -4,19 +4,23 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNodeModel;
 import com.github.nhirakawa.swarm.protocol.Initializable;
+import com.github.nhirakawa.swarm.protocol.model.ack.PingAck;
+import com.github.nhirakawa.swarm.protocol.model.ack.PingAckError;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
+import com.github.nhirakawa.swarm.protocol.model.ping.PingProxy;
+import com.github.nhirakawa.swarm.protocol.model.ping.PingResponse;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
-import com.github.nhirakawa.swarm.protocol.model.PingResponse;
-import com.github.nhirakawa.swarm.protocol.model.PingResponses;
-import com.github.nhirakawa.swarm.protocol.model.ProxyTarget;
 import com.github.nhirakawa.swarm.protocol.model.ProxyTargetModel;
 import com.github.nhirakawa.swarm.protocol.model.ProxyTargetsModel;
 import com.github.nhirakawa.swarm.protocol.model.SwarmEnvelope;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
-import com.github.nhirakawa.swarm.protocol.model.TimeoutResponse;
-import com.github.nhirakawa.swarm.protocol.model.TimeoutResponses;
+import com.github.nhirakawa.swarm.protocol.model.timeout.EmptyTimeoutResponse;
+import com.github.nhirakawa.swarm.protocol.model.timeout.PingProxyTimeoutResponse;
+import com.github.nhirakawa.swarm.protocol.model.timeout.PingTimeoutResponse;
+import com.github.nhirakawa.swarm.protocol.model.timeout.TimeoutResponse;
 import com.google.common.eventbus.EventBus;
+import com.hubspot.algebra.Result;
 import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,11 +56,28 @@ public class SwarmMessageApplier implements Initializable {
         swarmTimeoutMessage
       );
 
-      TimeoutResponses
-        .caseOf(timeoutResponse)
-        .empty(() -> null)
-        .ping(this::sendPingRequest)
-        .proxy(this::sendProxyRequest);
+      if (timeoutResponse instanceof EmptyTimeoutResponse) {
+        return;
+      }
+
+      if (timeoutResponse instanceof PingTimeoutResponse) {
+        PingTimeoutResponse pingTimeoutResponse = (PingTimeoutResponse) timeoutResponse;
+
+        sendPingRequest(
+          pingTimeoutResponse.getProtocolId(),
+          pingTimeoutResponse.getSwarmNode()
+        );
+        return;
+      }
+
+      if (timeoutResponse instanceof PingProxyTimeoutResponse) {
+        PingProxyTimeoutResponse pingProxyTimeoutResponse = (PingProxyTimeoutResponse) timeoutResponse;
+
+        sendProxyRequest(
+          pingProxyTimeoutResponse.getProtocolId(),
+          pingProxyTimeoutResponse.getProxyTargets()
+        );
+      }
     }
   }
 
@@ -117,10 +138,18 @@ public class SwarmMessageApplier implements Initializable {
     synchronized (lock) {
       PingResponse pingResponse = swarmProtocol.handle(pingMessage);
 
-      BaseSwarmMessage baseSwarmMessage = PingResponses
-        .caseOf(pingResponse)
-        .ack(this::ack)
-        .proxy(this::toPingMessage);
+      final BaseSwarmMessage baseSwarmMessage;
+      if (
+        pingResponse instanceof com.github.nhirakawa.swarm.protocol.model.ping.PingAck
+      ) {
+        baseSwarmMessage = ack();
+      } else if (pingResponse instanceof PingProxy) {
+        PingProxy pingProxy = (PingProxy) pingResponse;
+
+        baseSwarmMessage = toPingMessage(pingProxy.getSwarmNode());
+      } else {
+        throw new IllegalArgumentException();
+      }
 
       SwarmEnvelope swarmEnvelope = SwarmEnvelope
         .builder()
@@ -148,7 +177,15 @@ public class SwarmMessageApplier implements Initializable {
 
   public void apply(PingAckMessage pingAckMessage) {
     synchronized (lock) {
-      eventBus.post(swarmProtocol.handle(pingAckMessage));
+      Result<PingAck, PingAckError> result = swarmProtocol.handle(
+        pingAckMessage
+      );
+
+      if (result.isErr()) {
+        return;
+      }
+
+      eventBus.post(result.unwrapOrElseThrow());
     }
   }
 
