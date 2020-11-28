@@ -4,13 +4,13 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNodeModel;
 import com.github.nhirakawa.swarm.protocol.Initializable;
-import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.ack.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.ack.PingAckError;
+import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
+import com.github.nhirakawa.swarm.protocol.model.ping.PingProxy;
+import com.github.nhirakawa.swarm.protocol.model.ping.PingResponse;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
-import com.github.nhirakawa.swarm.protocol.model.PingResponse;
-import com.github.nhirakawa.swarm.protocol.model.PingResponses;
 import com.github.nhirakawa.swarm.protocol.model.ProxyTargetModel;
 import com.github.nhirakawa.swarm.protocol.model.ProxyTargetsModel;
 import com.github.nhirakawa.swarm.protocol.model.SwarmEnvelope;
@@ -138,10 +138,18 @@ public class SwarmMessageApplier implements Initializable {
     synchronized (lock) {
       PingResponse pingResponse = swarmProtocol.handle(pingMessage);
 
-      BaseSwarmMessage baseSwarmMessage = PingResponses
-        .caseOf(pingResponse)
-        .ack(this::ack)
-        .proxy(this::toPingMessage);
+      final BaseSwarmMessage baseSwarmMessage;
+      if (
+        pingResponse instanceof com.github.nhirakawa.swarm.protocol.model.ping.PingAck
+      ) {
+        baseSwarmMessage = ack();
+      } else if (pingResponse instanceof PingProxy) {
+        PingProxy pingProxy = (PingProxy) pingResponse;
+
+        baseSwarmMessage = toPingMessage(pingProxy.getSwarmNode());
+      } else {
+        throw new IllegalArgumentException();
+      }
 
       SwarmEnvelope swarmEnvelope = SwarmEnvelope
         .builder()

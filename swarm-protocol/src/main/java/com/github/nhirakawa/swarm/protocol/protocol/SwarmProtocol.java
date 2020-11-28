@@ -6,10 +6,10 @@ import com.github.nhirakawa.swarm.protocol.model.ack.AcknowledgePing;
 import com.github.nhirakawa.swarm.protocol.model.ack.AcknowledgeProxy;
 import com.github.nhirakawa.swarm.protocol.model.ack.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.ack.PingAckError;
+import com.github.nhirakawa.swarm.protocol.model.ping.PingProxy;
+import com.github.nhirakawa.swarm.protocol.model.ping.PingResponse;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
-import com.github.nhirakawa.swarm.protocol.model.PingResponse;
-import com.github.nhirakawa.swarm.protocol.model.PingResponses;
 import com.github.nhirakawa.swarm.protocol.model.ProxyTarget;
 import com.github.nhirakawa.swarm.protocol.model.ProxyTargets;
 import com.github.nhirakawa.swarm.protocol.model.SwarmState;
@@ -220,10 +220,13 @@ class SwarmProtocol {
       pingMessage.getProxyFor().isPresent() &&
       pingMessage.getProxyFor().get().equals(pingMessage.getSender())
     ) {
-      return PingResponses.proxy(pingMessage.getProxyFor().get());
+      return PingProxy
+        .builder()
+        .setSwarmNode(pingMessage.getProxyFor().get())
+        .build();
     }
 
-    return PingResponses.ack();
+    return com.github.nhirakawa.swarm.protocol.model.ping.PingAck.instance();
   }
 
   Result<PingAck, PingAckError> handle(PingAckMessage pingAckMessage) {
