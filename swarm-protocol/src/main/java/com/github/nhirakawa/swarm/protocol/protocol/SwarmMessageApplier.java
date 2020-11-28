@@ -9,13 +9,14 @@ import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingResponse;
 import com.github.nhirakawa.swarm.protocol.model.PingResponses;
-import com.github.nhirakawa.swarm.protocol.model.ProxyTarget;
 import com.github.nhirakawa.swarm.protocol.model.ProxyTargetModel;
 import com.github.nhirakawa.swarm.protocol.model.ProxyTargetsModel;
 import com.github.nhirakawa.swarm.protocol.model.SwarmEnvelope;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
-import com.github.nhirakawa.swarm.protocol.model.TimeoutResponse;
-import com.github.nhirakawa.swarm.protocol.model.TimeoutResponses;
+import com.github.nhirakawa.swarm.protocol.model.timeout.EmptyTimeoutResponse;
+import com.github.nhirakawa.swarm.protocol.model.timeout.PingProxyTimeoutResponse;
+import com.github.nhirakawa.swarm.protocol.model.timeout.PingTimeoutResponse;
+import com.github.nhirakawa.swarm.protocol.model.timeout.TimeoutResponse;
 import com.google.common.eventbus.EventBus;
 import javax.inject.Inject;
 import org.slf4j.Logger;
@@ -52,11 +53,28 @@ public class SwarmMessageApplier implements Initializable {
         swarmTimeoutMessage
       );
 
-      TimeoutResponses
-        .caseOf(timeoutResponse)
-        .empty(() -> null)
-        .ping(this::sendPingRequest)
-        .proxy(this::sendProxyRequest);
+      if (timeoutResponse instanceof EmptyTimeoutResponse) {
+        return;
+      }
+
+      if (timeoutResponse instanceof PingTimeoutResponse) {
+        PingTimeoutResponse pingTimeoutResponse = (PingTimeoutResponse) timeoutResponse;
+
+        sendPingRequest(
+          pingTimeoutResponse.getProtocolId(),
+          pingTimeoutResponse.getSwarmNode()
+        );
+        return;
+      }
+
+      if (timeoutResponse instanceof PingProxyTimeoutResponse) {
+        PingProxyTimeoutResponse pingProxyTimeoutResponse = (PingProxyTimeoutResponse) timeoutResponse;
+
+        sendProxyRequest(
+          pingProxyTimeoutResponse.getProtocolId(),
+          pingProxyTimeoutResponse.getProxyTargets()
+        );
+      }
     }
   }
 

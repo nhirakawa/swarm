@@ -12,8 +12,10 @@ import com.github.nhirakawa.swarm.protocol.model.ProxyTarget;
 import com.github.nhirakawa.swarm.protocol.model.ProxyTargets;
 import com.github.nhirakawa.swarm.protocol.model.SwarmState;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
-import com.github.nhirakawa.swarm.protocol.model.TimeoutResponse;
-import com.github.nhirakawa.swarm.protocol.model.TimeoutResponses;
+import com.github.nhirakawa.swarm.protocol.model.timeout.EmptyTimeoutResponse;
+import com.github.nhirakawa.swarm.protocol.model.timeout.PingProxyTimeoutResponse;
+import com.github.nhirakawa.swarm.protocol.model.timeout.PingTimeoutResponse;
+import com.github.nhirakawa.swarm.protocol.model.timeout.TimeoutResponse;
 import com.github.nhirakawa.swarm.protocol.util.SwarmStateBuffer;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -94,10 +96,11 @@ class SwarmProtocol {
 
       swarmStateBuffer.add(updatedSwarmState);
 
-      return TimeoutResponses.ping(
-        swarmState.getLastProtocolPeriodId(),
-        randomNode
-      );
+      return PingTimeoutResponse
+        .builder()
+        .setProtocolId(swarmState.getLastProtocolPeriodId())
+        .setSwarmNode(randomNode)
+        .build();
     }
 
     Instant earliestValidAckRequestTimestamp = now.minus(
@@ -105,7 +108,7 @@ class SwarmProtocol {
     );
 
     if (swarmState.getLastAckRequest().isEmpty()) {
-      return TimeoutResponses.empty();
+      return EmptyTimeoutResponse.instance();
     }
 
     LastAckRequest lastAckRequest = swarmState
@@ -115,7 +118,7 @@ class SwarmProtocol {
     if (
       lastAckRequest.getTimestamp().isAfter(earliestValidAckRequestTimestamp)
     ) {
-      return TimeoutResponses.empty();
+      return EmptyTimeoutResponse.instance();
     }
 
     LOG.debug(
@@ -168,10 +171,11 @@ class SwarmProtocol {
       .setProxyTargets(proxyTargetsList)
       .build();
 
-    return TimeoutResponses.proxy(
-      swarmState.getLastProtocolPeriodId(),
-      proxyTargets
-    );
+    return PingProxyTimeoutResponse
+      .builder()
+      .setProtocolId(swarmState.getLastProtocolPeriodId())
+      .setProxyTargets(proxyTargets)
+      .build();
   }
 
   private Collection<SwarmNode> getRandomNodes(int number) {
