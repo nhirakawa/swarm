@@ -29,7 +29,7 @@ public class SwarmFailureInjectorTest {
         .setUniqueId(UUID.randomUUID())
         .build()
     )
-    .setProtocolTick(10)
+    .setProtocolTick(Duration.ofMillis(10))
     .setFailureSubGroup(1)
     .build();
 

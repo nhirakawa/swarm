@@ -44,7 +44,7 @@ public class SwarmProtocolTest {
     .setProtocolPeriod(Duration.ofSeconds(1))
     .setMessageTimeout(Duration.ofMillis(10))
     .setSwarmStateBufferSize(10)
-    .setProtocolTick(1)
+    .setProtocolTick(Duration.ofMillis(1))
     .build();
 
   @Test

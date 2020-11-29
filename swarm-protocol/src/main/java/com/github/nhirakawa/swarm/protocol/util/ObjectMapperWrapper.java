@@ -1,6 +1,8 @@
 package com.github.nhirakawa.swarm.protocol.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 public final class ObjectMapperWrapper {
   private static final ObjectMapper INSTANCE = buildObjectMapper();
@@ -10,7 +12,12 @@ public final class ObjectMapperWrapper {
   }
 
   private static ObjectMapper buildObjectMapper() {
-    return new ObjectMapper();
+    ObjectMapper objectMapper = new ObjectMapper();
+
+    objectMapper.registerModule(new Jdk8Module());
+    objectMapper.registerModule(new GuavaModule());
+
+    return objectMapper;
   }
 
   private ObjectMapperWrapper() {

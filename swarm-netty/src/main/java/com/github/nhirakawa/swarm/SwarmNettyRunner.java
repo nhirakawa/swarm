@@ -7,6 +7,7 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfigFactory;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.dagger.SwarmProtocolModule;
+import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.transport.server.SwarmServer;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;

@@ -1,12 +1,12 @@
 package com.github.nhirakawa.swarm.transport.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.github.nhirakawa.swarm.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.SwarmEnvelope;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageSender;
+import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.transport.NettyFutureAdapter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.Bootstrap;
@@ -94,7 +94,7 @@ public class SwarmClient implements Closeable, SwarmMessageSender {
     try {
       return new DatagramPacket(
         Unpooled.copiedBuffer(
-          ObjectMapperWrapper.instance().writeValueAsBytes(message)
+            ObjectMapperWrapper.instance().writeValueAsBytes(message)
         ),
         inetSocketAddress
       );
