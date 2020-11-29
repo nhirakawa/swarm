@@ -50,7 +50,7 @@ public class SwarmTimer implements Initializable {
           scheduledExecutorService.scheduleAtFixedRate(
             this::doTimeout,
             0L,
-            swarmConfig.getProtocolTick(),
+            swarmConfig.getProtocolTick().toMillis(),
             TimeUnit.MILLISECONDS
           )
         );

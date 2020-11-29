@@ -13,7 +13,7 @@ public abstract class SwarmConfigModel {
 
   public abstract Duration getMessageTimeout();
 
-  public abstract int getProtocolTick();
+  public abstract Duration getProtocolTick();
 
   public abstract int getFailureSubGroup();
 

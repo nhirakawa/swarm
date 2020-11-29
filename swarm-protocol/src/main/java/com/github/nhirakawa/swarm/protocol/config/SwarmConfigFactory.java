@@ -20,7 +20,7 @@ public final class SwarmConfigFactory {
     Duration messageTimeout = config.getDuration(
       ConfigPath.SWARM_MESSAGE_TIMEOUT.getConfigPath()
     );
-    int protocolTick = config.getInt(
+    Duration protocolTick = config.getDuration(
       ConfigPath.SWARM_PROTOCOL_TICK.getConfigPath()
     );
     int failureSubGroup = config.getInt(
