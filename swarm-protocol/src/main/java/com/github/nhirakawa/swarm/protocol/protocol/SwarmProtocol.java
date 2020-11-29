@@ -110,7 +110,7 @@ class SwarmProtocol {
       swarmConfig.getMessageTimeout()
     );
 
-    if (swarmState.getLastAckRequest().isEmpty()) {
+    if (!swarmState.getLastAckRequest().isPresent()) {
       return EmptyTimeoutResponse.instance();
     }
 
@@ -249,7 +249,7 @@ class SwarmProtocol {
 
     Instant now = clock.instant();
 
-    if (currentSwarmState.getLastAckRequest().isEmpty()) {
+    if (!currentSwarmState.getLastAckRequest().isPresent()) {
       LOG.warn("No outstanding ping request");
       return Result.err(PingAckError.NO_OUTSTANDING_PICK_REQUEST);
     }
