@@ -30,8 +30,6 @@
     <logback.version>1.0.13</logback.version>
     <maven.compiler.plugin.release>11</maven.compiler.plugin.release>
     <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
     <maven.dependency.plugin.version>3.1.2</maven.dependency.plugin.version>
     <mockito.core.version>3.3.3</mockito.core.version>
     <netty-version>4.1.42.Final</netty-version>
