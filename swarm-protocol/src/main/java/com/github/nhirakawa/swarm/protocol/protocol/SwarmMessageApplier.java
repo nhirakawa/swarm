@@ -142,11 +142,15 @@ public class SwarmMessageApplier implements Initializable {
       if (
         pingResponse instanceof com.github.nhirakawa.swarm.protocol.model.ping.PingAck
       ) {
-        baseSwarmMessage = ack();
+        baseSwarmMessage = ack(pingMessage.getProtocolPeriodId());
       } else if (pingResponse instanceof PingProxy) {
         PingProxy pingProxy = (PingProxy) pingResponse;
 
-        baseSwarmMessage = toPingMessage(pingProxy.getSwarmNode());
+        baseSwarmMessage =
+          toPingMessage(
+            pingMessage.getProtocolPeriodId(),
+            pingProxy.getSwarmNode()
+          );
       } else {
         throw new IllegalArgumentException();
       }
@@ -161,17 +165,21 @@ public class SwarmMessageApplier implements Initializable {
     }
   }
 
-  private BaseSwarmMessage ack() {
-    return PingAckMessage.builder().setSender(swarmNode).build();
+  private BaseSwarmMessage ack(String protocolPeriodId) {
+    return PingAckMessage.builder().setSender(swarmNode).setProtocolPeriodId(protocolPeriodId).build();
   }
 
-  private BaseSwarmMessage toPingMessage(SwarmNodeModel swarmNodeModel) {
+  private BaseSwarmMessage toPingMessage(
+    String protocolPeriodId,
+    SwarmNodeModel swarmNodeModel
+  ) {
     SwarmNode proxyFor = SwarmNode.builder().from(swarmNodeModel).build();
 
     return PingMessage
       .builder()
       .setSender(swarmNode)
       .setProxyFor(proxyFor)
+      .setProtocolPeriodId(protocolPeriodId)
       .build();
   }
 

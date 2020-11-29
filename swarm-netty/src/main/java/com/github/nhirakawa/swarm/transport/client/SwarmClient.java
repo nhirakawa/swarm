@@ -94,7 +94,7 @@ public class SwarmClient implements Closeable, SwarmMessageSender {
     try {
       return new DatagramPacket(
         Unpooled.copiedBuffer(
-            ObjectMapperWrapper.instance().writeValueAsBytes(message)
+          ObjectMapperWrapper.instance().writeValueAsBytes(message)
         ),
         inetSocketAddress
       );
