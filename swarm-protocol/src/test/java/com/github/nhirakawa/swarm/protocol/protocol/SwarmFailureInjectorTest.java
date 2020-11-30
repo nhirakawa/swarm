@@ -20,7 +20,6 @@ public class SwarmFailureInjectorTest {
     .setSwarmStateBufferSize(0)
     .setDebugEnabled(true)
     .setFailureInjectionPercent(0)
-    .setEntireClusterLocal(true)
     .setLocalNode(
       SwarmNode
         .builder()

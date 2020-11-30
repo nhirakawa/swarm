@@ -42,9 +42,7 @@ public final class SwarmConfigFactory {
           .render(ConfigRenderOptions.concise()),
         SwarmNode.class
       );
-    boolean isEntireClusterLocal = config.getBoolean(
-      ConfigPath.RUN_ENTIRE_CLUSTER_LOCALLY.getConfigPath()
-    );
+
     boolean isDebugEnabled = config.getBoolean(
       ConfigPath.DEBUG_ENABLED.getConfigPath()
     );
@@ -63,7 +61,6 @@ public final class SwarmConfigFactory {
       .setFailureSubGroup(failureSubGroup)
       .setClusterNodes(clusterNodes)
       .setLocalNode(localSwarmNode)
-      .setEntireClusterLocal(isEntireClusterLocal)
       .setDebugEnabled(isDebugEnabled)
       .setFailureInjectionPercent(failureInjectionPercent)
       .setSwarmStateBufferSize(swarmStateBufferSize)

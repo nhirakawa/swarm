@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
+import java.util.UUID;
+import org.immutables.value.Value;
 
 @JsonTypeInfo(
   use = JsonTypeInfo.Id.NAME,
@@ -22,4 +24,9 @@ public interface BaseSwarmMessage {
   SwarmMessageType getType();
   SwarmNode getSender();
   String getProtocolPeriodId();
+
+  @Value.Default
+  default String getUniqueMessageId() {
+    return UUID.randomUUID().toString();
+  }
 }

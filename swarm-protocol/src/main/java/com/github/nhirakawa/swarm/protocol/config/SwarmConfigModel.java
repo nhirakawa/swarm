@@ -21,8 +21,6 @@ public abstract class SwarmConfigModel {
 
   public abstract SwarmNode getLocalNode();
 
-  public abstract boolean isEntireClusterLocal();
-
   public abstract boolean isDebugEnabled();
 
   public abstract int getFailureInjectionPercent();

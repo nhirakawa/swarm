@@ -166,7 +166,11 @@ public class SwarmMessageApplier implements Initializable {
   }
 
   private BaseSwarmMessage ack(String protocolPeriodId) {
-    return PingAckMessage.builder().setSender(swarmNode).setProtocolPeriodId(protocolPeriodId).build();
+    return PingAckMessage
+      .builder()
+      .setSender(swarmNode)
+      .setProtocolPeriodId(protocolPeriodId)
+      .build();
   }
 
   private BaseSwarmMessage toPingMessage(

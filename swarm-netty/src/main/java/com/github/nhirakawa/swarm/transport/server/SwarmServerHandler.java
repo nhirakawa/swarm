@@ -1,5 +1,7 @@
 package com.github.nhirakawa.swarm.transport.server;
 
+import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
+import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingMessage;
@@ -20,11 +22,16 @@ public class SwarmServerHandler
   );
 
   private final SwarmMessageApplier swarmMessageApplier;
+  private final SwarmNode localSwarmNode;
 
   @Inject
-  SwarmServerHandler(SwarmMessageApplier swarmMessageApplier) {
+  SwarmServerHandler(
+    SwarmMessageApplier swarmMessageApplier,
+    SwarmConfig swarmConfig
+  ) {
     super(false);
     this.swarmMessageApplier = swarmMessageApplier;
+    this.localSwarmNode = swarmConfig.getLocalNode();
   }
 
   @Override

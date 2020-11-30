@@ -40,7 +40,6 @@ public class SwarmProtocolTest {
     .setFailureSubGroup(1)
     .addClusterNodes(OTHER_NODE)
     .setLocalNode(LOCAL_NODE)
-    .setEntireClusterLocal(false)
     .setProtocolPeriod(Duration.ofSeconds(1))
     .setMessageTimeout(Duration.ofMillis(10))
     .setSwarmStateBufferSize(10)
