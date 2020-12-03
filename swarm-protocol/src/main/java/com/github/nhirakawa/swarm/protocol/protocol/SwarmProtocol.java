@@ -1,8 +1,31 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+
+import javax.annotation.concurrent.NotThreadSafe;
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.protocol.model.*;
+import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
+import com.github.nhirakawa.swarm.protocol.model.PingMessage;
+import com.github.nhirakawa.swarm.protocol.model.ProxyTarget;
+import com.github.nhirakawa.swarm.protocol.model.ProxyTargets;
+import com.github.nhirakawa.swarm.protocol.model.SwarmState;
+import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.ack.AcknowledgePing;
 import com.github.nhirakawa.swarm.protocol.model.ack.AcknowledgeProxy;
 import com.github.nhirakawa.swarm.protocol.model.ack.PingAck;
@@ -20,14 +43,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hubspot.algebra.Result;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
-import javax.annotation.concurrent.NotThreadSafe;
-import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @NotThreadSafe
 class SwarmProtocol {
@@ -68,7 +83,7 @@ class SwarmProtocol {
       SwarmNode randomNode = getRandomNode();
       String nextProtocolPeriodId = UUID.randomUUID().toString();
 
-      LOG.info(
+      LOG.debug(
         "Protocol transitioning from ID {} to ID {}",
         swarmState.getLastProtocolPeriodId(),
         nextProtocolPeriodId
@@ -93,7 +108,7 @@ class SwarmProtocol {
 
       swarmStateBuffer.add(updatedSwarmState);
 
-      LOG.info("Timeout reached - sending ping request to {}", randomNode);
+      LOG.debug("Timeout reached - sending ping request to {}", randomNode);
 
       return PingTimeoutResponse
         .builder()
@@ -273,7 +288,7 @@ class SwarmProtocol {
         .getProtocolPeriodId()
         .equals(lastAckRequest.getProtocolPeriodId())
     ) {
-      LOG.warn(
+      LOG.debug(
         "{} does not match current protocol period ID ({})",
         pingAckMessage.getProtocolPeriodId(),
         lastAckRequest.getProtocolPeriodId()
@@ -283,7 +298,7 @@ class SwarmProtocol {
     }
 
     if (!pingAckMessage.getSender().equals(lastAckRequest.getSwarmNode())) {
-      LOG.warn(
+      LOG.debug(
         "{} does not match last ack request ({})",
         pingAckMessage.getSender(),
         lastAckRequest.getSwarmNode()
@@ -292,7 +307,7 @@ class SwarmProtocol {
       return Result.err(PingAckError.INVALID_SENDER);
     }
 
-    LOG.info("{} has acknowledged ping", pingAckMessage.getSender());
+    LOG.debug("{} has acknowledged ping", pingAckMessage.getSender());
 
     SwarmState updatedSwarmState = SwarmState
       .builder()

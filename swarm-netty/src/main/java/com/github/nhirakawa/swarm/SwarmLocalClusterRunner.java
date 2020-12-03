@@ -1,5 +1,12 @@
 package com.github.nhirakawa.swarm;
 
+import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfigFactory;
 import com.github.nhirakawa.swarm.protocol.dagger.SwarmProtocolModule;
@@ -7,11 +14,7 @@ import com.github.nhirakawa.swarm.transport.server.SwarmServer;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import java.io.IOException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.typesafe.config.ConfigRenderOptions;
 
 public class SwarmLocalClusterRunner {
   private static final Logger LOG = LoggerFactory.getLogger(
@@ -30,6 +33,12 @@ public class SwarmLocalClusterRunner {
         .withFallback(ConfigFactory.load());
 
       SwarmConfig swarmConfig = SwarmConfigFactory.get(realConfig);
+
+      LOG.trace(
+        "Config for node {} - {}",
+        swarmConfig.getLocalNode(),
+        realConfig.root().render(ConfigRenderOptions.defaults())
+      );
 
       SwarmServer swarmServer = DaggerSwarmComponent
         .builder()
