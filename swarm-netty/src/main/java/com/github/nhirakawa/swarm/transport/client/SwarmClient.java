@@ -1,11 +1,5 @@
 package com.github.nhirakawa.swarm.transport.client;
 
-import java.io.Closeable;
-import java.net.InetSocketAddress;
-import java.util.concurrent.CompletableFuture;
-
-import javax.inject.Inject;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
@@ -15,7 +9,6 @@ import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageSender;
 import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.transport.NettyFutureAdapter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -24,6 +17,10 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import java.io.Closeable;
+import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
+import javax.inject.Inject;
 
 public class SwarmClient implements Closeable, SwarmMessageSender {
   private final SwarmClientChannelInitializer swarmClientChannelInitializer;

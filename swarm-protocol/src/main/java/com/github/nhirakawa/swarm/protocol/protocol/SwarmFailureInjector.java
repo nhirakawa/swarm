@@ -1,12 +1,10 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.util.InjectableRandom;
+import javax.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SwarmFailureInjector {
   private static final Logger LOG = LoggerFactory.getLogger(

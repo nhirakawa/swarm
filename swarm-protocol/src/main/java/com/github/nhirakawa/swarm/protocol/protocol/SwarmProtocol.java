@@ -1,37 +1,19 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
-
-import javax.annotation.concurrent.NotThreadSafe;
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
-import com.github.nhirakawa.swarm.protocol.model.PingMessage;
-import com.github.nhirakawa.swarm.protocol.model.ProxyTarget;
-import com.github.nhirakawa.swarm.protocol.model.ProxyTargets;
-import com.github.nhirakawa.swarm.protocol.model.SwarmState;
-import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.ack.AcknowledgePing;
 import com.github.nhirakawa.swarm.protocol.model.ack.AcknowledgeProxy;
 import com.github.nhirakawa.swarm.protocol.model.ack.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.ack.PingAckError;
 import com.github.nhirakawa.swarm.protocol.model.ping.PingProxy;
 import com.github.nhirakawa.swarm.protocol.model.ping.PingResponse;
+import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
+import com.github.nhirakawa.swarm.protocol.model.PingMessage;
+import com.github.nhirakawa.swarm.protocol.model.ProxyTarget;
+import com.github.nhirakawa.swarm.protocol.model.ProxyTargets;
+import com.github.nhirakawa.swarm.protocol.model.SwarmState;
+import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.timeout.EmptyTimeoutResponse;
 import com.github.nhirakawa.swarm.protocol.model.timeout.PingProxyTimeoutResponse;
 import com.github.nhirakawa.swarm.protocol.model.timeout.PingTimeoutResponse;
@@ -43,6 +25,21 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hubspot.algebra.Result;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import javax.annotation.concurrent.NotThreadSafe;
+import javax.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @NotThreadSafe
 class SwarmProtocol {
