@@ -1,22 +1,18 @@
 package com.github.nhirakawa.swarm.transport.server;
 
-import java.net.InetSocketAddress;
-
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.nhirakawa.swarm.protocol.concurrent.SwarmThreadFactoryFactory;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.AbstractIdleService;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import java.net.InetSocketAddress;
+import javax.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SwarmServer extends AbstractIdleService {
   private static final Logger LOG = LoggerFactory.getLogger(SwarmServer.class);
@@ -41,32 +37,6 @@ public class SwarmServer extends AbstractIdleService {
           swarmConfig.getLocalNode()
         )
       );
-  }
-
-  public void start() {
-    //    initializables.forEach(Initializable::initialize);
-    try {
-      Bootstrap bootstrap = new Bootstrap();
-      bootstrap
-        .group(eventLoopGroup)
-        .channel(NioDatagramChannel.class)
-        .handler(swarmServerChannelInitializer)
-        .bind(toSocketAddress(swarmConfig.getLocalNode()))
-        .sync();
-
-      Runtime
-        .getRuntime()
-        .addShutdownHook(
-          new Thread(
-            new ServerShutdownHook(eventLoopGroup),
-            threadName(swarmConfig.getLocalNode())
-          )
-        );
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      Throwables.throwIfUnchecked(e);
-      throw new RuntimeException(e);
-    }
   }
 
   private static InetSocketAddress toSocketAddress(SwarmNode swarmNode) {
