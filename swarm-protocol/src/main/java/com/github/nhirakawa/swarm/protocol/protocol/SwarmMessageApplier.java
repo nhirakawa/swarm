@@ -3,7 +3,6 @@ package com.github.nhirakawa.swarm.protocol.protocol;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNodeModel;
-import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.model.ack.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.ack.PingAckError;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
@@ -20,12 +19,13 @@ import com.github.nhirakawa.swarm.protocol.model.timeout.PingProxyTimeoutRespons
 import com.github.nhirakawa.swarm.protocol.model.timeout.PingTimeoutResponse;
 import com.github.nhirakawa.swarm.protocol.model.timeout.TimeoutResponse;
 import com.google.common.eventbus.EventBus;
+import com.google.common.util.concurrent.AbstractIdleService;
 import com.hubspot.algebra.Result;
 import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SwarmMessageApplier implements Initializable {
+public class SwarmMessageApplier extends AbstractIdleService {
   private static final Logger LOG = LoggerFactory.getLogger(
     SwarmMessageApplier.class
   );
@@ -202,7 +202,12 @@ public class SwarmMessageApplier implements Initializable {
   }
 
   @Override
-  public void initialize() {
+  protected void startUp() throws Exception {
     eventBus.register(this);
+  }
+
+  @Override
+  protected void shutDown() throws Exception {
+    eventBus.unregister(this);
   }
 }

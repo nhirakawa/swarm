@@ -3,7 +3,6 @@ package com.github.nhirakawa.swarm;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfigFactory;
 import com.github.nhirakawa.swarm.protocol.dagger.SwarmProtocolModule;
-import com.github.nhirakawa.swarm.transport.server.SwarmServer;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -38,13 +37,13 @@ public class SwarmLocalClusterRunner {
         realConfig.root().render(ConfigRenderOptions.defaults())
       );
 
-      SwarmServer swarmServer = DaggerSwarmComponent
+      SwarmService swarmService = DaggerSwarmComponent
         .builder()
         .swarmProtocolModule(new SwarmProtocolModule(swarmConfig))
         .build()
-        .buildServer();
+        .buildService();
 
-      EXECUTOR.execute(swarmServer::start);
+      EXECUTOR.execute(swarmService::run);
     }
   }
 

@@ -4,7 +4,6 @@ import com.github.nhirakawa.swarm.protocol.config.ConfigValidator;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfigFactory;
 import com.github.nhirakawa.swarm.protocol.dagger.SwarmProtocolModule;
-import com.github.nhirakawa.swarm.transport.server.SwarmServer;
 import com.google.common.io.Resources;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -26,13 +25,13 @@ public class SwarmNettyRunner {
 
     SwarmConfig swarmConfig = SwarmConfigFactory.get(config);
 
-    SwarmServer swarmServer = DaggerSwarmComponent
+    SwarmService swarmService = DaggerSwarmComponent
       .builder()
       .swarmProtocolModule(new SwarmProtocolModule(swarmConfig))
       .build()
-      .buildServer();
+      .buildService();
 
-    swarmServer.start();
+    swarmService.run();
   }
 
   private static String getBanner() {

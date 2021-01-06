@@ -1,12 +1,12 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
-import com.github.nhirakawa.swarm.protocol.Initializable;
 import com.github.nhirakawa.swarm.protocol.model.SwarmEnvelope;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.google.common.util.concurrent.AbstractIdleService;
 import javax.inject.Inject;
 
-public class SwarmDisseminator implements Initializable {
+public class SwarmDisseminator extends AbstractIdleService {
   private final SwarmMessageSender swarmMessageSender;
   private final EventBus eventBus;
 
@@ -19,13 +19,18 @@ public class SwarmDisseminator implements Initializable {
     this.eventBus = eventBus;
   }
 
-  @Override
-  public void initialize() {
-    eventBus.register(this);
-  }
-
   @Subscribe
   public void handle(SwarmEnvelope swarmEnvelope) {
     swarmMessageSender.send(swarmEnvelope);
+  }
+
+  @Override
+  protected void startUp() throws Exception {
+    eventBus.register(this);
+  }
+
+  @Override
+  protected void shutDown() throws Exception {
+    eventBus.unregister(this);
   }
 }
