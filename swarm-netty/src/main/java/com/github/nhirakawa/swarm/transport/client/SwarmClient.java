@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
-import com.github.nhirakawa.swarm.protocol.model.SwarmEnvelope;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageSender;
 import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.transport.NettyFutureAdapter;
@@ -55,11 +54,11 @@ public class SwarmClient implements Closeable, SwarmMessageSender {
   }
 
   @Override
-  public CompletableFuture<?> send(SwarmEnvelope swarmEnvelope) {
+  public CompletableFuture<?> send(BaseSwarmMessage swarmEnvelope) {
     Channel channel = buildChannel();
     DatagramPacket datagramPacket = wrapInDatagramPacket(
-      swarmEnvelope.getToSwarmNode(),
-      swarmEnvelope.getBaseSwarmMessage()
+      swarmEnvelope.getTo(),
+      swarmEnvelope
     );
 
     ChannelFuture channelFuture = channel

@@ -1,6 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
-import com.github.nhirakawa.swarm.protocol.model.SwarmEnvelope;
+import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.AbstractIdleService;
@@ -20,8 +20,8 @@ public class SwarmDisseminator extends AbstractIdleService {
   }
 
   @Subscribe
-  public void handle(SwarmEnvelope swarmEnvelope) {
-    swarmMessageSender.send(swarmEnvelope);
+  public void handle(BaseSwarmMessage swarmMessage) {
+    swarmMessageSender.send(swarmMessage);
   }
 
   @Override

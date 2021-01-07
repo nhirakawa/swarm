@@ -15,14 +15,14 @@ import org.immutables.value.Value;
 )
 @JsonSubTypes(
   {
-    @Type(name = "PING", value = PingMessage.class),
     @Type(name = "PING_REQUEST", value = PingRequestMessage.class),
     @Type(name = "PING_ACK", value = PingAckMessage.class)
   }
 )
 public interface BaseSwarmMessage {
   SwarmMessageType getType();
-  SwarmNode getSender();
+  SwarmNode getFrom();
+  SwarmNode getTo();
   String getProtocolPeriodId();
 
   @Value.Default

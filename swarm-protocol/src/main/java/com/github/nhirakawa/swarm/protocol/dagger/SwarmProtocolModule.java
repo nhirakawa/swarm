@@ -2,18 +2,14 @@ package com.github.nhirakawa.swarm.protocol.dagger;
 
 import com.github.nhirakawa.swarm.protocol.concurrent.SwarmThreadFactoryFactory;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
-import com.github.nhirakawa.swarm.protocol.model.SwarmState;
 import com.github.nhirakawa.swarm.protocol.util.InjectableRandom;
 import com.github.nhirakawa.swarm.protocol.util.InjectableThreadLocalRandom;
-import com.github.nhirakawa.swarm.protocol.util.SwarmStateBuffer;
 import com.google.common.eventbus.EventBus;
 import dagger.Module;
 import dagger.Provides;
 import java.time.Clock;
-import java.time.Instant;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.UUID;
 import javax.inject.Singleton;
 
 @Module
@@ -60,29 +56,5 @@ public class SwarmProtocolModule {
   @Singleton
   static EventBus provideEventBus() {
     return new EventBus("swarm");
-  }
-
-  @Provides
-  @Singleton
-  static SwarmState provideInitialSwarmState(Clock clock) {
-    Instant now = clock.instant();
-    return SwarmState
-      .builder()
-      .setLastProtocolPeriodStarted(now)
-      .setTimestamp(now)
-      .setLastProtocolPeriodId(UUID.randomUUID().toString())
-      .build();
-  }
-
-  @Provides
-  @Singleton
-  static SwarmStateBuffer provideSwarmStateBuffer(
-    SwarmState swarmState,
-    SwarmConfig swarmConfig
-  ) {
-    return new SwarmStateBuffer(
-      swarmState,
-      swarmConfig.getSwarmStateBufferSize()
-    );
   }
 }
