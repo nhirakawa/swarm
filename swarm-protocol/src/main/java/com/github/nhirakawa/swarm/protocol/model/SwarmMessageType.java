@@ -1,5 +1,31 @@
 package com.github.nhirakawa.swarm.protocol.model;
 
+import java.util.Optional;
+
+import com.google.common.primitives.UnsignedBytes;
+
 public enum SwarmMessageType {
-  UUID, PING, PING_ACK, PING_REQUEST, PING_PROXY
+  PING_ACK(0), PING_REQUEST(1);
+
+  private final byte id;
+
+  SwarmMessageType(int id) {
+    this.id = UnsignedBytes.checkedCast(id);
+  }
+
+  public byte getId() {
+    return id;
+  }
+
+  public static Optional<SwarmMessageType> fromId(byte id){
+    switch (id) {
+      case 0:
+        return Optional.of(PING_ACK);
+      case 1:
+        return Optional.of(PING_REQUEST);
+      default:
+        return Optional.empty();
+    }
+  }
+
 }
