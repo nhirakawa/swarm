@@ -1,34 +1,37 @@
-package com.github.nhirakawa.swarm;
+package com.github.nhirakawa.swarm.runner;
+
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
+
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmDisseminator;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmStateMachine;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmTimer;
-import com.github.nhirakawa.swarm.transport.server.SwarmServer;
+import com.github.nhirakawa.swarm.transport.server.SwarmNettyServer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ServiceManager;
-import java.time.Duration;
-import java.util.concurrent.TimeoutException;
-import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SwarmService {
   private static final Logger LOG = LoggerFactory.getLogger(SwarmService.class);
 
   private final SwarmTimer swarmTimer;
-  private final SwarmServer swarmServer;
+  private final SwarmNettyServer swarmNettyServer;
   private final SwarmDisseminator swarmDisseminator;
   private final SwarmStateMachine swarmStateMachine;
 
   @Inject
   SwarmService(
     SwarmTimer swarmTimer,
-    SwarmServer swarmServer,
+    SwarmNettyServer swarmNettyServer,
     SwarmDisseminator swarmDisseminator,
     SwarmStateMachine swarmStateMachine
   ) {
     this.swarmTimer = swarmTimer;
-    this.swarmServer = swarmServer;
+    this.swarmNettyServer = swarmNettyServer;
     this.swarmDisseminator = swarmDisseminator;
     this.swarmStateMachine = swarmStateMachine;
   }
@@ -37,7 +40,7 @@ public class SwarmService {
     ServiceManager serviceManager = new ServiceManager(
       ImmutableList.of(
         swarmTimer,
-        swarmServer,
+        swarmNettyServer,
         swarmDisseminator,
         swarmStateMachine
       )

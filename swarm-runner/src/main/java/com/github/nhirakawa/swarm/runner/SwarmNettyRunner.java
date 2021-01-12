@@ -1,4 +1,10 @@
-package com.github.nhirakawa.swarm;
+package com.github.nhirakawa.swarm.runner;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.nhirakawa.swarm.protocol.config.ConfigValidator;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
@@ -7,10 +13,6 @@ import com.github.nhirakawa.swarm.protocol.dagger.SwarmProtocolModule;
 import com.google.common.io.Resources;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SwarmNettyRunner {
   private static final Logger LOG = LoggerFactory.getLogger(

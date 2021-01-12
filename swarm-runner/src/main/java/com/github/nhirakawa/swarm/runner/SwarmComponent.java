@@ -1,4 +1,4 @@
-package com.github.nhirakawa.swarm;
+package com.github.nhirakawa.swarm.runner;
 
 import com.github.nhirakawa.swarm.dagger.SwarmNettyRunnerModule;
 import dagger.Component;

@@ -2,18 +2,16 @@ package com.github.nhirakawa.swarm.nio;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.util.Optional;
-
-import org.junit.Test;
-
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingRequestMessage;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.Optional;
+import org.junit.Test;
 
 public class BaseSwarmMessageSerdeTest {
   private static final SwarmConfig SWARM_CONFIG = SwarmConfig
@@ -87,8 +85,8 @@ public class BaseSwarmMessageSerdeTest {
 
     Optional<BaseSwarmMessage> deserialized = serde.deserialize(
       InetSocketAddress.createUnresolved(
-       serialized.getFrom().getHost(),
-       serialized.getFrom().getPort()
+        serialized.getFrom().getHost(),
+        serialized.getFrom().getPort()
       ),
       buffer
     );

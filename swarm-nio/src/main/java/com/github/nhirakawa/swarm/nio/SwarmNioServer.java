@@ -1,17 +1,19 @@
 package com.github.nhirakawa.swarm.nio;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
+import java.util.Optional;
+
+import javax.inject.Inject;
+
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
-import javax.inject.Inject;
 
 public class SwarmNioServer extends AbstractExecutionThreadService {
   private final EventBus eventBus;
@@ -54,17 +56,32 @@ public class SwarmNioServer extends AbstractExecutionThreadService {
         incoming
       );
 
-      throw new UnsupportedOperationException();
+      Optional<BaseSwarmMessage> swarmMessage = baseSwarmMessageSerde.deserialize(
+        sender,
+        incoming
+      );
+
+      eventBus.post(swarmMessage);
     }
   }
 
   @Subscribe
-  public void handle(BaseSwarmMessage swarmMessage) {
+  public void handle(BaseSwarmMessage swarmMessage) throws IOException {
     if (state() != State.RUNNING) {
       return;
     }
 
-    throw new UnsupportedOperationException();
+    if (swarmMessage.getTo().equals(swarmConfig.getLocalNode())) {
+      return;
+    }
+
+    ByteBuffer buffer = baseSwarmMessageSerde.serialize(swarmMessage);
+    InetSocketAddress target = InetSocketAddress.createUnresolved(
+      swarmMessage.getTo().getHost(),
+      swarmMessage.getFrom().getPort()
+    );
+
+    datagramChannel.send(buffer, target);
   }
 
   @Override
