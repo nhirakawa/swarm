@@ -6,6 +6,7 @@ import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingRequestMessage;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.protocol.Transition;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Iterables;
 import java.time.Duration;
 import java.time.Instant;
@@ -73,5 +74,14 @@ public class WaitingForNextProtocolPeriodProtocolState
   public Optional<Transition> applyPingAck(PingAckMessage pingAckMessage) {
     LOG.trace("Ignoring {}", pingAckMessage);
     return Optional.empty();
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects
+      .toStringHelper(this)
+      .add("protocolStartTimestamp", protocolStartTimestamp)
+      .add("protocolPeriodId", protocolPeriodId)
+      .toString();
   }
 }

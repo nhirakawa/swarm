@@ -24,7 +24,7 @@ public class SwarmServerChannelInitializer
       .pipeline()
       .addLast(
         "LoggingHandler",
-        new LoggingHandler("SwarmServer", LogLevel.TRACE)
+        new LoggingHandler("SwarmNettyServer", LogLevel.TRACE)
       )
       .addLast("SwarmServerHandler", swarmServerHandler.get());
   }

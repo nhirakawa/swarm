@@ -1,4 +1,4 @@
-package com.github.nhirakawa.swarm;
+package com.github.nhirakawa.swarm.runner;
 
 import com.github.nhirakawa.swarm.protocol.config.ConfigValidator;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
@@ -25,7 +25,7 @@ public class SwarmNettyRunner {
 
     SwarmConfig swarmConfig = SwarmConfigFactory.get(config);
 
-    SwarmService swarmService = DaggerSwarmComponent
+    SwarmService swarmService = DaggerSwarmNettyComponent
       .builder()
       .swarmProtocolModule(new SwarmProtocolModule(swarmConfig))
       .build()

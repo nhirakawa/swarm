@@ -14,10 +14,12 @@ import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ThreadSafe
+@Singleton
 public class SwarmStateMachine extends AbstractIdleService {
   private static final Logger LOG = LoggerFactory.getLogger(
     SwarmStateMachine.class
@@ -51,6 +53,12 @@ public class SwarmStateMachine extends AbstractIdleService {
 
   @Subscribe
   public void applyTimeout(SwarmTimeoutMessage timeoutMessage) {
+    State state = state();
+    if (state != State.RUNNING) {
+      LOG.debug("Current state is {}", state);
+      return;
+    }
+
     synchronized (lock) {
       Optional<Transition> transition = swarmProtocolState.applyTick(
         timeoutMessage
@@ -62,6 +70,12 @@ public class SwarmStateMachine extends AbstractIdleService {
 
   @Subscribe
   public void applyAck(PingAckMessage pingAckMessage) {
+    State state = state();
+    if (state != State.RUNNING) {
+      LOG.debug("Current state is {}", state);
+      return;
+    }
+
     if (pingAckMessage.getFrom().equals(swarmConfig.getLocalNode())) {
       return;
     }
@@ -77,6 +91,12 @@ public class SwarmStateMachine extends AbstractIdleService {
 
   @Subscribe
   public void applyPingRequest(PingRequestMessage pingRequestMessage) {
+    State state = state();
+    if (state != State.RUNNING) {
+      LOG.debug("Current state is {}", state);
+      return;
+    }
+
     if (swarmFailureInjector.shouldInjectFailure()) {
       LOG.debug("Injecting failure - dropping {}", pingRequestMessage);
       return;
@@ -94,6 +114,12 @@ public class SwarmStateMachine extends AbstractIdleService {
   }
 
   private void applyStateAndSendMessages(Transition transition) {
+    LOG.trace(
+      "Transitioning from {} to {}",
+      swarmProtocolState,
+      transition.getNextSwarmProtocolState()
+    );
+
     swarmProtocolState = transition.getNextSwarmProtocolState();
 
     for (BaseSwarmMessage message : transition.getMessagesToSend()) {
@@ -103,11 +129,21 @@ public class SwarmStateMachine extends AbstractIdleService {
 
   @Override
   protected void startUp() throws Exception {
+    LOG.info("Starting state machine");
     eventBus.register(this);
   }
 
   @Override
   protected void shutDown() throws Exception {
     eventBus.unregister(this);
+  }
+
+  @Override
+  protected String serviceName() {
+    return String.format(
+      "swarm-state-machine-%s-%s",
+      swarmConfig.getLocalNode().getHost(),
+      swarmConfig.getLocalNode().getPort()
+    );
   }
 }

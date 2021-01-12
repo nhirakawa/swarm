@@ -15,6 +15,7 @@
   <modules>
     <module>swarm-protocol</module>
     <module>swarm-netty</module>
+    <module>swarm-runner</module>
   </modules>
 
   <properties>
