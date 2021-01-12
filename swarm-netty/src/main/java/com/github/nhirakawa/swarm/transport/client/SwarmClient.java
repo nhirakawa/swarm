@@ -6,19 +6,16 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageSender;
 import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
-import com.github.nhirakawa.swarm.transport.NettyFutureAdapter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import java.io.Closeable;
 import java.net.InetSocketAddress;
-import java.util.concurrent.CompletableFuture;
 import javax.inject.Inject;
 
 public class SwarmClient implements Closeable, SwarmMessageSender {
@@ -54,18 +51,25 @@ public class SwarmClient implements Closeable, SwarmMessageSender {
   }
 
   @Override
-  public CompletableFuture<?> send(BaseSwarmMessage swarmEnvelope) {
+  public void send(BaseSwarmMessage swarmEnvelope) {
     Channel channel = buildChannel();
     DatagramPacket datagramPacket = wrapInDatagramPacket(
       swarmEnvelope.getTo(),
       swarmEnvelope
     );
 
-    ChannelFuture channelFuture = channel
-      .writeAndFlush(datagramPacket)
-      .channel()
-      .closeFuture();
-    return NettyFutureAdapter.of(channelFuture);
+    try {
+      channel
+        .writeAndFlush(datagramPacket)
+        .sync()
+        .channel()
+        .closeFuture()
+        .await()
+        .sync();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    }
   }
 
   private Channel buildChannel() {

@@ -69,6 +69,7 @@ public class SwarmServer extends AbstractIdleService {
           )
         );
     } catch (InterruptedException e) {
+      LOG.error("Could not start UDP server", e);
       Thread.currentThread().interrupt();
       Throwables.throwIfUnchecked(e);
       throw new RuntimeException(e);

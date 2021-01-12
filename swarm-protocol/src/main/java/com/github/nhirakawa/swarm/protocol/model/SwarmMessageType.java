@@ -1,12 +1,10 @@
 package com.github.nhirakawa.swarm.protocol.model;
 
-import java.util.Optional;
-
 import com.google.common.primitives.UnsignedBytes;
+import java.util.Optional;
 
 public enum SwarmMessageType {
   PING_ACK(0), PING_REQUEST(1);
-
   private final byte id;
 
   SwarmMessageType(int id) {
@@ -17,7 +15,7 @@ public enum SwarmMessageType {
     return id;
   }
 
-  public static Optional<SwarmMessageType> fromId(byte id){
+  public static Optional<SwarmMessageType> fromId(byte id) {
     switch (id) {
       case 0:
         return Optional.of(PING_ACK);
@@ -27,5 +25,4 @@ public enum SwarmMessageType {
         return Optional.empty();
     }
   }
-
 }

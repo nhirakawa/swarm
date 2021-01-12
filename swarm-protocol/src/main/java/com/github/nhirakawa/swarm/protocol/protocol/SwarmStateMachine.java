@@ -51,6 +51,12 @@ public class SwarmStateMachine extends AbstractIdleService {
 
   @Subscribe
   public void applyTimeout(SwarmTimeoutMessage timeoutMessage) {
+    State state = state();
+    if (state != State.RUNNING) {
+      LOG.debug("Current state is {}", state);
+      return;
+    }
+
     synchronized (lock) {
       Optional<Transition> transition = swarmProtocolState.applyTick(
         timeoutMessage
@@ -62,6 +68,12 @@ public class SwarmStateMachine extends AbstractIdleService {
 
   @Subscribe
   public void applyAck(PingAckMessage pingAckMessage) {
+    State state = state();
+    if (state != State.RUNNING) {
+      LOG.debug("Current state is {}", state);
+      return;
+    }
+
     if (pingAckMessage.getFrom().equals(swarmConfig.getLocalNode())) {
       return;
     }
@@ -77,6 +89,12 @@ public class SwarmStateMachine extends AbstractIdleService {
 
   @Subscribe
   public void applyPingRequest(PingRequestMessage pingRequestMessage) {
+    State state = state();
+    if (state != State.RUNNING) {
+      LOG.debug("Current state is {}", state);
+      return;
+    }
+
     if (swarmFailureInjector.shouldInjectFailure()) {
       LOG.debug("Injecting failure - dropping {}", pingRequestMessage);
       return;
@@ -103,6 +121,7 @@ public class SwarmStateMachine extends AbstractIdleService {
 
   @Override
   protected void startUp() throws Exception {
+    LOG.info("Starting state machine");
     eventBus.register(this);
   }
 
