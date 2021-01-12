@@ -1,131 +1,173 @@
 package com.github.nhirakawa.swarm.nio;
 
-import java.net.DatagramPacket;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Optional;
-
-import javax.inject.Inject;
-
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingRequestMessage;
 import com.github.nhirakawa.swarm.protocol.model.SwarmMessageType;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+import javax.inject.Inject;
 
 public class BaseSwarmMessageSerde {
+  private static final int MAGIC_NUMBER = 1937205613;
 
-	private static final int MAGIC_NUMBER = 1937205613;
+  private final SwarmConfig swarmConfig;
 
-	private final SwarmConfig swarmConfig;
+  @Inject
+  BaseSwarmMessageSerde(SwarmConfig swarmConfig) {
+    this.swarmConfig = swarmConfig;
+  }
 
-	@Inject
-	BaseSwarmMessageSerde(SwarmConfig swarmConfig) {
-this.swarmConfig = swarmConfig;
-	}
+  public ByteBuffer serialize(BaseSwarmMessage swarmMessage) {
+    ByteBuffer buffer = ByteBuffer.allocate(1024);
 
-	public ByteBuffer serialize(BaseSwarmMessage swarmMessage) {
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
+    buffer.putInt(MAGIC_NUMBER);
 
-		buffer.putInt(MAGIC_NUMBER);
+    buffer.putInt(swarmMessage.getProtocolPeriodId().length());
+    buffer.put(
+      swarmMessage.getProtocolPeriodId().getBytes(StandardCharsets.UTF_8)
+    );
 
-		buffer.putInt(swarmMessage.getProtocolPeriodId().length());
-		buffer.put(swarmMessage.getProtocolPeriodId().getBytes(StandardCharsets.UTF_8));
+    buffer.putInt(swarmMessage.getUniqueMessageId().length());
+    buffer.put(
+      swarmMessage.getUniqueMessageId().getBytes(StandardCharsets.UTF_8)
+    );
 
-		buffer.putInt(swarmMessage.getUniqueMessageId().length());
-		buffer.put(swarmMessage.getUniqueMessageId().getBytes(StandardCharsets.UTF_8));
+    buffer.put(swarmMessage.getType().getId());
 
-		buffer.put(swarmMessage.getType().getId());
+    if (swarmMessage instanceof PingAckMessage) {
+      PingAckMessage pingAckMessage = (PingAckMessage) swarmMessage;
 
-		if (swarmMessage instanceof PingAckMessage) {
-			PingAckMessage pingAckMessage = (PingAckMessage) swarmMessage;
+      if (pingAckMessage.getProxyFor().isPresent()) {
+        SwarmNode proxyFor = pingAckMessage.getProxyFor().get();
 
-			if (pingAckMessage.getProxyFor().isPresent()) {
-				SwarmNode proxyFor = pingAckMessage.getProxyFor().get();
+        buffer.put((byte) 1);
+        buffer.putInt(proxyFor.getHost().length());
+        buffer.put(proxyFor.getHost().getBytes(StandardCharsets.UTF_8));
+        buffer.putInt(proxyFor.getPort());
+      } else {
+        buffer.put((byte) 0);
+      }
+    } else if (swarmMessage instanceof PingRequestMessage) {
+      PingRequestMessage pingRequestMessage = (PingRequestMessage) swarmMessage;
 
-				buffer.put((byte)1);
-				buffer.putInt(proxyFor.getHost().length());
-				buffer.put(proxyFor.getHost().getBytes(StandardCharsets.UTF_8));
-				buffer.putInt(proxyFor.getPort());
-			} else {
-				buffer.put((byte) 0);
-			}
+      if (pingRequestMessage.getOnBehalfOf().isPresent()) {
+        SwarmNode onBehalfOf = pingRequestMessage.getOnBehalfOf().get();
 
-		} else if (swarmMessage instanceof PingRequestMessage) {
-			PingRequestMessage pingRequestMessage = (PingRequestMessage) swarmMessage;
+        buffer.put((byte) 1);
+        buffer.putInt(onBehalfOf.getHost().length());
+        buffer.put(onBehalfOf.getHost().getBytes(StandardCharsets.UTF_8));
+        buffer.putInt(onBehalfOf.getPort());
+      } else {
+        buffer.put((byte) 0);
+      }
+    }
 
-			if (pingRequestMessage.getOnBehalfOf().isPresent()) {
-				SwarmNode onBehalfOf = pingRequestMessage.getOnBehalfOf().get();
+    return buffer;
+  }
 
-				buffer.put((byte) 1);
-				buffer.putInt(onBehalfOf.getHost().length());
-				buffer.put(onBehalfOf.getHost().getBytes(StandardCharsets.UTF_8));
-				buffer.putInt(onBehalfOf.getPort());
-			} else {
-				buffer.put((byte) 0);
-			}
+  public Optional<BaseSwarmMessage> deserialize(
+    InetSocketAddress from,
+    ByteBuffer buffer
+  ) {
+    int magicNumber = buffer.getInt();
 
-		}
+    if (magicNumber != MAGIC_NUMBER) {
+      return Optional.empty();
+    }
 
-		return buffer;
-	}
+    int protocolPeriodIdLength = buffer.getInt();
+    byte[] protocolPeriodIdBytes = new byte[protocolPeriodIdLength];
+    buffer.get(protocolPeriodIdBytes);
+    String protocolPeriodId = new String(
+      protocolPeriodIdBytes,
+      StandardCharsets.UTF_8
+    );
 
-	public Optional<BaseSwarmMessage> deserialize(InetSocketAddress from, ByteBuffer buffer) {
-		int magicNumber = buffer.getInt();
+    int uniqueMessageIdLength = buffer.getInt();
+    byte[] uniqueMessageIdBytes = new byte[uniqueMessageIdLength];
+    buffer.get(uniqueMessageIdBytes);
+    String uniqueMessageId = new String(
+      uniqueMessageIdBytes,
+      StandardCharsets.UTF_8
+    );
 
-		if (magicNumber != MAGIC_NUMBER) {
-			return Optional.empty();
-		}
+    Optional<SwarmMessageType> maybeSwarmMessageType = SwarmMessageType.fromId(
+      buffer.get()
+    );
 
-		int protocolPeriodIdLength = buffer.getInt();
-		byte[] protocolPeriodIdBytes = new byte[protocolPeriodIdLength];
-		buffer.get(protocolPeriodIdBytes);
-		String protocolPeriodId = new String(protocolPeriodIdBytes, StandardCharsets.UTF_8);
+    if (maybeSwarmMessageType.isEmpty()) {
+      return Optional.empty();
+    }
 
-		int uniqueMessageIdLength = buffer.getInt();
-		byte[] uniqueMessageIdBytes = new byte[uniqueMessageIdLength];
-		buffer.get(uniqueMessageIdBytes);
-		String uniqueMessageId = new String(uniqueMessageIdBytes, StandardCharsets.UTF_8);
+    SwarmNode fromSwarmNode = SwarmNode
+      .builder()
+      .setHost(from.getHostName())
+      .setPort(from.getPort())
+      .build();
 
-		Optional<SwarmMessageType> maybeSwarmMessageType = SwarmMessageType.fromId(buffer.get());
+    SwarmMessageType swarmMessageType = maybeSwarmMessageType.get();
 
-		if (maybeSwarmMessageType.isEmpty()) {
-			return Optional.empty();
-		}
+    if (swarmMessageType == SwarmMessageType.PING_ACK) {
+      PingAckMessage.Builder builder = PingAckMessage
+        .builder()
+        .setFrom(fromSwarmNode)
+        .setTo(swarmConfig.getLocalNode())
+        .setUniqueMessageId(uniqueMessageId)
+        .setProtocolPeriodId(protocolPeriodId);
 
-		SwarmNode fromSwarmNode = SwarmNode.builder().setHost(from.getHostName()).setPort(from.getPort()).build();
+      byte flag = buffer.get();
 
-		SwarmMessageType swarmMessageType = maybeSwarmMessageType.get();
+      if (flag == 1) {
+        int hostLength = buffer.getInt();
+        byte[] hostBytes = new byte[hostLength];
+        buffer.get(hostBytes);
+        String host = new String(hostBytes, StandardCharsets.UTF_8);
+        int port = buffer.getInt();
 
-		if (swarmMessageType == SwarmMessageType.PING_ACK) {
-			PingAckMessage.Builder builder = PingAckMessage.builder()
-					.setFrom(fromSwarmNode)
-					.setTo(swarmConfig.getLocalNode())
-					.setUniqueMessageId(uniqueMessageId)
-					.setProtocolPeriodId(protocolPeriodId);
+        SwarmNode proxyFor = SwarmNode
+          .builder()
+          .setHost(host)
+          .setPort(port)
+          .build();
 
-			byte flag = buffer.get();
+        builder.setProxyFor(proxyFor);
+      }
 
-			if (flag == 1) {
-				int hostLength = buffer.getInt();
-				byte[] hostBytes = new byte[hostLength];
-				buffer.get(hostBytes);
-				String host = new String(hostBytes, StandardCharsets.UTF_8);
-				int port = buffer.getInt();
+      return Optional.of(builder.build());
+    } else if (swarmMessageType == SwarmMessageType.PING_REQUEST) {
+      PingRequestMessage.Builder builder = PingRequestMessage
+        .builder()
+        .setFrom(fromSwarmNode)
+        .setTo(swarmConfig.getLocalNode())
+        .setUniqueMessageId(uniqueMessageId)
+        .setProtocolPeriodId(protocolPeriodId);
 
-				SwarmNode proxyFor = SwarmNode.builder().setHost(host).setPort(port).build();
+      byte flag = buffer.get();
 
-				builder.setProxyFor(proxyFor);
-			}
+      if (flag == 1) {
+        int hostLength = buffer.getInt();
+        byte[] hostBytes = new byte[hostLength];
+        buffer.get(hostBytes);
+        String host = new String(hostBytes, StandardCharsets.UTF_8);
+        int port = buffer.getInt();
 
-			return Optional.of(builder.build());
-		} else if (swarmMessageType == SwarmMessageType.PING_REQUEST) {
-			throw new UnsupportedOperationException();
-		} else {
-			return Optional.empty();
-		}
-	}
+        SwarmNode onBehalfOf = SwarmNode
+          .builder()
+          .setHost(host)
+          .setPort(port)
+          .build();
 
+        builder.setOnBehalfOf(onBehalfOf);
+      }
+
+      return Optional.of(builder.build());
+    } else {
+      return Optional.empty();
+    }
+  }
 }

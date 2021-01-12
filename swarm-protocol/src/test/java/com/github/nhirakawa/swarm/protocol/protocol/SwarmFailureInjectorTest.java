@@ -6,7 +6,6 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.util.InjectableThreadLocalRandom;
 import java.time.Duration;
-import java.util.UUID;
 import org.assertj.core.data.Offset;
 import org.junit.Test;
 
@@ -20,14 +19,7 @@ public class SwarmFailureInjectorTest {
     .setSwarmStateBufferSize(0)
     .setDebugEnabled(true)
     .setFailureInjectionPercent(0)
-    .setLocalNode(
-      SwarmNode
-        .builder()
-        .setHost("host")
-        .setPort(1)
-        .setUniqueId(UUID.randomUUID())
-        .build()
-    )
+    .setLocalNode(SwarmNode.builder().setHost("host").setPort(1).build())
     .setProtocolTick(Duration.ofMillis(10))
     .setFailureSubGroup(1)
     .build();
