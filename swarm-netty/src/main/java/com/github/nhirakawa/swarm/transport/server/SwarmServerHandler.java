@@ -1,12 +1,8 @@
 package com.github.nhirakawa.swarm.transport.server;
 
-import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
-import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
-import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
-import com.github.nhirakawa.swarm.protocol.model.PingMessage;
-import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageApplier;
 import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
+import com.google.common.eventbus.EventBus;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
@@ -21,17 +17,12 @@ public class SwarmServerHandler
     SwarmServerHandler.class
   );
 
-  private final SwarmMessageApplier swarmMessageApplier;
-  private final SwarmNode localSwarmNode;
+  private final EventBus eventBus;
 
   @Inject
-  SwarmServerHandler(
-    SwarmMessageApplier swarmMessageApplier,
-    SwarmConfig swarmConfig
-  ) {
+  SwarmServerHandler(EventBus eventBus) {
     super(false);
-    this.swarmMessageApplier = swarmMessageApplier;
-    this.localSwarmNode = swarmConfig.getLocalNode();
+    this.eventBus = eventBus;
   }
 
   @Override
@@ -47,11 +38,7 @@ public class SwarmServerHandler
       .instance()
       .readValue(bytes, BaseSwarmMessage.class);
 
-    if (baseSwarmMessage instanceof PingMessage) {
-      swarmMessageApplier.apply((PingMessage) baseSwarmMessage);
-    } else if (baseSwarmMessage instanceof PingAckMessage) {
-      swarmMessageApplier.apply((PingAckMessage) baseSwarmMessage);
-    }
+    eventBus.post(baseSwarmMessage);
   }
 
   @Override

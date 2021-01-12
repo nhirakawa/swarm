@@ -8,9 +8,6 @@
   </parent>
 
   <artifactId>swarm-protocol</artifactId>
-  <properties>
-    <hubspot.algebra.version>1.2</hubspot.algebra.version>
-  </properties>
 
   <dependencies>
     <dependency>
@@ -63,11 +60,6 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.hubspot</groupId>
-      <artifactId>algebra</artifactId>
-      <version>${hubspot.algebra.version}</version>
     </dependency>
     <dependency>
       <groupId>com.typesafe</groupId>
