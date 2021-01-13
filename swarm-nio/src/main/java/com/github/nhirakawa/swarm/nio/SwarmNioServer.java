@@ -87,10 +87,12 @@ public class SwarmNioServer
   @Override
   public void send(BaseSwarmMessage swarmMessage) {
     if (state() != State.RUNNING) {
+      LOG.debug("Dropping {} because server isn't running", swarmMessage);
       return;
     }
 
     if (swarmMessage.getTo().equals(swarmConfig.getLocalNode())) {
+      LOG.debug("Ignoring {} because it is addressed to this node", swarmMessage);
       return;
     }
 
@@ -101,7 +103,10 @@ public class SwarmNioServer
     );
 
     try {
-      datagramChannel.send(buffer, target);
+      int bytesSent = datagramChannel.send(buffer, target);
+      if (bytesSent == 0) {
+        LOG.warn("0 bytes written to datagram channel");
+      }
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
