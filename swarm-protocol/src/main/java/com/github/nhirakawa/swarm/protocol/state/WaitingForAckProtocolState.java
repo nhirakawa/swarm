@@ -1,12 +1,5 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
@@ -16,6 +9,12 @@ import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.protocol.Transition;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
+import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 public class WaitingForAckProtocolState extends SwarmProtocolState {
   private final SwarmNode pingTarget;
@@ -113,13 +112,13 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("protocolStartTimestamp", protocolStartTimestamp)
-        .add("swarmConfig", swarmConfig)
-        .add("protocolPeriodId", protocolPeriodId)
-        .add("clusterNodesList", clusterNodesList)
-        .add("pingTarget", pingTarget)
-        .toString();
+    return MoreObjects
+      .toStringHelper(this)
+      .add("protocolStartTimestamp", protocolStartTimestamp)
+      .add("swarmConfig", swarmConfig)
+      .add("protocolPeriodId", protocolPeriodId)
+      .add("clusterNodesList", clusterNodesList)
+      .add("pingTarget", pingTarget)
+      .toString();
   }
-
 }

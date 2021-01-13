@@ -1,22 +1,19 @@
 package com.github.nhirakawa.swarm.nio;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
-import java.util.Optional;
-
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageSender;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
+import java.util.Optional;
+import javax.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SwarmNioServer
   extends AbstractExecutionThreadService
@@ -48,7 +45,10 @@ public class SwarmNioServer
       eventBus.register(this);
 
       SwarmNode localNode = swarmConfig.getLocalNode();
-      InetSocketAddress inetSocketAddress = new InetSocketAddress(localNode.getHost(), localNode.getPort());
+      InetSocketAddress inetSocketAddress = new InetSocketAddress(
+        localNode.getHost(),
+        localNode.getPort()
+      );
 
       datagramChannel = DatagramChannel.open();
       datagramChannel.socket().bind(inetSocketAddress);

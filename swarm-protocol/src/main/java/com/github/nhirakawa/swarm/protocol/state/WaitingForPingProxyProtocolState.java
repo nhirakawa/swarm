@@ -1,15 +1,5 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
-import java.time.Instant;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
@@ -17,6 +7,13 @@ import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.protocol.Transition;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
+import java.time.Instant;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import javax.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
   private static final Logger LOG = LoggerFactory.getLogger(
@@ -93,7 +90,10 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
       return false;
     }
     WaitingForPingProxyProtocolState that = (WaitingForPingProxyProtocolState) o;
-    return pingTarget.equals(that.pingTarget) && proxyTargets.equals(that.proxyTargets);
+    return (
+      pingTarget.equals(that.pingTarget) &&
+      proxyTargets.equals(that.proxyTargets)
+    );
   }
 
   @Override
@@ -103,14 +103,14 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("protocolStartTimestamp", protocolStartTimestamp)
-        .add("swarmConfig", swarmConfig)
-        .add("protocolPeriodId", protocolPeriodId)
-        .add("clusterNodesList", clusterNodesList)
-        .add("pingTarget", pingTarget)
-        .add("proxyTargets", proxyTargets)
-        .toString();
+    return MoreObjects
+      .toStringHelper(this)
+      .add("protocolStartTimestamp", protocolStartTimestamp)
+      .add("swarmConfig", swarmConfig)
+      .add("protocolPeriodId", protocolPeriodId)
+      .add("clusterNodesList", clusterNodesList)
+      .add("pingTarget", pingTarget)
+      .add("proxyTargets", proxyTargets)
+      .toString();
   }
-
 }
