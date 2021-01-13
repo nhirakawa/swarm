@@ -52,4 +52,13 @@ public class SwarmTimer extends AbstractScheduledService {
   protected ScheduledExecutorService executor() {
     return scheduledExecutorService;
   }
+
+  @Override
+  protected String serviceName() {
+    return String.format(
+      "swarm-timer-%s-%s",
+      swarmConfig.getLocalNode().getHost(),
+      swarmConfig.getLocalNode().getPort()
+    );
+  }
 }

@@ -1,5 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.util;
 
+import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.google.common.eventbus.DeadEvent;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -14,10 +15,12 @@ public class DeadEventLogger extends AbstractIdleService {
   );
 
   private final EventBus eventBus;
+  private final SwarmConfig swarmConfig;
 
   @Inject
-  DeadEventLogger(EventBus eventBus) {
+  DeadEventLogger(EventBus eventBus, SwarmConfig swarmConfig) {
     this.eventBus = eventBus;
+    this.swarmConfig = swarmConfig;
   }
 
   @Override
@@ -33,5 +36,14 @@ public class DeadEventLogger extends AbstractIdleService {
   @Subscribe
   public void logDeadEvent(DeadEvent deadEvent) {
     LOG.warn("Found dead event - {}", deadEvent);
+  }
+
+  @Override
+  protected String serviceName() {
+    return String.format(
+      "dead-event-logger-%s-%s",
+      swarmConfig.getLocalNode().getHost(),
+      swarmConfig.getLocalNode().getPort()
+    );
   }
 }

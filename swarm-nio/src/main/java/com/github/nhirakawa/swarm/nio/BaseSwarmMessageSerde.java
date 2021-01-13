@@ -11,8 +11,14 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import javax.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BaseSwarmMessageSerde {
+  private static final Logger LOG = LoggerFactory.getLogger(
+    BaseSwarmMessageSerde.class
+  );
+
   private static final int MAGIC_NUMBER = 1937205613;
 
   private final SwarmConfig swarmConfig;
@@ -71,6 +77,18 @@ public class BaseSwarmMessageSerde {
   }
 
   public Optional<BaseSwarmMessage> deserialize(
+    InetSocketAddress from,
+    ByteBuffer buffer
+  ) {
+    try {
+      return deserializeInternal(from, buffer);
+    } catch (Throwable t) {
+      LOG.debug("Caught exception", t);
+      return Optional.empty();
+    }
+  }
+
+  private Optional<BaseSwarmMessage> deserializeInternal(
     InetSocketAddress from,
     ByteBuffer buffer
   ) {

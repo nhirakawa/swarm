@@ -80,12 +80,15 @@ public class SwarmNioServer
         incoming
       );
 
+      incoming.clear();
+
       eventBus.post(swarmMessage);
     }
   }
 
   @Override
   protected void shutDown() throws Exception {
+    LOG.debug("Shutting down");
     eventBus.unregister(this);
     super.shutDown();
   }
@@ -111,9 +114,9 @@ public class SwarmNioServer
     }
 
     ByteBuffer buffer = baseSwarmMessageSerde.serialize(swarmMessage);
-    InetSocketAddress target = InetSocketAddress.createUnresolved(
+    InetSocketAddress target = new InetSocketAddress(
       swarmMessage.getTo().getHost(),
-      swarmMessage.getFrom().getPort()
+      swarmMessage.getTo().getPort()
     );
 
     try {
@@ -127,13 +130,11 @@ public class SwarmNioServer
   }
 
   @Override
-  protected Executor executor() {
-    return Executors.newFixedThreadPool(
-      4,
-      SwarmThreadFactoryFactory.forNode(
-        "swarm-nio-udp",
-        swarmConfig.getLocalNode()
-      )
+  protected String serviceName() {
+    return String.format(
+      "swarm-nio-server-%s-%s",
+      swarmConfig.getLocalNode().getHost(),
+      swarmConfig.getLocalNode().getPort()
     );
   }
 }

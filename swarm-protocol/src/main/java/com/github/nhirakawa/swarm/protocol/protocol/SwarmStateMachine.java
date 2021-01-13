@@ -137,4 +137,13 @@ public class SwarmStateMachine extends AbstractIdleService {
   protected void shutDown() throws Exception {
     eventBus.unregister(this);
   }
+
+  @Override
+  protected String serviceName() {
+    return String.format(
+      "swarm-state-machine-%s-%s",
+      swarmConfig.getLocalNode().getHost(),
+      swarmConfig.getLocalNode().getPort()
+    );
+  }
 }
