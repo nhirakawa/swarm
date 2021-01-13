@@ -1,5 +1,15 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
+import java.time.Clock;
+import java.util.Optional;
+import java.util.UUID;
+
+import javax.annotation.concurrent.ThreadSafe;
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
@@ -9,13 +19,6 @@ import com.github.nhirakawa.swarm.protocol.state.SwarmProtocolState;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.AbstractIdleService;
-import java.time.Clock;
-import java.util.Optional;
-import java.util.UUID;
-import javax.annotation.concurrent.ThreadSafe;
-import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @ThreadSafe
 public class SwarmStateMachine extends AbstractIdleService {
@@ -112,6 +115,8 @@ public class SwarmStateMachine extends AbstractIdleService {
   }
 
   private void applyStateAndSendMessages(Transition transition) {
+    LOG.trace("Transitioning from {} to {}", swarmProtocolState, transition.getNextSwarmProtocolState());
+
     swarmProtocolState = transition.getNextSwarmProtocolState();
 
     for (BaseSwarmMessage message : transition.getMessagesToSend()) {
