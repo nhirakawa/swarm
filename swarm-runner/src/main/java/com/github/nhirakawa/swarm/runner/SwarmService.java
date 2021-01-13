@@ -3,6 +3,7 @@ package com.github.nhirakawa.swarm.runner;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmDisseminator;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmStateMachine;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmTimer;
+import com.github.nhirakawa.swarm.protocol.util.DeadEventLogger;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Service;
 import com.google.common.util.concurrent.ServiceManager;
@@ -20,18 +21,21 @@ public class SwarmService {
   private final Service swarmServer;
   private final SwarmDisseminator swarmDisseminator;
   private final SwarmStateMachine swarmStateMachine;
+  private final DeadEventLogger deadEventLogger;
 
   @Inject
   SwarmService(
     SwarmTimer swarmTimer,
     @Named("swarm-server") Service swarmServer,
     SwarmDisseminator swarmDisseminator,
-    SwarmStateMachine swarmStateMachine
+    SwarmStateMachine swarmStateMachine,
+    DeadEventLogger deadEventLogger
   ) {
     this.swarmTimer = swarmTimer;
     this.swarmServer = swarmServer;
     this.swarmDisseminator = swarmDisseminator;
     this.swarmStateMachine = swarmStateMachine;
+    this.deadEventLogger = deadEventLogger;
   }
 
   public void run() {
