@@ -39,7 +39,7 @@ public class SwarmLocalClusterRunner {
         realConfig.root().render(ConfigRenderOptions.defaults())
       );
 
-      SwarmService swarmService = DaggerSwarmComponent
+      SwarmService swarmService = DaggerSwarmNettyComponent
         .builder()
         .swarmProtocolModule(new SwarmProtocolModule(swarmConfig))
         .build()

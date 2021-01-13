@@ -6,6 +6,6 @@ import javax.inject.Singleton;
 
 @Singleton
 @Component(modules = SwarmNettyRunnerModule.class)
-public interface SwarmComponent {
+public interface SwarmNettyComponent {
   SwarmService buildService();
 }

@@ -8,14 +8,23 @@ import java.util.Optional;
 
 import javax.inject.Inject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
+import com.github.nhirakawa.swarm.protocol.protocol.SwarmMessageSender;
 import com.google.common.eventbus.EventBus;
-import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 
-public class SwarmNioServer extends AbstractExecutionThreadService {
+public class SwarmNioServer
+  extends AbstractExecutionThreadService
+  implements SwarmMessageSender {
+  private static final Logger LOG = LoggerFactory.getLogger(
+    SwarmNioServer.class
+  );
+
   private final EventBus eventBus;
   private final SwarmConfig swarmConfig;
   private final BaseSwarmMessageSerde baseSwarmMessageSerde;
@@ -35,16 +44,18 @@ public class SwarmNioServer extends AbstractExecutionThreadService {
 
   @Override
   protected void startUp() throws Exception {
-    eventBus.register(this);
+    try {
+      eventBus.register(this);
 
-    SwarmNode localNode = swarmConfig.getLocalNode();
-    InetSocketAddress inetSocketAddress = InetSocketAddress.createUnresolved(
-      localNode.getHost(),
-      localNode.getPort()
-    );
+      SwarmNode localNode = swarmConfig.getLocalNode();
+      InetSocketAddress inetSocketAddress = new InetSocketAddress(localNode.getHost(), localNode.getPort());
 
-    datagramChannel = DatagramChannel.open();
-    datagramChannel.socket().bind(inetSocketAddress);
+      datagramChannel = DatagramChannel.open();
+      datagramChannel.socket().bind(inetSocketAddress);
+    } catch (Exception e) {
+      LOG.error("Error starting up", e);
+      throw e;
+    }
   }
 
   @Override
@@ -56,6 +67,8 @@ public class SwarmNioServer extends AbstractExecutionThreadService {
         incoming
       );
 
+      LOG.trace("Received {} from {}", incoming, sender);
+
       Optional<BaseSwarmMessage> swarmMessage = baseSwarmMessageSerde.deserialize(
         sender,
         incoming
@@ -65,8 +78,14 @@ public class SwarmNioServer extends AbstractExecutionThreadService {
     }
   }
 
-  @Subscribe
-  public void handle(BaseSwarmMessage swarmMessage) throws IOException {
+  @Override
+  protected void shutDown() throws Exception {
+    eventBus.unregister(this);
+    super.shutDown();
+  }
+
+  @Override
+  public void send(BaseSwarmMessage swarmMessage) {
     if (state() != State.RUNNING) {
       return;
     }
@@ -81,12 +100,10 @@ public class SwarmNioServer extends AbstractExecutionThreadService {
       swarmMessage.getFrom().getPort()
     );
 
-    datagramChannel.send(buffer, target);
-  }
-
-  @Override
-  protected void shutDown() throws Exception {
-    eventBus.unregister(this);
-    super.shutDown();
+    try {
+      datagramChannel.send(buffer, target);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
