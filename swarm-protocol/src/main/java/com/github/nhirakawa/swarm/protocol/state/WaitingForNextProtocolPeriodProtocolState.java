@@ -81,9 +81,7 @@ public class WaitingForNextProtocolPeriodProtocolState
     return MoreObjects
       .toStringHelper(this)
       .add("protocolStartTimestamp", protocolStartTimestamp)
-      .add("swarmConfig", swarmConfig)
       .add("protocolPeriodId", protocolPeriodId)
-      .add("clusterNodesList", clusterNodesList)
       .toString();
   }
 }

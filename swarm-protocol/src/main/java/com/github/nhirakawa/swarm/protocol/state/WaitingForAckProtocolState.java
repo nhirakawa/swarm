@@ -115,9 +115,7 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
     return MoreObjects
       .toStringHelper(this)
       .add("protocolStartTimestamp", protocolStartTimestamp)
-      .add("swarmConfig", swarmConfig)
       .add("protocolPeriodId", protocolPeriodId)
-      .add("clusterNodesList", clusterNodesList)
       .add("pingTarget", pingTarget)
       .toString();
   }
