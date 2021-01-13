@@ -1,6 +1,7 @@
 package com.github.nhirakawa.swarm.protocol.util;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
+import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.google.common.eventbus.DeadEvent;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -9,16 +10,16 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DeadEventLogger extends AbstractIdleService {
+public class EventBusLogger extends AbstractIdleService {
   private static final Logger LOG = LoggerFactory.getLogger(
-    DeadEventLogger.class
+    EventBusLogger.class
   );
 
   private final EventBus eventBus;
   private final SwarmConfig swarmConfig;
 
   @Inject
-  DeadEventLogger(EventBus eventBus, SwarmConfig swarmConfig) {
+  EventBusLogger(EventBus eventBus, SwarmConfig swarmConfig) {
     this.eventBus = eventBus;
     this.swarmConfig = swarmConfig;
   }
@@ -31,6 +32,11 @@ public class DeadEventLogger extends AbstractIdleService {
   @Override
   protected void shutDown() throws Exception {
     eventBus.unregister(this);
+  }
+
+  @Subscribe
+  public void logSwarmMessage(BaseSwarmMessage swarmMessage) {
+    LOG.debug("{}", swarmMessage);
   }
 
   @Subscribe

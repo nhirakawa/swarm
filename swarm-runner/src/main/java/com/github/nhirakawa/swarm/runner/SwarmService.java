@@ -3,14 +3,8 @@ package com.github.nhirakawa.swarm.runner;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmDisseminator;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmStateMachine;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmTimer;
-import com.github.nhirakawa.swarm.protocol.util.DeadEventLogger;
-import com.google.common.base.Verify;
-import com.google.common.collect.ImmutableList;
+import com.github.nhirakawa.swarm.protocol.util.EventBusLogger;
 import com.google.common.util.concurrent.Service;
-import com.google.common.util.concurrent.Service.State;
-import com.google.common.util.concurrent.ServiceManager;
-import java.time.Duration;
-import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 import javax.inject.Named;
 import org.slf4j.Logger;
@@ -23,7 +17,7 @@ public class SwarmService {
   private final Service swarmServer;
   private final SwarmDisseminator swarmDisseminator;
   private final SwarmStateMachine swarmStateMachine;
-  private final DeadEventLogger deadEventLogger;
+  private final EventBusLogger eventBusLogger;
 
   @Inject
   SwarmService(
@@ -31,17 +25,17 @@ public class SwarmService {
     @Named("swarm-server") Service swarmServer,
     SwarmDisseminator swarmDisseminator,
     SwarmStateMachine swarmStateMachine,
-    DeadEventLogger deadEventLogger
+    EventBusLogger eventBusLogger
   ) {
     this.swarmTimer = swarmTimer;
     this.swarmServer = swarmServer;
     this.swarmDisseminator = swarmDisseminator;
     this.swarmStateMachine = swarmStateMachine;
-    this.deadEventLogger = deadEventLogger;
+    this.eventBusLogger = eventBusLogger;
   }
 
   public void run() {
-    deadEventLogger.startAsync().awaitRunning();
+    eventBusLogger.startAsync().awaitRunning();
     swarmServer.startAsync().awaitRunning();
     LOG.debug("SwarmServer - {}", swarmServer.state());
     swarmDisseminator.startAsync().awaitRunning();
