@@ -14,10 +14,12 @@ import java.util.Optional;
 import java.util.UUID;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ThreadSafe
+@Singleton
 public class SwarmStateMachine extends AbstractIdleService {
   private static final Logger LOG = LoggerFactory.getLogger(
     SwarmStateMachine.class

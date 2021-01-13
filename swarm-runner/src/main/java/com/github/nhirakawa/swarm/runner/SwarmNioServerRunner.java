@@ -32,12 +32,11 @@ public class SwarmNioServerRunner {
 
       SwarmConfig swarmConfig = SwarmConfigFactory.get(realConfig);
 
-      LOG.trace(
-        "Config for node {} - {}",
-        swarmConfig.getLocalNode(),
-        realConfig.root().render(ConfigRenderOptions.defaults())
-      );
-
+      //      LOG.trace(
+      //        "Config for node {} - {}",
+      //        swarmConfig.getLocalNode(),
+      //        realConfig.root().render(ConfigRenderOptions.defaults())
+      //      );
       SwarmService swarmService = DaggerSwarmNioComponent
         .builder()
         .swarmProtocolModule(new SwarmProtocolModule(swarmConfig))

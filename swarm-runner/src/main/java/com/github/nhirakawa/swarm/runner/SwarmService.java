@@ -4,8 +4,10 @@ import com.github.nhirakawa.swarm.protocol.protocol.SwarmDisseminator;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmStateMachine;
 import com.github.nhirakawa.swarm.protocol.protocol.SwarmTimer;
 import com.github.nhirakawa.swarm.protocol.util.DeadEventLogger;
+import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Service;
+import com.google.common.util.concurrent.Service.State;
 import com.google.common.util.concurrent.ServiceManager;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
@@ -39,21 +41,11 @@ public class SwarmService {
   }
 
   public void run() {
-    ServiceManager serviceManager = new ServiceManager(
-      ImmutableList.of(
-        swarmTimer,
-        swarmServer,
-        swarmDisseminator,
-        swarmStateMachine
-      )
-    );
-
-    serviceManager.startAsync();
-    try {
-      serviceManager.awaitHealthy(Duration.ofSeconds(10));
-    } catch (TimeoutException e) {
-      LOG.error("Could not start SwarmService", e);
-      throw new RuntimeException(e);
-    }
+    deadEventLogger.startAsync().awaitRunning();
+    swarmServer.startAsync().awaitRunning();
+    LOG.debug("SwarmServer - {}", swarmServer.state());
+    swarmDisseminator.startAsync().awaitRunning();
+    swarmStateMachine.startAsync().awaitRunning();
+    swarmTimer.startAsync().awaitRunning();
   }
 }

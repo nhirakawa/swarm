@@ -1,5 +1,6 @@
 package com.github.nhirakawa.swarm.nio;
 
+import com.github.nhirakawa.swarm.protocol.concurrent.SwarmThreadFactoryFactory;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
@@ -10,11 +11,15 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.Optional;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Singleton
 public class SwarmNioServer
   extends AbstractExecutionThreadService
   implements SwarmMessageSender {
@@ -41,6 +46,7 @@ public class SwarmNioServer
 
   @Override
   protected void startUp() throws Exception {
+    LOG.debug("Starting nio UDP server - {}", state());
     try {
       eventBus.register(this);
 
@@ -86,13 +92,21 @@ public class SwarmNioServer
 
   @Override
   public void send(BaseSwarmMessage swarmMessage) {
-    if (state() != State.RUNNING) {
-      LOG.debug("Dropping {} because server isn't running", swarmMessage);
+    State state = state();
+    if (state != State.RUNNING) {
+      LOG.debug(
+        "Dropping {} because server isn't running ({})",
+        swarmMessage,
+        state
+      );
       return;
     }
 
     if (swarmMessage.getTo().equals(swarmConfig.getLocalNode())) {
-      LOG.debug("Ignoring {} because it is addressed to this node", swarmMessage);
+      LOG.debug(
+        "Ignoring {} because it is addressed to this node",
+        swarmMessage
+      );
       return;
     }
 
@@ -110,5 +124,16 @@ public class SwarmNioServer
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  protected Executor executor() {
+    return Executors.newFixedThreadPool(
+      4,
+      SwarmThreadFactoryFactory.forNode(
+        "swarm-nio-udp",
+        swarmConfig.getLocalNode()
+      )
+    );
   }
 }
