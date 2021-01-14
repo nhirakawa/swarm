@@ -4,6 +4,8 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
+import com.github.nhirakawa.swarm.protocol.protocol.MemberStatus;
+import com.github.nhirakawa.swarm.protocol.protocol.MemberStatusUpdate;
 import com.github.nhirakawa.swarm.protocol.protocol.Transition;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
@@ -47,6 +49,7 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
   public Optional<Transition> applyPingAck(PingAckMessage pingAckMessage) {
     if (pingAckMessage.getProxyFor().isEmpty()) {
       LOG.warn("Expected proxy-for but did not find one - {}", pingAckMessage);
+
       return Optional.empty();
     }
 
@@ -57,6 +60,7 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
         pingTarget,
         pingAckMessage
       );
+
       return Optional.empty();
     }
 
@@ -67,6 +71,7 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
         proxyTargets,
         pingAckMessage
       );
+
       return Optional.empty();
     }
 
@@ -77,7 +82,17 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
     );
 
     return Optional.of(
-      Transition.builder().setNextSwarmProtocolState(nextState).build()
+      Transition
+        .builder()
+        .setNextSwarmProtocolState(nextState)
+        .setMemberStatusUpdate(
+          MemberStatusUpdate
+            .builder()
+            .setNewMemberStatus(MemberStatus.ALIVE)
+            .setSwarmNode(pingTarget)
+            .build()
+        )
+        .build()
     );
   }
 

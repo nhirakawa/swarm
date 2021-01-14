@@ -6,6 +6,8 @@ import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingRequestMessage;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
+import com.github.nhirakawa.swarm.protocol.protocol.MemberStatus;
+import com.github.nhirakawa.swarm.protocol.protocol.MemberStatusUpdate;
 import com.github.nhirakawa.swarm.protocol.protocol.Transition;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
@@ -85,8 +87,19 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
         swarmConfig,
         UUID.randomUUID().toString()
       );
+
       return Optional.of(
-        Transition.builder().setNextSwarmProtocolState(nextState).build()
+        Transition
+          .builder()
+          .setNextSwarmProtocolState(nextState)
+          .setMemberStatusUpdate(
+            MemberStatusUpdate
+              .builder()
+              .setNewMemberStatus(MemberStatus.ALIVE)
+              .setSwarmNode(pingTarget)
+              .build()
+          )
+          .build()
       );
     }
 
