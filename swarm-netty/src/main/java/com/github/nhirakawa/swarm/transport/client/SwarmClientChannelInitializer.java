@@ -18,7 +18,7 @@ public class SwarmClientChannelInitializer
       .pipeline()
       .addLast(
         "LoggingHandler",
-        new LoggingHandler("SwarmClient", LogLevel.TRACE)
+        new LoggingHandler(SwarmClient.class, LogLevel.TRACE)
       );
   }
 }
