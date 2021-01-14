@@ -1,6 +1,7 @@
 package com.github.nhirakawa.swarm.protocol.config;
 
 import com.github.nhirakawa.immutable.style.guava.ImmutableStyle;
+import com.google.common.base.Preconditions;
 import java.time.Duration;
 import java.util.Set;
 import org.immutables.value.Value;
@@ -26,4 +27,14 @@ public abstract class SwarmConfigModel {
   public abstract int getFailureInjectionPercent();
 
   public abstract int getSwarmStateBufferSize();
+
+  @Value.Check
+  public void check() {
+    Preconditions.checkArgument(
+      getProtocolPeriod().compareTo(getMessageTimeout()) > 0,
+      "Expected protocol period (%s) to be longer than message timeout (%s)",
+      getProtocolPeriod(),
+      getMessageTimeout()
+    );
+  }
 }
