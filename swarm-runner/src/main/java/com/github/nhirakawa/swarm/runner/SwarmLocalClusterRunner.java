@@ -1,4 +1,4 @@
-package com.github.nhirakawa.swarm;
+package com.github.nhirakawa.swarm.runner;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfigFactory;
@@ -31,13 +31,12 @@ public class SwarmLocalClusterRunner {
 
       SwarmConfig swarmConfig = SwarmConfigFactory.get(realConfig);
 
-      LOG.trace(
-        "Config for node {} - {}",
-        swarmConfig.getLocalNode(),
-        realConfig.root().render(ConfigRenderOptions.defaults())
-      );
-
-      SwarmService swarmService = DaggerSwarmComponent
+      //      LOG.trace(
+      //        "Config for node {} - {}",
+      //        swarmConfig.getLocalNode(),
+      //        realConfig.root().render(ConfigRenderOptions.defaults())
+      //      );
+      SwarmService swarmService = DaggerSwarmNettyComponent
         .builder()
         .swarmProtocolModule(new SwarmProtocolModule(swarmConfig))
         .build()

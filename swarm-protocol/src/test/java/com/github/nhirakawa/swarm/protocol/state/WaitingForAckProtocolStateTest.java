@@ -21,27 +21,23 @@ public class WaitingForAckProtocolStateTest {
     .builder()
     .setHost("local")
     .setPort(1000)
-    .setUniqueId(UUID.randomUUID())
     .build();
 
   private static final SwarmNode PING_TARGET = SwarmNode
     .builder()
     .setHost("host")
     .setPort(2000)
-    .setUniqueId(UUID.randomUUID())
     .build();
 
   private static final SwarmNode OTHER_NODE_1 = SwarmNode
     .builder()
     .setHost("host")
     .setPort(3001)
-    .setUniqueId(UUID.randomUUID())
     .build();
   private static final SwarmNode OTHER_NODE_2 = SwarmNode
     .builder()
     .setHost("host")
     .setPort(3002)
-    .setUniqueId(UUID.randomUUID())
     .build();
 
   private static final SwarmConfig SWARM_CONFIG = SwarmConfig
@@ -107,6 +103,7 @@ public class WaitingForAckProtocolStateTest {
       PingAckMessage
         .builder()
         .setFrom(PING_TARGET)
+        .setTo(LOCAL_NODE)
         .setProtocolPeriodId(protocolState.protocolPeriodId)
         .setUniqueMessageId(UUID.randomUUID().toString())
         .build()

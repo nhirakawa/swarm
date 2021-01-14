@@ -14,15 +14,17 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SwarmServer extends AbstractIdleService {
-  private static final Logger LOG = LoggerFactory.getLogger(SwarmServer.class);
+public class SwarmNettyServer extends AbstractIdleService {
+  private static final Logger LOG = LoggerFactory.getLogger(
+    SwarmNettyServer.class
+  );
 
   private final EventLoopGroup eventLoopGroup;
   private final SwarmServerChannelInitializer swarmServerChannelInitializer;
   private final SwarmConfig swarmConfig;
 
   @Inject
-  SwarmServer(
+  SwarmNettyServer(
     SwarmServerChannelInitializer swarmServerChannelInitializer,
     SwarmConfig swarmConfig
   ) {
@@ -69,6 +71,7 @@ public class SwarmServer extends AbstractIdleService {
           )
         );
     } catch (InterruptedException e) {
+      LOG.error("Could not start UDP server", e);
       Thread.currentThread().interrupt();
       Throwables.throwIfUnchecked(e);
       throw new RuntimeException(e);

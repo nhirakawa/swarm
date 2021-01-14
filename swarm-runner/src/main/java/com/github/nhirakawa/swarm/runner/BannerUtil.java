@@ -1,4 +1,4 @@
-package com.github.nhirakawa.swarm;
+package com.github.nhirakawa.swarm.runner;
 
 import com.google.common.io.Resources;
 import java.io.IOException;

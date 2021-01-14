@@ -10,7 +10,6 @@ import com.google.common.collect.ImmutableSet;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,27 +20,23 @@ public class WaitingForPingProxyProtocolStateTest {
     .builder()
     .setHost("local")
     .setPort(1000)
-    .setUniqueId(UUID.randomUUID())
     .build();
 
   private static final SwarmNode PING_TARGET = SwarmNode
     .builder()
     .setHost("host")
     .setPort(2000)
-    .setUniqueId(UUID.randomUUID())
     .build();
 
   private static final SwarmNode OTHER_NODE_1 = SwarmNode
     .builder()
     .setHost("host")
     .setPort(3001)
-    .setUniqueId(UUID.randomUUID())
     .build();
   private static final SwarmNode OTHER_NODE_2 = SwarmNode
     .builder()
     .setHost("host")
     .setPort(3002)
-    .setUniqueId(UUID.randomUUID())
     .build();
 
   private static final SwarmConfig SWARM_CONFIG = SwarmConfig
@@ -80,6 +75,7 @@ public class WaitingForPingProxyProtocolStateTest {
         .setProtocolPeriodId("protocol-period-id")
         .setUniqueMessageId("asdf")
         .setFrom(OTHER_NODE_1)
+        .setTo(LOCAL_NODE)
         .setProxyFor(PING_TARGET)
         .build()
     );
@@ -99,6 +95,7 @@ public class WaitingForPingProxyProtocolStateTest {
         .setProtocolPeriodId("protocol-period-id")
         .setUniqueMessageId("asdf")
         .setFrom(OTHER_NODE_2)
+        .setTo(LOCAL_NODE)
         .setProxyFor(PING_TARGET)
         .build()
     );
@@ -114,6 +111,7 @@ public class WaitingForPingProxyProtocolStateTest {
         .setProtocolPeriodId("protocol-period-id")
         .setUniqueMessageId("asdf")
         .setFrom(OTHER_NODE_1)
+        .setTo(LOCAL_NODE)
         .setProxyFor(OTHER_NODE_2)
         .build()
     );

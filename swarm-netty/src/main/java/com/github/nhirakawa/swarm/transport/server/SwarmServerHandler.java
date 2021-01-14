@@ -42,6 +42,12 @@ public class SwarmServerHandler
   }
 
   @Override
+  public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+    LOG.error("{} unregistering", ctx);
+    super.channelUnregistered(ctx);
+  }
+
+  @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
     LOG.error("Exception caught", cause);
   }

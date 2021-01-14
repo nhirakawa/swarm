@@ -10,7 +10,6 @@ import com.github.nhirakawa.swarm.protocol.protocol.Transition;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,14 +20,12 @@ public class WaitingForNextProtocolPeriodStateTest {
     .builder()
     .setHost("host")
     .setPort(1000)
-    .setUniqueId(UUID.randomUUID())
     .build();
 
   private static final SwarmNode OTHER_NODE = SwarmNode
     .builder()
     .setHost("host")
     .setPort(2000)
-    .setUniqueId(UUID.randomUUID())
     .build();
 
   private static final SwarmConfig SWARM_CONFIG = SwarmConfig
@@ -93,6 +90,7 @@ public class WaitingForNextProtocolPeriodStateTest {
         .setProtocolPeriodId(protocolState.protocolPeriodId)
         .setUniqueMessageId("asdf")
         .setFrom(OTHER_NODE)
+        .setTo(LOCAL_SWARM_NODE)
         .build()
     );
 
