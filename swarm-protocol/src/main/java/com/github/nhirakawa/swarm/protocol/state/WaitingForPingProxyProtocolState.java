@@ -2,18 +2,17 @@ package com.github.nhirakawa.swarm.protocol.state;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
+import com.github.nhirakawa.swarm.protocol.model.MemberStatusUpdate;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
+import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.protocol.MemberStatus;
-import com.github.nhirakawa.swarm.protocol.protocol.MemberStatusUpdate;
-import com.github.nhirakawa.swarm.protocol.protocol.Transition;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +24,6 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
   private final SwarmNode pingTarget;
   private final Set<SwarmNode> proxyTargets;
 
-  @Inject
   protected WaitingForPingProxyProtocolState(
     Instant timestamp,
     SwarmConfig swarmConfig,

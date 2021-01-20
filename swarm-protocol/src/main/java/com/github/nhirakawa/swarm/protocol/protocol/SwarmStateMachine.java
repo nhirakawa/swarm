@@ -5,6 +5,7 @@ import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingRequestMessage;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
+import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.state.SwarmProtocolState;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;

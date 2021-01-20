@@ -5,7 +5,7 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.PingRequestMessage;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
-import com.github.nhirakawa.swarm.protocol.protocol.Transition;
+import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.Iterables;
 import java.time.Duration;

@@ -1,7 +1,6 @@
-package com.github.nhirakawa.swarm.protocol.protocol;
+package com.github.nhirakawa.swarm.protocol.model;
 
 import com.github.nhirakawa.immutable.style.guava.ImmutableStyle;
-import com.github.nhirakawa.swarm.protocol.model.BaseSwarmMessage;
 import com.github.nhirakawa.swarm.protocol.state.SwarmProtocolState;
 import java.util.List;
 import java.util.Optional;
