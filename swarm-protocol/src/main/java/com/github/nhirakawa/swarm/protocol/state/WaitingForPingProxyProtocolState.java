@@ -9,6 +9,7 @@ import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.protocol.MemberStatus;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,7 +41,28 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
   public Optional<Transition> applyTick(
     SwarmTimeoutMessage swarmTimeoutMessage
   ) {
-    return Optional.empty();
+    long millisSinceProtocolStarted = Duration
+      .between(protocolStartTimestamp, swarmTimeoutMessage.getTimestamp())
+      .toMillis();
+
+    if (
+      millisSinceProtocolStarted < swarmConfig.getProtocolPeriod().toMillis()
+    ) {
+      return Optional.empty();
+    }
+
+    Transition transition = Transition
+      .builder()
+      .setNextSwarmProtocolState(
+        new WaitingForNextProtocolPeriodProtocolState(
+          protocolStartTimestamp,
+          swarmConfig,
+          protocolPeriodId
+        )
+      )
+      .build();
+
+    return Optional.of(transition);
   }
 
   @Override
