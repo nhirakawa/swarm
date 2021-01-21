@@ -2,19 +2,17 @@ package com.github.nhirakawa.swarm.protocol.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Optional;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.google.common.collect.ImmutableSet;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
+import org.junit.Before;
+import org.junit.Test;
 
 public class WaitingForPingProxyProtocolStateTest {
   private static final Instant TIMESTAMP = Instant.ofEpochMilli(1000);
@@ -93,21 +91,28 @@ public class WaitingForPingProxyProtocolStateTest {
   @Test
   public void itTransitionsToWaitingForNextProtocolPeriodAfterProtocolTimeout() {
     Optional<Transition> transition = protocolState.applyTick(
-        SwarmTimeoutMessage.builder()
+      SwarmTimeoutMessage
+        .builder()
         .setTimestamp(
-            TIMESTAMP.plus(SWARM_CONFIG.getProtocolPeriod()).plusSeconds(1)
-        ).build()
+          TIMESTAMP.plus(SWARM_CONFIG.getProtocolPeriod()).plusSeconds(1)
+        )
+        .build()
     );
 
     assertThat(transition).isPresent();
 
     assertThat(transition.get().getMessagesToSend()).isEmpty();
-    assertThat(transition.get().getNextSwarmProtocolState()).isInstanceOf(WaitingForNextProtocolPeriodProtocolState.class);
+    assertThat(transition.get().getNextSwarmProtocolState())
+      .isInstanceOf(WaitingForNextProtocolPeriodProtocolState.class);
 
-    WaitingForNextProtocolPeriodProtocolState nextState = (WaitingForNextProtocolPeriodProtocolState) transition.get().getNextSwarmProtocolState();
+    WaitingForNextProtocolPeriodProtocolState nextState = (WaitingForNextProtocolPeriodProtocolState) transition
+      .get()
+      .getNextSwarmProtocolState();
 
-    assertThat(nextState.getProtocolPeriodId()).isEqualTo(protocolState.getProtocolPeriodId());
-    assertThat(nextState.protocolStartTimestamp).isEqualTo(protocolState.protocolStartTimestamp);
+    assertThat(nextState.getProtocolPeriodId())
+      .isEqualTo(protocolState.getProtocolPeriodId());
+    assertThat(nextState.protocolStartTimestamp)
+      .isEqualTo(protocolState.protocolStartTimestamp);
   }
 
   @Test

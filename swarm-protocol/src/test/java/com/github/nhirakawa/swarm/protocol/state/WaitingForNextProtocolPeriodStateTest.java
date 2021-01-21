@@ -2,18 +2,16 @@ package com.github.nhirakawa.swarm.protocol.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Optional;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
 import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
+import org.junit.Before;
+import org.junit.Test;
 
 public class WaitingForNextProtocolPeriodStateTest {
   private static final Instant TIMESTAMP = Instant.ofEpochMilli(1000);

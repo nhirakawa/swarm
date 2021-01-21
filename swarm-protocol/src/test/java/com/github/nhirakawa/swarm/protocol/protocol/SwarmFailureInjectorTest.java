@@ -14,7 +14,7 @@ public class SwarmFailureInjectorTest {
 
   private static final SwarmConfig BASE = SwarmConfig
     .builder()
-    .setProtocolPeriod(Duration.ofMillis(1))
+    .setProtocolPeriod(Duration.ofMillis(10))
     .setMessageTimeout(Duration.ofMillis(1))
     .setSwarmStateBufferSize(0)
     .setDebugEnabled(true)
