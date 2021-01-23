@@ -10,4 +10,5 @@ import org.immutables.value.Value;
 public interface MemberStatusUpdateModel {
   MemberStatus getNewMemberStatus();
   SwarmNode getSwarmNode();
+  long getIncarnationNumber();
 }
