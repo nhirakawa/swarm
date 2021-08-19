@@ -110,6 +110,7 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
             .builder()
             .setNewMemberStatus(MemberStatus.ALIVE)
             .setSwarmNode(pingTarget)
+            .setIncarnationNumber(1L)
             .build()
         )
         .build()
