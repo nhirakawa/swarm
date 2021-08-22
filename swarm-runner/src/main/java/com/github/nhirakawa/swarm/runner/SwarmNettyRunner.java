@@ -7,6 +7,7 @@ import com.github.nhirakawa.swarm.protocol.dagger.SwarmProtocolModule;
 import com.google.common.io.Resources;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import io.netty.handler.codec.compression.Brotli;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
@@ -17,8 +18,10 @@ public class SwarmNettyRunner {
     SwarmNettyRunner.class
   );
 
-  public static void main(String... args) throws IOException {
+  public static void main(String... args) throws Throwable {
     LOG.info("{}", getBanner());
+
+    Brotli.ensureAvailability();
 
     Config config = ConfigFactory.load();
     ConfigValidator.validate(config);

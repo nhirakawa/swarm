@@ -7,6 +7,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
+import io.netty.handler.codec.compression.Brotli;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
@@ -19,8 +20,10 @@ public class SwarmLocalClusterRunner {
   );
   private static final ExecutorService EXECUTOR = buildExecutor();
 
-  public static void main(String... args) throws IOException {
+  public static void main(String... args) throws Throwable {
     LOG.info("{}", BannerUtil.getOrDefault("swarm-local-cluster"));
+
+    Brotli.ensureAvailability();
 
     Config nodesConfig = ConfigFactory.load("cluster.conf");
 
@@ -31,11 +34,6 @@ public class SwarmLocalClusterRunner {
 
       SwarmConfig swarmConfig = SwarmConfigFactory.get(realConfig);
 
-      //      LOG.trace(
-      //        "Config for node {} - {}",
-      //        swarmConfig.getLocalNode(),
-      //        realConfig.root().render(ConfigRenderOptions.defaults())
-      //      );
       SwarmService swarmService = DaggerSwarmNettyComponent
         .builder()
         .swarmProtocolModule(new SwarmProtocolModule(swarmConfig))

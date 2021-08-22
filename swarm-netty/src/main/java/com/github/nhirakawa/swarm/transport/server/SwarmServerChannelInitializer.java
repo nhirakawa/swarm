@@ -2,6 +2,7 @@ package com.github.nhirakawa.swarm.transport.server;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.DatagramChannel;
+import io.netty.handler.codec.compression.BrotliEncoder;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.logging.LogLevel;
 import javax.inject.Inject;
@@ -22,6 +23,7 @@ public class SwarmServerChannelInitializer
   protected void initChannel(DatagramChannel channel) {
     channel
       .pipeline()
+      .addLast(new BrotliEncoder())
       .addLast(
         "LoggingHandler",
         new LoggingHandler(SwarmNettyServer.class, LogLevel.TRACE)
