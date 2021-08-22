@@ -78,6 +78,7 @@ public class SwarmStateMachine extends AbstractIdleService {
     }
 
     if (pingAckMessage.getFrom().equals(swarmConfig.getLocalNode())) {
+      LOG.debug("Ignoring message from own node ({})", pingAckMessage);
       return;
     }
 
@@ -115,7 +116,7 @@ public class SwarmStateMachine extends AbstractIdleService {
   }
 
   private void applyStateAndSendMessages(Transition transition) {
-    LOG.trace(
+    LOG.debug(
       "Transitioning from {} to {}",
       swarmProtocolState,
       transition.getNextSwarmProtocolState()

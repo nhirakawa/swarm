@@ -33,14 +33,13 @@ public class WaitingForNextProtocolPeriodProtocolState
   public Optional<Transition> applyTick(
     SwarmTimeoutMessage swarmTimeoutMessage
   ) {
-    Duration sinceStart = Duration.between(
-      protocolStartTimestamp,
-      swarmTimeoutMessage.getTimestamp()
-    );
+    Instant protocolEndTimestamp = protocolStartTimestamp.plus(swarmConfig.getProtocolPeriod());
 
-    if (sinceStart.compareTo(swarmConfig.getProtocolPeriod()) <= 0) {
+    if(swarmTimeoutMessage.getTimestamp().isBefore(protocolEndTimestamp)) {
       return Optional.empty();
     }
+
+    LOG.debug("Current protocol period has ended");
 
     SwarmNode pingTarget = Iterables.getOnlyElement(
       getRandomNodes(1, Optional.empty())
@@ -72,7 +71,7 @@ public class WaitingForNextProtocolPeriodProtocolState
 
   @Override
   public Optional<Transition> applyPingAck(PingAckMessage pingAckMessage) {
-    LOG.trace("Ignoring {}", pingAckMessage);
+    LOG.debug("Ignoring {}", pingAckMessage);
     return Optional.empty();
   }
 
