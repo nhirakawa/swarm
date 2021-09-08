@@ -33,9 +33,11 @@ public class WaitingForNextProtocolPeriodProtocolState
   public Optional<Transition> applyTick(
     SwarmTimeoutMessage swarmTimeoutMessage
   ) {
-    Instant protocolEndTimestamp = protocolStartTimestamp.plus(swarmConfig.getProtocolPeriod());
+    Instant protocolEndTimestamp = protocolStartTimestamp.plus(
+      swarmConfig.getProtocolPeriod()
+    );
 
-    if(swarmTimeoutMessage.getTimestamp().isBefore(protocolEndTimestamp)) {
+    if (swarmTimeoutMessage.getTimestamp().isBefore(protocolEndTimestamp)) {
       return Optional.empty();
     }
 
