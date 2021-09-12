@@ -56,7 +56,7 @@ public class SwarmStateMachine extends AbstractIdleService {
   public void applyTimeout(SwarmTimeoutMessage timeoutMessage) {
     State state = state();
     if (state != State.RUNNING) {
-      LOG.debug("Current state is {}", state);
+      LOG.debug("Service is not running ({})", state);
       return;
     }
 
@@ -73,7 +73,7 @@ public class SwarmStateMachine extends AbstractIdleService {
   public void applyAck(PingAckMessage pingAckMessage) {
     State state = state();
     if (state != State.RUNNING) {
-      LOG.debug("Current state is {}", state);
+      LOG.debug("Service is not running ({})", state);
       return;
     }
 
@@ -95,12 +95,17 @@ public class SwarmStateMachine extends AbstractIdleService {
   public void applyPingRequest(PingRequestMessage pingRequestMessage) {
     State state = state();
     if (state != State.RUNNING) {
-      LOG.debug("Current state is {}", state);
+      LOG.warn("Service is not running ({})", state);
       return;
     }
 
     if (swarmFailureInjector.shouldInjectFailure()) {
       LOG.debug("Injecting failure - dropping {}", pingRequestMessage);
+      return;
+    }
+
+    if (pingRequestMessage.getFrom().equals(swarmConfig.getLocalNode())) {
+      LOG.debug("Ignoring message from own node ({})", pingRequestMessage);
       return;
     }
 

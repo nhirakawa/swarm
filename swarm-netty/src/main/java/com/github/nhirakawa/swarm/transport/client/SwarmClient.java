@@ -26,6 +26,7 @@ public class SwarmClient implements Closeable, SwarmMessageSender {
   private static final Logger LOG = LoggerFactory.getLogger(SwarmClient.class);
 
   private final SwarmClientChannelInitializer swarmClientChannelInitializer;
+  private final SwarmConfig swarmConfig;
   private final EventLoopGroup eventLoopGroup;
 
   @Inject
@@ -34,6 +35,7 @@ public class SwarmClient implements Closeable, SwarmMessageSender {
     SwarmConfig swarmConfig
   ) {
     this.swarmClientChannelInitializer = swarmClientChannelInitializer;
+    this.swarmConfig = swarmConfig;
 
     this.eventLoopGroup =
       new NioEventLoopGroup(
@@ -58,6 +60,13 @@ public class SwarmClient implements Closeable, SwarmMessageSender {
 
   @Override
   public void send(BaseSwarmMessage swarmEnvelope) {
+    if (!swarmEnvelope.getFrom().equals(swarmConfig.getLocalNode())) {
+      LOG.warn("Not sending message from different node {}", swarmEnvelope);
+      return;
+    }
+
+    LOG.debug("Sending {}", swarmEnvelope);
+
     try {
       Channel channel = buildChannel();
       DatagramPacket datagramPacket = wrapInDatagramPacket(

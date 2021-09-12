@@ -15,7 +15,7 @@ public class SwarmFailureInjector {
   private final InjectableRandom injectableRandom;
 
   @Inject
-  SwarmFailureInjector(
+  public SwarmFailureInjector(
     SwarmConfig swarmConfig,
     InjectableRandom injectableRandom
   ) {

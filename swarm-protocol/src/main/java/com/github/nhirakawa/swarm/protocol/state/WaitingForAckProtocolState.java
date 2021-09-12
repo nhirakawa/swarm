@@ -83,7 +83,7 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
   public Optional<Transition> applyPingAck(PingAckMessage pingAckMessage) {
     if (pingAckMessage.getFrom().equals(pingTarget)) {
       WaitingForNextProtocolPeriodProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(
-        protocolStartTimestamp,
+        protocolStartTimestamp.plus(swarmConfig.getProtocolPeriod()),
         swarmConfig,
         UUID.randomUUID().toString()
       );
