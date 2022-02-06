@@ -1,9 +1,9 @@
 package com.github.nhirakawa.swarm.runner;
 
-import com.github.nhirakawa.swarm.protocol.config.ConfigValidator;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
-import com.github.nhirakawa.swarm.protocol.config.SwarmConfigFactory;
 import com.github.nhirakawa.swarm.protocol.dagger.SwarmProtocolModule;
+import com.github.nhirakawa.swarm.runner.config.ConfigValidator;
+import com.github.nhirakawa.swarm.runner.config.SwarmConfigFactory;
 import com.google.common.io.Resources;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;

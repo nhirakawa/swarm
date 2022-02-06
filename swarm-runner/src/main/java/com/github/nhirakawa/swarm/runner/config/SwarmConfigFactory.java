@@ -1,7 +1,9 @@
-package com.github.nhirakawa.swarm.protocol.config;
+package com.github.nhirakawa.swarm.runner.config;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
+import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigRenderOptions;

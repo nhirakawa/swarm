@@ -1,4 +1,4 @@
-package com.github.nhirakawa.swarm.protocol.config;
+package com.github.nhirakawa.swarm.runner.config;
 
 public enum ConfigPath {
   SWARM_PROTOCOL_PERIOD("swarm.protocol.period"),

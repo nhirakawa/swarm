@@ -1,4 +1,4 @@
-package com.github.nhirakawa.swarm.protocol.config;
+package com.github.nhirakawa.swarm.runner.config;
 
 import com.google.common.base.Preconditions;
 import com.typesafe.config.Config;
