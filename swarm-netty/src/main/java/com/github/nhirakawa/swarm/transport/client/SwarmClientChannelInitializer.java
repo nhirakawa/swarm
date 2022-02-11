@@ -17,7 +17,6 @@ public class SwarmClientChannelInitializer
   protected void initChannel(DatagramChannel channel) {
     channel
       .pipeline()
-      .addLast(new BrotliDecoder())
       .addLast(
         "LoggingHandler",
         new LoggingHandler(SwarmClient.class, LogLevel.TRACE)

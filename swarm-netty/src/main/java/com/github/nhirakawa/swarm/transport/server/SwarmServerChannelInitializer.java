@@ -23,7 +23,6 @@ public class SwarmServerChannelInitializer
   protected void initChannel(DatagramChannel channel) {
     channel
       .pipeline()
-      .addLast(new BrotliEncoder())
       .addLast(
         "LoggingHandler",
         new LoggingHandler(SwarmNettyServer.class, LogLevel.TRACE)

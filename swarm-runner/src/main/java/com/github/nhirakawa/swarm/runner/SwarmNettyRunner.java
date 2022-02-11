@@ -21,8 +21,6 @@ public class SwarmNettyRunner {
   public static void main(String... args) throws Throwable {
     LOG.info("{}", getBanner());
 
-    Brotli.ensureAvailability();
-
     Config config = ConfigFactory.load();
     ConfigValidator.validate(config);
 

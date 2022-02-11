@@ -21,8 +21,6 @@ public class SwarmLocalClusterRunner {
   public static void main(String... args) throws Throwable {
     LOG.info("{}", BannerUtil.getOrDefault("swarm-local-cluster"));
 
-    Brotli.ensureAvailability();
-
     Config nodesConfig = ConfigFactory.load("cluster.conf");
 
     for (Config nodeConfig : nodesConfig.getConfigList("nodes")) {
