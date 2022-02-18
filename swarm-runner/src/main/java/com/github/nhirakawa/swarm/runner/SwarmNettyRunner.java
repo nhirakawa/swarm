@@ -1,16 +1,14 @@
 package com.github.nhirakawa.swarm.runner;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.dagger.SwarmProtocolModule;
 import com.github.nhirakawa.swarm.runner.config.ConfigValidator;
 import com.github.nhirakawa.swarm.runner.config.SwarmConfigFactory;
-import com.google.common.io.Resources;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SwarmNettyRunner {
   private static final Logger LOG = LoggerFactory.getLogger(
@@ -18,7 +16,7 @@ public class SwarmNettyRunner {
   );
 
   public static void main(String... args) throws Throwable {
-    LOG.info("{}", getBanner());
+    LOG.info("\n{}", BannerUtil.getOrDefault("swarm-netty-banner.txt", "swarm"));
 
     Config config = ConfigFactory.load();
     ConfigValidator.validate(config);
@@ -32,16 +30,5 @@ public class SwarmNettyRunner {
       .buildService();
 
     swarmService.run();
-  }
-
-  private static String getBanner() {
-    try {
-      return Resources.toString(
-        Resources.getResource("banner.txt"),
-        StandardCharsets.UTF_8
-      );
-    } catch (IOException ignored) {
-      return "swarm";
-    }
   }
 }

@@ -1,8 +1,9 @@
 package com.github.nhirakawa.swarm.runner;
 
-import com.google.common.io.Resources;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+
+import com.google.common.io.Resources;
 
 final class BannerUtil {
 
@@ -10,10 +11,10 @@ final class BannerUtil {
     throw new UnsupportedOperationException();
   }
 
-  static String getOrDefault(String defaultBanner) {
+  static String getOrDefault(String resourceName, String defaultBanner) {
     try {
       return Resources.toString(
-        Resources.getResource("banner.txt"),
+        Resources.getResource(resourceName),
         StandardCharsets.UTF_8
       );
     } catch (IOException e) {
