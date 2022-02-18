@@ -7,7 +7,6 @@ import com.github.nhirakawa.swarm.runner.config.SwarmConfigFactory;
 import com.google.common.io.Resources;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import io.netty.handler.codec.compression.Brotli;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
