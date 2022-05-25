@@ -10,5 +10,7 @@ import org.immutables.value.Value;
 public interface MemberStatusUpdateModel {
   MemberStatus getNewMemberStatus();
   SwarmNode getSwarmNode();
+
+  // todo(nhirakawa) add validation for > 0
   long getIncarnationNumber();
 }
