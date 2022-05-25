@@ -19,6 +19,7 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// todo(nhirakawa) - document this
 @ThreadSafe
 @Singleton
 public class SwarmStateMachine extends AbstractIdleService {

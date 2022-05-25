@@ -7,6 +7,7 @@ import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.AbstractIdleService;
 import javax.inject.Inject;
 
+// todo(nhirakawa) document this
 public class SwarmDisseminator extends AbstractIdleService {
   private final SwarmConfig swarmConfig;
   private final SwarmMessageSender swarmMessageSender;

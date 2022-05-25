@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+// todo(nhirakawa) document this
 public class WaitingForAckProtocolState extends SwarmProtocolState {
   private final SwarmNode pingTarget;
 
