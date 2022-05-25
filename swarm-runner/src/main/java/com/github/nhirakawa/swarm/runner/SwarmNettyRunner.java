@@ -1,14 +1,13 @@
 package com.github.nhirakawa.swarm.runner;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.dagger.SwarmProtocolModule;
 import com.github.nhirakawa.swarm.runner.config.ConfigValidator;
 import com.github.nhirakawa.swarm.runner.config.SwarmConfigFactory;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SwarmNettyRunner {
   private static final Logger LOG = LoggerFactory.getLogger(
@@ -16,7 +15,10 @@ public class SwarmNettyRunner {
   );
 
   public static void main(String... args) throws Throwable {
-    LOG.info("\n{}", BannerUtil.getOrDefault("swarm-netty-banner.txt", "swarm"));
+    LOG.info(
+      "\n{}",
+      BannerUtil.getOrDefault("swarm-netty-banner.txt", "swarm")
+    );
 
     Config config = ConfigFactory.load();
     ConfigValidator.validate(config);

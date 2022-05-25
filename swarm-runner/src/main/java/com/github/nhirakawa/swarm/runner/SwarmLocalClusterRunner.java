@@ -1,17 +1,15 @@
 package com.github.nhirakawa.swarm.runner;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.dagger.SwarmProtocolModule;
 import com.github.nhirakawa.swarm.runner.config.SwarmConfigFactory;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SwarmLocalClusterRunner {
   private static final Logger LOG = LoggerFactory.getLogger(
@@ -20,7 +18,10 @@ public class SwarmLocalClusterRunner {
   private static final ExecutorService EXECUTOR = buildExecutor();
 
   public static void main(String... args) throws Throwable {
-    LOG.info("\n{}", BannerUtil.getOrDefault("swarm-local-banner.txt", "swarm-local-cluster"));
+    LOG.info(
+      "\n{}",
+      BannerUtil.getOrDefault("swarm-local-banner.txt", "swarm-local-cluster")
+    );
 
     Config nodesConfig = ConfigFactory.load("cluster.conf");
 
