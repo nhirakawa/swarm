@@ -60,6 +60,14 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
           protocolPeriodId
         )
       )
+      .setMemberStatusUpdate(
+        MemberStatusUpdate
+          .builder()
+          .setIncarnationNumber(-1)
+          .setNewMemberStatus(MemberStatus.SUSPECTED)
+          .setSwarmNode(pingTarget)
+          .build()
+      )
       .build();
 
     return Optional.of(transition);
