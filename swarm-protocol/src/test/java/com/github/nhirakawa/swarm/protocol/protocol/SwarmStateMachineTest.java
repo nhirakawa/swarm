@@ -27,6 +27,8 @@ public class SwarmStateMachineTest {
     .setMessageTimeout(Duration.ofMillis(10))
     .setProtocolTick(Duration.ofMillis(1))
     .setSwarmStateBufferSize(10)
+    .setDebugEnabled(false)
+    .setFailureInjectionPercent(0)
     .build();
 
   @Mock
@@ -34,8 +36,8 @@ public class SwarmStateMachineTest {
 
   @Before
   public void setup() {
-    when(swarmFailureInjector.shouldInjectFailure()).thenReturn(false);
     MockitoAnnotations.initMocks(this);
+    when(swarmFailureInjector.shouldInjectFailure()).thenReturn(false);
   }
 
   @Test
