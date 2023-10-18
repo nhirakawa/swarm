@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Range;
 
 public abstract class InjectableRandom {
+
   protected static final Range<Integer> VALID_PERCENTS = Range.closed(1, 100);
 
   protected abstract int nextInt();

@@ -6,12 +6,13 @@ import com.github.nhirakawa.swarm.runner.config.SwarmConfigFactory;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SwarmLocalClusterRunner {
+
   private static final Logger LOG = LoggerFactory.getLogger(
     SwarmLocalClusterRunner.class
   );
@@ -47,8 +48,8 @@ public class SwarmLocalClusterRunner {
       4,
       new ThreadFactoryBuilder()
         .setNameFormat("swarm-runner-%s")
-        .setUncaughtExceptionHandler(
-          (ignored, t) -> LOG.error("Caught exception", t)
+        .setUncaughtExceptionHandler((ignored, t) ->
+          LOG.error("Caught exception", t)
         )
         .build()
     );

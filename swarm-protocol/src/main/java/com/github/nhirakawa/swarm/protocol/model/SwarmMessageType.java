@@ -4,7 +4,9 @@ import com.google.common.primitives.UnsignedBytes;
 import java.util.Optional;
 
 public enum SwarmMessageType {
-  PING_ACK(0), PING_REQUEST(1);
+  PING_ACK(0),
+  PING_REQUEST(1);
+
   private final byte id;
 
   SwarmMessageType(int id) {

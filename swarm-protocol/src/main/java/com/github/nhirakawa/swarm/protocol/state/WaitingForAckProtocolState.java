@@ -20,6 +20,7 @@ import java.util.UUID;
 
 // todo(nhirakawa) document this
 public class WaitingForAckProtocolState extends SwarmProtocolState {
+
   private final SwarmNode pingTarget;
 
   protected WaitingForAckProtocolState(
@@ -48,8 +49,8 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
 
       List<BaseSwarmMessage> swarmMessages = failureSubGroup
         .stream()
-        .map(
-          swarmNode -> PingRequestMessage
+        .map(swarmNode ->
+          PingRequestMessage
             .builder()
             .setProtocolPeriodId(protocolPeriodId)
             .setUniqueMessageId(UUID.randomUUID().toString())

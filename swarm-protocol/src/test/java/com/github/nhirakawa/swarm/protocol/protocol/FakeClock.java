@@ -7,6 +7,7 @@ import java.time.ZoneOffset;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class FakeClock extends Clock {
+
   private static final AtomicLong COUNTER = new AtomicLong(10_000_000);
 
   @Override

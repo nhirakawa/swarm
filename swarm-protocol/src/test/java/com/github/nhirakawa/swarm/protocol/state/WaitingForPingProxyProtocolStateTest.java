@@ -15,6 +15,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class WaitingForPingProxyProtocolStateTest {
+
   private static final Instant TIMESTAMP = Instant.ofEpochMilli(1000);
 
   private static final SwarmNode LOCAL_NODE = SwarmNode

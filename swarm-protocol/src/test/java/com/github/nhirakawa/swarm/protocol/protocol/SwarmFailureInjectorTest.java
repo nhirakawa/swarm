@@ -10,6 +10,7 @@ import org.assertj.core.data.Offset;
 import org.junit.Test;
 
 public class SwarmFailureInjectorTest {
+
   private static final int NUMBER_OF_SAMPLES = 100_000;
 
   private static final SwarmConfig BASE = SwarmConfig

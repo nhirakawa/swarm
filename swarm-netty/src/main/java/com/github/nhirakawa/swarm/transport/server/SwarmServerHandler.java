@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 public class SwarmServerHandler
   extends SimpleChannelInboundHandler<DatagramPacket> {
+
   private static final Logger LOG = LoggerFactory.getLogger(
     SwarmServerHandler.class
   );
@@ -29,8 +30,7 @@ public class SwarmServerHandler
   protected void channelRead0(
     ChannelHandlerContext ctx,
     DatagramPacket message
-  )
-    throws IOException, InterruptedException {
+  ) throws IOException, InterruptedException {
     byte[] bytes = new byte[message.content().readableBytes()];
     message.content().getBytes(message.content().readerIndex(), bytes);
 

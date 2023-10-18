@@ -10,6 +10,7 @@ public enum ConfigPath {
   DEBUG_ENABLED("swarm.debug.enabled"),
   FAILURE_INJECTION_PERCENT("swarm.debug.failureInjectionPercent"),
   SWARM_STATE_BUFFER_SIZE("swarm.stateBufferSize");
+
   private final String configPath;
 
   ConfigPath(String configPath) {

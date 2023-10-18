@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class EventBusLogger extends AbstractIdleService {
+
   private static final Logger LOG = LoggerFactory.getLogger(
     EventBusLogger.class
   );

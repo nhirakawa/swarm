@@ -9,6 +9,7 @@ import javax.inject.Inject;
 
 // todo(nhirakawa) document this
 public class SwarmDisseminator extends AbstractIdleService {
+
   private final SwarmConfig swarmConfig;
   private final SwarmMessageSender swarmMessageSender;
   private final EventBus eventBus;

@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SwarmNettyServer extends AbstractIdleService {
+
   private static final Logger LOG = LoggerFactory.getLogger(
     SwarmNettyServer.class
   );
@@ -85,6 +86,7 @@ public class SwarmNettyServer extends AbstractIdleService {
   }
 
   private static final class ServerShutdownHook implements Runnable {
+
     private final EventLoopGroup eventLoopGroup;
 
     private ServerShutdownHook(EventLoopGroup eventLoopGroup) {

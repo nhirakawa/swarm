@@ -9,13 +9,14 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.time.Instant;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 public abstract class SwarmProtocolState {
+
   protected final Instant protocolStartTimestamp;
   protected final SwarmConfig swarmConfig;
   protected final String protocolPeriodId;

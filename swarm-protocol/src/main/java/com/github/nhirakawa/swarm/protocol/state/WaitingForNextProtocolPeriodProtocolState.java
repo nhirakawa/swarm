@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 // todo(nhirakawa) document this
 public class WaitingForNextProtocolPeriodProtocolState
   extends SwarmProtocolState {
+
   private static final Logger LOG = LoggerFactory.getLogger(
     WaitingForNextProtocolPeriodProtocolState.class
   );

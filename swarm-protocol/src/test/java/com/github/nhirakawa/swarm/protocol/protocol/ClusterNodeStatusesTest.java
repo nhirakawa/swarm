@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class ClusterNodeStatusesTest {
+
   private static final SwarmNode SWARM_NODE = SwarmNode
     .builder()
     .setHost("host")

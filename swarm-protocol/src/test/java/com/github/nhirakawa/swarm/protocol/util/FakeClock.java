@@ -6,6 +6,7 @@ import java.time.ZoneId;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class FakeClock extends Clock {
+
   private final AtomicLong timestamp;
 
   FakeClock() {

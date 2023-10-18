@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.Set;
 
 public final class SwarmConfigFactory {
+
   private static final TypeReference<Set<SwarmNode>> SET_SWARM_NODE = new TypeReference<>() {};
 
   public static SwarmConfig get(Config config) throws JsonProcessingException {

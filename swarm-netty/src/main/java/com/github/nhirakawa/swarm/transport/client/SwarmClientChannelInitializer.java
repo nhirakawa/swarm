@@ -3,8 +3,8 @@ package com.github.nhirakawa.swarm.transport.client;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.handler.codec.compression.BrotliDecoder;
-import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import javax.inject.Inject;
 
 public class SwarmClientChannelInitializer

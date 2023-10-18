@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 // todo(nhirakawa) document this
 public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
+
   private static final Logger LOG = LoggerFactory.getLogger(
     WaitingForPingProxyProtocolState.class
   );

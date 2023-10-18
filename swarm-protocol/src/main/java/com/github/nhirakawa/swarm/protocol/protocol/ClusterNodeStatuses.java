@@ -2,9 +2,9 @@ package com.github.nhirakawa.swarm.protocol.protocol;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.MemberStatusUpdate;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 @Singleton
 public class ClusterNodeStatuses {
+
   private static final Logger LOG = LoggerFactory.getLogger(
     ClusterNodeStatuses.class
   );

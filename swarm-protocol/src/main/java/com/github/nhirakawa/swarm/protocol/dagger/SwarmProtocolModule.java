@@ -14,6 +14,7 @@ import javax.inject.Singleton;
 
 @Module
 public class SwarmProtocolModule {
+
   private final SwarmConfig swarmConfig;
 
   public SwarmProtocolModule(SwarmConfig swarmConfig) {

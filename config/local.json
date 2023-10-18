@@ -1,0 +1,10 @@
+{
+  "numberOfNodes": 5,
+  "protocolPeriod": "PT10S",
+  "messageTimeout": "PT1S",
+  "protocolTick": "PT0.05S",
+  "failureSubGroup": 1,
+  "adminConfig": {
+    "port": 8080
+  }
+}

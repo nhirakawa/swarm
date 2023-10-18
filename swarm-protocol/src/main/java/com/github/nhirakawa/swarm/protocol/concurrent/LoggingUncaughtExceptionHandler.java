@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 public class LoggingUncaughtExceptionHandler
   implements UncaughtExceptionHandler {
+
   private static final Logger LOG = LoggerFactory.getLogger(
     LoggingUncaughtExceptionHandler.class
   );

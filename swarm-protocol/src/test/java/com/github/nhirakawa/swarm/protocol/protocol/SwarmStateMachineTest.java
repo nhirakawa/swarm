@@ -14,6 +14,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 public class SwarmStateMachineTest {
+
   private static final SwarmConfig SWARM_CONFIG = SwarmConfig
     .builder()
     .setFailureSubGroup(1)

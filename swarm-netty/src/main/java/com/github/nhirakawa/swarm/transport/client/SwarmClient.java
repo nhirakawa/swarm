@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SwarmClient implements Closeable, SwarmMessageSender {
+
   private static final Logger LOG = LoggerFactory.getLogger(SwarmClient.class);
 
   private final SwarmClientChannelInitializer swarmClientChannelInitializer;
@@ -47,7 +48,7 @@ public class SwarmClient implements Closeable, SwarmMessageSender {
               swarmConfig.getLocalNode().getHost(),
               swarmConfig.getLocalNode().getPort()
             ) +
-              "-%s"
+            "-%s"
           )
           .build()
       );

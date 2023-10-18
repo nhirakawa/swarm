@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 @Singleton
 public class SwarmStateMachine extends AbstractIdleService {
+
   private static final Logger LOG = LoggerFactory.getLogger(
     SwarmStateMachine.class
   );
