@@ -15,7 +15,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class SwarmService
-  extends AbstractScheduledService
+
+extends AbstractScheduledService
   implements NamedService {
 
   private static final Logger LOG = LogManager.getLogger(SwarmService.class);

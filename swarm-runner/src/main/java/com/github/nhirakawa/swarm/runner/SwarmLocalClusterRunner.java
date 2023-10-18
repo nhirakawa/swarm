@@ -20,6 +20,7 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "local")
 public class SwarmLocalClusterRunner implements Callable<Integer> {
 
+
   private static final Logger LOG = LogManager.getLogger(
     SwarmLocalClusterRunner.class
   );
