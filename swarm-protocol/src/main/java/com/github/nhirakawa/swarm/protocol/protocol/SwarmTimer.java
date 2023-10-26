@@ -18,19 +18,16 @@ public class SwarmTimer extends AbstractScheduledService {
   private final EventBus eventBus;
   private final SwarmConfig swarmConfig;
   private final Clock clock;
-  private final ScheduledExecutorService scheduledExecutorService;
 
   @Inject
   public SwarmTimer(
     EventBus eventBus,
     SwarmConfig swarmConfig,
-    Clock clock,
-    ScheduledExecutorService scheduledExecutorService
+    Clock clock
   ) {
     this.eventBus = eventBus;
     this.swarmConfig = swarmConfig;
     this.clock = clock;
-    this.scheduledExecutorService = scheduledExecutorService;
   }
 
   @Override
@@ -47,11 +44,6 @@ public class SwarmTimer extends AbstractScheduledService {
       Duration.ZERO,
       swarmConfig.getProtocolTick()
     );
-  }
-
-  @Override
-  protected ScheduledExecutorService executor() {
-    return scheduledExecutorService;
   }
 
   @Override

@@ -1,9 +1,13 @@
 package com.github.nhirakawa.swarm.runner;
 
+import com.github.nhirakawa.swarm.guice.SwarmNettyModule;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
-import com.github.nhirakawa.swarm.protocol.dagger.SwarmProtocolModule;
+import com.github.nhirakawa.swarm.protocol.guice.SwarmConfigModule;
+import com.github.nhirakawa.swarm.protocol.guice.SwarmProtocolModule;
 import com.github.nhirakawa.swarm.runner.config.SwarmConfigFactory;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import java.util.concurrent.ExecutorService;
@@ -33,11 +37,15 @@ public class SwarmLocalClusterRunner {
 
       SwarmConfig swarmConfig = SwarmConfigFactory.get(realConfig);
 
-      SwarmService swarmService = DaggerSwarmNettyComponent
-        .builder()
-        .swarmProtocolModule(new SwarmProtocolModule(swarmConfig))
-        .build()
-        .buildService();
+      SwarmConfigModule swarmConfigModule = new SwarmConfigModule(swarmConfig);
+
+      Injector injector = Guice.createInjector(
+        swarmConfigModule,
+        new SwarmProtocolModule(),
+        new SwarmNettyModule()
+      );
+
+      SwarmService swarmService = injector.getInstance(SwarmService.class);
 
       EXECUTOR.execute(swarmService::run);
     }
