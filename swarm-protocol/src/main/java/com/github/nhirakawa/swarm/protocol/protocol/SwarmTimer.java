@@ -20,11 +20,7 @@ public class SwarmTimer extends AbstractScheduledService {
   private final Clock clock;
 
   @Inject
-  public SwarmTimer(
-    EventBus eventBus,
-    SwarmConfig swarmConfig,
-    Clock clock
-  ) {
+  public SwarmTimer(EventBus eventBus, SwarmConfig swarmConfig, Clock clock) {
     this.eventBus = eventBus;
     this.swarmConfig = swarmConfig;
     this.clock = clock;
