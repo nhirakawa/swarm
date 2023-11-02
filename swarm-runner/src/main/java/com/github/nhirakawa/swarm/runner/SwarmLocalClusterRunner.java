@@ -2,23 +2,17 @@ package com.github.nhirakawa.swarm.runner;
 
 import com.github.nhirakawa.swarm.guice.SwarmNettyModule;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
+import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.guice.SwarmConfigModule;
 import com.github.nhirakawa.swarm.protocol.guice.SwarmProtocolModule;
-import com.github.nhirakawa.swarm.runner.config.SwarmConfigFactory;
 import com.github.nhirakawa.swarm.runner.util.NamedService;
 import com.github.nhirakawa.swarm.runner.util.ServiceObserver;
-import com.google.common.util.concurrent.Service;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -29,7 +23,44 @@ public class SwarmLocalClusterRunner implements Callable<Integer> {
   private static final Logger LOG = LoggerFactory.getLogger(
     SwarmLocalClusterRunner.class
   );
-  private static final ExecutorService EXECUTOR = buildExecutor();
+
+  @CommandLine.Option(
+    names = "--protocol-period",
+    defaultValue = "PT10S",
+    showDefaultValue = CommandLine.Help.Visibility.ALWAYS
+  )
+  private Duration protocolPeriod;
+
+  @CommandLine.Option(
+    names = "--message-timeout",
+    defaultValue = "PT0.5S",
+    showDefaultValue = CommandLine.Help.Visibility.ALWAYS
+  )
+  private Duration messageTimeout;
+
+  @CommandLine.Option(
+    names = "--tick",
+    defaultValue = "PT2S",
+    showDefaultValue = CommandLine.Help.Visibility.ALWAYS
+  )
+  private Duration tick;
+
+  @CommandLine.Option(
+    names = "--failure-subgroup",
+    defaultValue = "1",
+    showDefaultValue = CommandLine.Help.Visibility.ALWAYS
+  )
+  private int failureSubGroup;
+
+  @CommandLine.Option(names = "--node", arity = "1..*", required = true)
+  private List<SwarmNode> clusterNodes;
+
+  @CommandLine.Option(
+    names = "--state-buffer-size",
+    defaultValue = "10",
+    showDefaultValue = CommandLine.Help.Visibility.ALWAYS
+  )
+  private int stateBufferSize;
 
   public Integer call() throws Exception {
     LOG.info(
@@ -37,16 +68,21 @@ public class SwarmLocalClusterRunner implements Callable<Integer> {
       BannerUtil.getOrDefault("swarm-local-banner.txt", "swarm-local-cluster")
     );
 
-    Config nodesConfig = ConfigFactory.load("cluster.conf");
-
     List<NamedService> services = new ArrayList<>();
 
-    for (Config nodeConfig : nodesConfig.getConfigList("nodes")) {
-      Config realConfig = ConfigFactory
-        .load(nodeConfig)
-        .withFallback(ConfigFactory.load());
-
-      SwarmConfig swarmConfig = SwarmConfigFactory.get(realConfig);
+    for (SwarmNode swarmNode : clusterNodes) {
+      SwarmConfig swarmConfig = SwarmConfig
+        .builder()
+        .setProtocolPeriod(protocolPeriod)
+        .setMessageTimeout(messageTimeout)
+        .setProtocolTick(tick)
+        .setFailureSubGroup(failureSubGroup)
+        .setLocalNode(swarmNode)
+        .addAllClusterNodes(clusterNodes)
+        .setSwarmStateBufferSize(stateBufferSize)
+        .setDebugEnabled(false)
+        .setFailureInjectionPercent(0)
+        .build();
 
       SwarmConfigModule swarmConfigModule = new SwarmConfigModule(swarmConfig);
 
@@ -72,17 +108,5 @@ public class SwarmLocalClusterRunner implements Callable<Integer> {
     LOG.info("ServiceObserver is terminated");
 
     return 0;
-  }
-
-  private static ExecutorService buildExecutor() {
-    return Executors.newFixedThreadPool(
-      4,
-      new ThreadFactoryBuilder()
-        .setNameFormat("swarm-runner-%s")
-        .setUncaughtExceptionHandler((ignored, t) ->
-          LOG.error("Caught exception", t)
-        )
-        .build()
-    );
   }
 }
