@@ -13,14 +13,14 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "local")
 public class SwarmLocalClusterRunner implements Callable<Integer> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(
+  private static final Logger LOG = LogManager.getLogger(
     SwarmLocalClusterRunner.class
   );
 

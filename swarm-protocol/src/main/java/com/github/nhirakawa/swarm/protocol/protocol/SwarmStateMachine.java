@@ -16,15 +16,15 @@ import java.util.UUID;
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 // todo(nhirakawa) - document this
 @ThreadSafe
 @Singleton
 public class SwarmStateMachine extends AbstractIdleService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(
+  private static final Logger LOG = LogManager.getLogger(
     SwarmStateMachine.class
   );
   private final Object lock = new Object();

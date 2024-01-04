@@ -1,21 +1,17 @@
 package com.github.nhirakawa.swarm.runner.util;
 
 import com.google.common.util.concurrent.AbstractScheduledService;
-import com.google.common.util.concurrent.Service;
-import io.netty.handler.logging.LogLevel;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class ServiceObserver extends AbstractScheduledService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(
-    ServiceObserver.class
-  );
+  private static final Logger LOG = LogManager.getLogger(ServiceObserver.class);
 
   private static final Set<State> TERMINAL_STATES = EnumSet.of(
     State.TERMINATED,

@@ -19,12 +19,12 @@ import java.io.Closeable;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class SwarmClient implements Closeable, SwarmMessageSender {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SwarmClient.class);
+  private static final Logger LOG = LogManager.getLogger(SwarmClient.class);
 
   private final SwarmClientChannelInitializer swarmClientChannelInitializer;
   private final SwarmConfig swarmConfig;

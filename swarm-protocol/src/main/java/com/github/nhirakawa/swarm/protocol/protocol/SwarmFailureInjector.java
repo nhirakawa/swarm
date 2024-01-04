@@ -3,12 +3,12 @@ package com.github.nhirakawa.swarm.protocol.protocol;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.util.InjectableRandom;
 import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class SwarmFailureInjector {
 
-  private static final Logger LOG = LoggerFactory.getLogger(
+  private static final Logger LOG = LogManager.getLogger(
     SwarmFailureInjector.class
   );
 

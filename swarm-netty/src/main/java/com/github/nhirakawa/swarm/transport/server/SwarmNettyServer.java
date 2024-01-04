@@ -11,12 +11,12 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import java.net.InetSocketAddress;
 import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class SwarmNettyServer extends AbstractIdleService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(
+  private static final Logger LOG = LogManager.getLogger(
     SwarmNettyServer.class
   );
 

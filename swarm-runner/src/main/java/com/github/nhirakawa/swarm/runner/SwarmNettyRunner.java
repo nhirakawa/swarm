@@ -10,8 +10,8 @@ import com.google.inject.Injector;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -20,7 +20,7 @@ import picocli.CommandLine;
 )
 public class SwarmNettyRunner implements Callable<Integer> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(
+  private static final Logger LOG = LogManager.getLogger(
     SwarmNettyRunner.class
   );
 

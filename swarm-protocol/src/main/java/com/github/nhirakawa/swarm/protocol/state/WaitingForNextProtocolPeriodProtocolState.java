@@ -8,18 +8,17 @@ import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.Iterables;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 // todo(nhirakawa) document this
 public class WaitingForNextProtocolPeriodProtocolState
   extends SwarmProtocolState {
 
-  private static final Logger LOG = LoggerFactory.getLogger(
+  private static final Logger LOG = LogManager.getLogger(
     WaitingForNextProtocolPeriodProtocolState.class
   );
 

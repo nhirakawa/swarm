@@ -11,14 +11,14 @@ import com.google.common.util.concurrent.Service;
 import java.time.Duration;
 import javax.inject.Inject;
 import javax.inject.Named;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class SwarmService
   extends AbstractScheduledService
   implements NamedService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SwarmService.class);
+  private static final Logger LOG = LogManager.getLogger(SwarmService.class);
 
   private final SwarmTimer swarmTimer;
   private final Service swarmServer;

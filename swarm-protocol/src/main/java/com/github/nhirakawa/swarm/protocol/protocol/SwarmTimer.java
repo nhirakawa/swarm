@@ -6,14 +6,13 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.AbstractScheduledService;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class SwarmTimer extends AbstractScheduledService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SwarmTimer.class);
+  private static final Logger LOG = LogManager.getLogger(SwarmTimer.class);
 
   private final EventBus eventBus;
   private final SwarmConfig swarmConfig;
