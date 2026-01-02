@@ -4,9 +4,7 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.runner.cli.SwarmNodeConverter;
 import picocli.CommandLine;
 
-@CommandLine.Command(
-  subcommands = { SwarmLocalClusterRunner.class, SwarmNettyRunner.class }
-)
+@CommandLine.Command
 public class SwarmLauncher {
 
   public static void main(String[] args) {
