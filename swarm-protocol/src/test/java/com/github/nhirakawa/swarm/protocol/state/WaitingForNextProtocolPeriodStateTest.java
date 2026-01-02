@@ -10,8 +10,8 @@ import com.github.nhirakawa.swarm.protocol.model.Transition;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class WaitingForNextProtocolPeriodStateTest {
 
@@ -44,7 +44,7 @@ public class WaitingForNextProtocolPeriodStateTest {
 
   private WaitingForNextProtocolPeriodProtocolState protocolState;
 
-  @Before
+  @BeforeEach
   public void setup() {
     protocolState =
       new WaitingForNextProtocolPeriodProtocolState(

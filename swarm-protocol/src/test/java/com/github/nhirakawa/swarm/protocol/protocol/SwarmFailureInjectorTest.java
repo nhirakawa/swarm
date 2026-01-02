@@ -7,7 +7,7 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.util.InjectableThreadLocalRandom;
 import java.time.Duration;
 import org.assertj.core.data.Offset;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class SwarmFailureInjectorTest {
 

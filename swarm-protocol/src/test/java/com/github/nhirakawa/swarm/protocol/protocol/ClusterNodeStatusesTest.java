@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.model.MemberStatusUpdate;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ClusterNodeStatusesTest {
 
@@ -17,12 +17,12 @@ public class ClusterNodeStatusesTest {
 
   private ClusterNodeStatuses clusterNodeStatuses;
 
-  @Before
+  @BeforeEach
   public void setup() {
     clusterNodeStatuses = new ClusterNodeStatuses();
   }
 
-  @Test
+  @org.junit.jupiter.api.Test
   public void itOverridesSuspectedWithAliveIfGreaterIncarnationNumber() {
     MemberStatusUpdate initial = MemberStatusUpdate
       .builder()

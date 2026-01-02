@@ -11,8 +11,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class WaitingForAckProtocolStateTest {
 
@@ -56,7 +56,7 @@ public class WaitingForAckProtocolStateTest {
 
   private WaitingForAckProtocolState protocolState;
 
-  @Before
+  @BeforeEach
   public void setup() {
     protocolState =
       new WaitingForAckProtocolState(

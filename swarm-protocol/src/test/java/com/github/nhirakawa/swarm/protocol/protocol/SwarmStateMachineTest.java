@@ -1,16 +1,14 @@
 package com.github.nhirakawa.swarm.protocol.protocol;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.when;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
 import com.github.nhirakawa.swarm.protocol.util.Fakes;
 import java.time.Duration;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 public class SwarmStateMachineTest {
@@ -35,7 +33,7 @@ public class SwarmStateMachineTest {
   @Mock
   private SwarmFailureInjector swarmFailureInjector;
 
-  @Before
+  @BeforeEach
   public void setup() {
     MockitoAnnotations.initMocks(this);
     when(swarmFailureInjector.shouldInjectFailure()).thenReturn(false);

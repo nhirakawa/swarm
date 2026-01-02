@@ -11,8 +11,8 @@ import com.google.common.collect.ImmutableSet;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class WaitingForPingProxyProtocolStateTest {
 
@@ -56,7 +56,7 @@ public class WaitingForPingProxyProtocolStateTest {
 
   private WaitingForPingProxyProtocolState protocolState;
 
-  @Before
+  @BeforeEach
   public void setup() {
     protocolState =
       new WaitingForPingProxyProtocolState(
