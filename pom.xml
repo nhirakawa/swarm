@@ -14,7 +14,6 @@
 
   <modules>
     <module>swarm-protocol</module>
-    <module>swarm-netty</module>
     <module>swarm-runner</module>
   </modules>
 
@@ -29,7 +28,6 @@
     <junit.version>4.13.1</junit.version>
     <logback.version>1.2.13</logback.version>
     <mockito.core.version>3.3.3</mockito.core.version>
-    <netty-version>4.1.67.Final</netty-version>
     <plugin.maven.compiler.java.version>21</plugin.maven.compiler.java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -82,12 +80,6 @@
         <groupId>info.picocli</groupId>
         <artifactId>picocli</artifactId>
         <version>4.7.5</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-all</artifactId>
-        <version>${netty-version}</version>
       </dependency>
 
       <dependency>
