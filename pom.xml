@@ -5,7 +5,7 @@
   <parent>
     <groupId>com.github.nhirakawa</groupId>
     <artifactId>basepom</artifactId>
-    <version>15</version>
+    <version>17</version>
   </parent>
 
   <artifactId>swarm</artifactId>
@@ -20,7 +20,7 @@
   <properties>
     <assertj.core.version>3.27.6</assertj.core.version>
     <enforcer.skip>true</enforcer.skip>
-    <errorprone.version>2.0.18</errorprone.version>
+    <errorprone.version>2.45.0</errorprone.version>
     <guava.version>33.5.0-jre</guava.version>
     <immutable.style.version>4.0</immutable.style.version>
     <immutables.version>2.12.0</immutables.version>
@@ -28,7 +28,9 @@
     <junit.version>4.13.1</junit.version>
     <logback.version>1.2.13</logback.version>
     <mockito.core.version>5.21.0</mockito.core.version>
-    <plugin.maven.compiler.java.version>21</plugin.maven.compiler.java.version>
+    <plugin.maven.compiler.java.version>25</plugin.maven.compiler.java.version>
+    <plugin.maven.compiler.version>3.14.1</plugin.maven.compiler.version>
+    <plugin.maven.dependency.version>3.9.0</plugin.maven.dependency.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -105,5 +107,54 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <compilerArgs>
+            <arg>-XDcompilePolicy=simple</arg>
+            <arg>--should-stop=ifError=FLOW</arg>
+            <arg>-Xplugin:ErrorProne \
+              -XepDisableWarningsInGeneratedCode \
+              -XepExcludedPaths:.*/generated-sources/.* \
+              -Xep:RemoveUnusedImports:ERROR \
+              -Xep:UnusedMethod:ERROR \
+              -Xep:UnusedNestedClass:ERROR \
+              -Xep:UnusedTypeParameter:ERROR \
+              -Xep:UnusedVariable:ERROR \
+              -Xep:FallThrough:ERROR \
+              -Xep:FutureReturnValueIgnored:ERROR \
+              -Xep:InstanceOfAndCastMatchWrongType:ERROR \
+              -Xep:IntLongMath:ERROR \
+              -Xep:MissingCasesInEnumSwitch:ERROR \
+              -Xep:MissingOverride:ERROR \
+              -Xep:ModifiedButNotUsed:ERROR \
+              -Xep:ModifyCollectionInEnhancedForLoop:ERROR \
+              -Xep:ObjectToString:ERROR \
+              -Xep:OptionalNotPresent:ERROR \
+              -Xep:OrphanedFormatString:ERROR \
+              -Xep:ReferenceEquality:ERROR \
+              -Xep:MissingBraces:ERROR</arg>
+          </compilerArgs>
+          <fork>false</fork>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>com.google.errorprone</groupId>
+              <artifactId>error_prone_core</artifactId>
+              <version>${errorprone.version}</version>
+            </path>
+            <path>
+              <groupId>org.immutables</groupId>
+              <artifactId>value</artifactId>
+              <version>${immutables.version}</version>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>

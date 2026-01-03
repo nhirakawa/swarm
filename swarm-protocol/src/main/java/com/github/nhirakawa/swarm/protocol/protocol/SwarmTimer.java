@@ -7,12 +7,8 @@ import com.google.common.util.concurrent.AbstractScheduledService;
 import java.time.Clock;
 import java.time.Duration;
 import javax.inject.Inject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class SwarmTimer extends AbstractScheduledService {
-
-  private static final Logger LOG = LogManager.getLogger(SwarmTimer.class);
 
   private final EventBus eventBus;
   private final SwarmConfig swarmConfig;

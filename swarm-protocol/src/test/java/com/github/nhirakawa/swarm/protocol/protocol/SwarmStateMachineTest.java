@@ -41,7 +41,7 @@ public class SwarmStateMachineTest {
 
   @Test
   public void itSendsPingRequest() {
-    SwarmStateMachine swarmStateMachine = new SwarmStateMachine(
+    SwarmStateMachine ignored = new SwarmStateMachine(
       SWARM_CONFIG,
       Fakes.clock(),
       Fakes.eventBus(),
