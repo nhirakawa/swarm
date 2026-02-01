@@ -1,19 +1,14 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
-import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.protocol.model.MemberStatusUpdate;
-import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
-import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
+import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
-import com.github.nhirakawa.swarm.protocol.protocol.MemberStatus;
-import com.google.common.base.MoreObjects;
+import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,69 +19,66 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
     WaitingForPingProxyProtocolState.class
   );
 
-  private final SwarmNode pingTarget;
-  private final Set<SwarmNode> proxyTargets;
+  private final SwarmAddress pingTarget;
+  private final Set<SwarmAddress> proxyTargets;
 
-  protected WaitingForPingProxyProtocolState(
-    Instant timestamp,
+  WaitingForPingProxyProtocolState(
     SwarmConfig swarmConfig,
     String protocolPeriodId,
-    SwarmNode pingTarget,
-    Set<SwarmNode> proxyTargets
+    Stopwatch stopwatch,
+    MemberRegistry memberRegistry,
+    SwarmAddress pingTarget,
+    Set<SwarmAddress> proxyTargets
   ) {
-    super(timestamp, swarmConfig, protocolPeriodId);
+    super(swarmConfig, protocolPeriodId, stopwatch, memberRegistry);
     this.pingTarget = pingTarget;
     this.proxyTargets = ImmutableSet.copyOf(proxyTargets);
   }
 
   @Override
-  public Optional<Transition> applyTick(
-    SwarmTimeoutMessage swarmTimeoutMessage
-  ) {
-    long millisSinceProtocolStarted = Duration
-      .between(protocolStartTimestamp, swarmTimeoutMessage.getTimestamp())
-      .toMillis();
-
+  public Optional<Transition> applyTick() {
     if (
-      millisSinceProtocolStarted < swarmConfig.getProtocolPeriod().toMillis()
+      stopwatch.elapsed(TimeUnit.NANOSECONDS) <
+      swarmConfig.getProtocolPeriod().toNanos()
     ) {
       return Optional.empty();
     }
 
+    SwarmProtocolState nextSwarmProtocolState = new WaitingForNextProtocolPeriodProtocolState(
+      swarmConfig,
+      protocolPeriodId,
+      stopwatch,
+      registry
+    );
+
     Transition transition = Transition
       .builder()
-      .setNextSwarmProtocolState(
-        new WaitingForNextProtocolPeriodProtocolState(
-          protocolStartTimestamp,
-          swarmConfig,
-          protocolPeriodId
-        )
-      )
-      .setMemberStatusUpdate(
-        MemberStatusUpdate
-          .builder()
-          .setIncarnationNumber(-1)
-          .setNewMemberStatus(MemberStatus.SUSPECTED)
-          .setSwarmNode(pingTarget)
-          .build()
-      )
+      .setNextSwarmProtocolState(nextSwarmProtocolState)
+      //      .setMemberStatusUpdate(
+      //        MemberStatusUpdate
+      //          .builder()
+      //          .setIncarnationNumber(-1)
+      //          .setNewMemberStatus(MemberStatus.SUSPECTED)
+      //          .setSwarmNode(pingTarget)
+      //          .build()
+      //      )
       .build();
 
     return Optional.of(transition);
   }
 
   @Override
-  public Optional<Transition> applyPingAck(PingAckMessage pingAckMessage) {
-    if (pingAckMessage.getProxyFor().isEmpty()) {
+  public Optional<Transition> applyPingAck(InboundPingAck pingAckMessage) {
+    if (pingAckMessage.proxyFor().isEmpty()) {
       LOG.warn("Expected proxy-for but did not find one - {}", pingAckMessage);
 
       return Optional.empty();
     }
 
-    if (!pingAckMessage.getProxyFor().get().equals(pingTarget)) {
+    if (!pingAckMessage.proxyFor().get().equals(pingTarget)) {
       LOG.warn(
         "Expected proxy-for to be {} but was {} - {}",
-        pingAckMessage.getProxyFor().get(),
+        pingAckMessage.proxyFor().get(),
         pingTarget,
         pingAckMessage
       );
@@ -94,10 +86,10 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
       return Optional.empty();
     }
 
-    if (!proxyTargets.contains(pingAckMessage.getFrom())) {
+    if (!proxyTargets.contains(pingAckMessage.from())) {
       LOG.warn(
         "{} was not one of the expected proxy targets ({}) - {}",
-        pingAckMessage.getFrom(),
+        pingAckMessage.from(),
         proxyTargets,
         pingAckMessage
       );
@@ -106,55 +98,25 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
     }
 
     SwarmProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(
-      protocolStartTimestamp,
       swarmConfig,
-      protocolPeriodId
+      protocolPeriodId,
+      stopwatch,
+      registry
     );
 
     return Optional.of(
       Transition
         .builder()
         .setNextSwarmProtocolState(nextState)
-        .setMemberStatusUpdate(
-          MemberStatusUpdate
-            .builder()
-            .setNewMemberStatus(MemberStatus.ALIVE)
-            .setSwarmNode(pingTarget)
-            .setIncarnationNumber(1L)
-            .build()
-        )
+        //        .setMemberStatusUpdate(
+        //          MemberStatusUpdate
+        //            .builder()
+        //            .setNewMemberStatus(MemberStatus.ALIVE)
+        //            .setSwarmNode(pingTarget)
+        //            .setIncarnationNumber(1L)
+        //            .build()
+        //        )
         .build()
     );
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    WaitingForPingProxyProtocolState that = (WaitingForPingProxyProtocolState) o;
-    return (
-      pingTarget.equals(that.pingTarget) &&
-      proxyTargets.equals(that.proxyTargets)
-    );
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(pingTarget, proxyTargets);
-  }
-
-  @Override
-  public String toString() {
-    return MoreObjects
-      .toStringHelper(this)
-      .add("protocolStartTimestamp", protocolStartTimestamp)
-      .add("protocolPeriodId", protocolPeriodId)
-      .add("pingTarget", pingTarget)
-      .add("proxyTargets", proxyTargets)
-      .toString();
   }
 }

@@ -5,7 +5,7 @@
   <parent>
     <groupId>com.github.nhirakawa</groupId>
     <artifactId>basepom</artifactId>
-    <version>17</version>
+    <version>18</version>
   </parent>
 
   <artifactId>swarm</artifactId>
@@ -31,6 +31,8 @@
     <plugin.maven.compiler.java.version>25</plugin.maven.compiler.java.version>
     <plugin.maven.compiler.version>3.14.1</plugin.maven.compiler.version>
     <plugin.maven.dependency.version>3.9.0</plugin.maven.dependency.version>
+    <plugin.prettier.maven.fail>false</plugin.prettier.maven.fail>
+    <plugin.prettier.maven.skip>true</plugin.prettier.maven.skip>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 

@@ -1,103 +1,63 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
-import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
-import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
+import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingAckResponse;
+import com.google.common.base.Stopwatch;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 
 public abstract class SwarmProtocolState {
 
-  protected final Instant protocolStartTimestamp;
   protected final SwarmConfig swarmConfig;
   protected final String protocolPeriodId;
+  final Stopwatch stopwatch;
+  final MemberRegistry registry;
 
-  protected final List<SwarmNode> clusterNodesList;
-
-  protected SwarmProtocolState(
-    Instant protocolStartTimestamp,
+  SwarmProtocolState(
     SwarmConfig swarmConfig,
-    String protocolPeriodId
+    String protocolPeriodId,
+    Stopwatch stopwatch,
+    MemberRegistry registry
   ) {
-    this.protocolStartTimestamp = protocolStartTimestamp;
     this.swarmConfig = swarmConfig;
     this.protocolPeriodId = protocolPeriodId;
-
-    this.clusterNodesList = ImmutableList.copyOf(swarmConfig.getClusterNodes());
+    this.stopwatch = stopwatch.reset().start();
+    this.registry = registry;
   }
 
-  public String getProtocolPeriodId() {
+  static SwarmProtocolState initial(
+    SwarmConfig swarmConfig,
+    String protocolPeriodId,
+    Stopwatch stopwatch,
+    MemberRegistry memberRegistry
+  ) {
+    return new WaitingForNextProtocolPeriodProtocolState(
+      swarmConfig,
+      protocolPeriodId,
+      stopwatch,
+      memberRegistry
+    );
+  }
+
+  String getProtocolPeriodId() {
     return protocolPeriodId;
   }
 
-  public abstract Optional<Transition> applyTick(
-    SwarmTimeoutMessage swarmTimeoutMessage
-  );
+  abstract Optional<Transition> applyTick();
 
-  public abstract Optional<Transition> applyPingAck(
-    PingAckMessage pingAckMessage
-  );
-
-  public static SwarmProtocolState initial(
-    Instant timestamp,
-    SwarmConfig swarmConfig,
-    String protocolPeriodId
-  ) {
-    return new WaitingForNextProtocolPeriodProtocolState(
-      timestamp,
-      swarmConfig,
-      protocolPeriodId
+  Optional<Transition> applyPing(InboundPingRequest pingRequest) {
+    return Optional.of(
+        Transition
+            .builder()
+            .setNextSwarmProtocolState(this)
+            .addResponsesToSend(new PingAckResponse(pingRequest.from(), Optional.empty(), protocolPeriodId))
+            .build()
     );
   }
 
-  protected Set<SwarmNode> getRandomNodes(
-    int number,
-    Optional<SwarmNode> proxyFor
-  ) {
-    Set<SwarmNode> disallowedNodes = new HashSet<>();
-    disallowedNodes.add(swarmConfig.getLocalNode());
-    proxyFor.ifPresent(disallowedNodes::add);
-
-    List<SwarmNode> allowedNodes = clusterNodesList
-      .stream()
-      .filter(node -> !disallowedNodes.contains(node))
-      .collect(ImmutableList.toImmutableList());
-
-    Preconditions.checkArgument(
-      number > 0,
-      "Must be greater than 0 (%s)",
-      number
-    );
-    Preconditions.checkArgument(
-      number <= allowedNodes.size(),
-      "Cannot request more than %s random nodes (%s)",
-      allowedNodes.size(),
-      number
-    );
-
-    if (number == allowedNodes.size()) {
-      return ImmutableSet.copyOf(allowedNodes);
-    }
-
-    Set<SwarmNode> randomNodes = new HashSet<>(number);
-
-    while (randomNodes.size() < number) {
-      int randomIndex = ThreadLocalRandom
-        .current()
-        .nextInt(0, allowedNodes.size());
-
-      randomNodes.add(allowedNodes.get(randomIndex));
-    }
-
-    return randomNodes;
+  Optional<Transition> applyPingAck(InboundPingAck pingAck) {
+    return Optional.empty();
   }
 }

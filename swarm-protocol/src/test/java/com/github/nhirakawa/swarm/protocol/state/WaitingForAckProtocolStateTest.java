@@ -3,97 +3,86 @@ package com.github.nhirakawa.swarm.protocol.state;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
-import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
-import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
+import com.github.nhirakawa.swarm.protocol.fake.FakeTicker;
+import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
+import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
+import com.google.common.base.Stopwatch;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class WaitingForAckProtocolStateTest {
 
-  private static final Instant TIMESTAMP = Instant.ofEpochMilli(1000);
-
-  private static final SwarmNode LOCAL_NODE = SwarmNode
-    .builder()
-    .setHost("local")
-    .setPort(1000)
-    .build();
-
-  private static final SwarmNode PING_TARGET = SwarmNode
-    .builder()
-    .setHost("host")
-    .setPort(2000)
-    .build();
-
-  private static final SwarmNode OTHER_NODE_1 = SwarmNode
-    .builder()
-    .setHost("host")
-    .setPort(3001)
-    .build();
-  private static final SwarmNode OTHER_NODE_2 = SwarmNode
-    .builder()
-    .setHost("host")
-    .setPort(3002)
-    .build();
+  private static final SwarmAddress LOCAL = new SwarmAddress(
+    "local",
+    1000,
+    "local-1000"
+  );
+  private static final SwarmAddress PING_TARGET = new SwarmAddress(
+    "host",
+    2000,
+    "host-2000"
+  );
+  private static final SwarmAddress OTHER_NODE_1 = new SwarmAddress(
+    "host",
+    3001,
+    "host-3001"
+  );
+  private static final SwarmAddress OTHER_NODE_2 = new SwarmAddress(
+    "host",
+    3002,
+    "host-3002"
+  );
 
   private static final SwarmConfig SWARM_CONFIG = SwarmConfig
     .builder()
-    .addClusterNodes(PING_TARGET, OTHER_NODE_1, OTHER_NODE_2)
-    .setDebugEnabled(false)
-    .setFailureInjectionPercent(0)
+      .setLocalAddress(LOCAL)
+    .addInitialClusterMembership(PING_TARGET, OTHER_NODE_1, OTHER_NODE_2)
     .setFailureSubGroup(1)
-    .setLocalNode(LOCAL_NODE)
     .setProtocolTick(Duration.ofMillis(100))
     .setMessageTimeout(Duration.ofMillis(20))
-    .setSwarmStateBufferSize(1)
     .setProtocolPeriod(Duration.ofSeconds(1))
     .build();
+
+  private FakeTicker ticker;
 
   private WaitingForAckProtocolState protocolState;
 
   @BeforeEach
   public void setup() {
+    ticker = new FakeTicker();
+
     protocolState =
       new WaitingForAckProtocolState(
-        TIMESTAMP,
         SWARM_CONFIG,
         PING_TARGET,
-        "protocol-period-id"
+        "protocol-period-id",
+        Stopwatch.createStarted(ticker),
+        new MemberRegistry(Set.of(PING_TARGET, OTHER_NODE_1, OTHER_NODE_2))
       );
   }
 
   @Test
   public void itDoesNothingIfTickIsBeforeMessageTimeout() {
-    Optional<Transition> transition = protocolState.applyTick(
-      SwarmTimeoutMessage
-        .builder()
-        .setTimestamp(TIMESTAMP.plusMillis(10))
-        .build()
-    );
-
+    Optional<Transition> transition = protocolState.applyTick();
     assertThat(transition).isEmpty();
   }
 
   @Test
   public void itTransitionsToWaitingForPingProxyAfterMessageTimeout() {
     // TODO @nhirakawa - make this test more robust
-    Optional<Transition> transition = protocolState.applyTick(
-      SwarmTimeoutMessage
-        .builder()
-        .setTimestamp(TIMESTAMP.plus(Duration.ofMillis(30)))
-        .build()
-    );
+    ticker.write(SWARM_CONFIG.getMessageTimeout().toNanos() * 2);
+
+    Optional<Transition> transition = protocolState.applyTick();
 
     assertThat(transition).isPresent();
 
     assertThat(transition.get().getNextSwarmProtocolState())
       .isInstanceOf(WaitingForPingProxyProtocolState.class);
-    assertThat(transition.get().getMessagesToSend())
+    assertThat(transition.get().getResponsesToSend())
       .hasSize(SWARM_CONFIG.getFailureSubGroup());
   }
 
@@ -101,19 +90,17 @@ public class WaitingForAckProtocolStateTest {
   public void itTransitionsToWaitingForNextProtocolPeriodAfterReceivingAck() {
     // TODO @nhirakawa - make this test more robust
     Optional<Transition> transition = protocolState.applyPingAck(
-      PingAckMessage
-        .builder()
-        .setFrom(PING_TARGET)
-        .setTo(LOCAL_NODE)
-        .setProtocolPeriodId(protocolState.protocolPeriodId)
-        .setUniqueMessageId(UUID.randomUUID().toString())
-        .build()
+      new InboundPingAck(
+        PING_TARGET,
+        Optional.empty(),
+        protocolState.protocolPeriodId
+      )
     );
 
     assertThat(transition).isPresent();
 
     assertThat(transition.get().getNextSwarmProtocolState())
       .isInstanceOf(WaitingForNextProtocolPeriodProtocolState.class);
-    assertThat(transition.get().getMessagesToSend()).isEmpty();
+    assertThat(transition.get().getResponsesToSend()).isEmpty();
   }
 }

@@ -3,6 +3,7 @@ package com.github.nhirakawa.swarm.protocol.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public final class ObjectMapperWrapper {
 
@@ -16,6 +17,7 @@ public final class ObjectMapperWrapper {
     ObjectMapper objectMapper = new ObjectMapper();
 
     objectMapper.registerModule(new Jdk8Module());
+    objectMapper.registerModule(new JavaTimeModule());
     objectMapper.registerModule(new GuavaModule());
 
     return objectMapper;

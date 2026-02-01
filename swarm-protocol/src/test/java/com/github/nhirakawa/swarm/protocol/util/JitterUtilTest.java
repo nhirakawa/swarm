@@ -1,0 +1,88 @@
+package com.github.nhirakawa.swarm.protocol.util;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Duration;
+import org.junit.jupiter.api.Test;
+
+class JitterUtilTest {
+
+  @Test
+  void testApplyJitter_returnsValueInExpectedRange() {
+    Duration baseDuration = Duration.ofMillis(100);
+    Duration jitterRange = Duration.ofMillis(10);
+
+    // Run multiple times to test randomness
+    for (int i = 0; i < 100; i++) {
+      Duration jittered = JitterUtil.applyJitter(baseDuration, jitterRange);
+
+      // Should be between 90ms and 110ms
+      assertThat(jittered.toMillis()).isBetween(90L, 110L);
+    }
+  }
+
+  @Test
+  void testApplyJitter_withZeroJitter() {
+    Duration baseDuration = Duration.ofMillis(100);
+    Duration jitterRange = Duration.ZERO;
+
+    Duration jittered = JitterUtil.applyJitter(baseDuration, jitterRange);
+
+    assertThat(jittered).isEqualTo(baseDuration);
+  }
+
+  @Test
+  void testApplyJitter_doesNotGoNegative() {
+    Duration baseDuration = Duration.ofMillis(10);
+    Duration jitterRange = Duration.ofMillis(20); // Larger than base
+
+    // Run multiple times to ensure we never go negative
+    for (int i = 0; i < 100; i++) {
+      Duration jittered = JitterUtil.applyJitter(baseDuration, jitterRange);
+
+      assertThat(jittered.toNanos()).isGreaterThanOrEqualTo(0);
+    }
+  }
+
+  @Test
+  void testApplyJitter_producesVariableResults() {
+    Duration baseDuration = Duration.ofMillis(100);
+    Duration jitterRange = Duration.ofMillis(20);
+
+    Duration first = JitterUtil.applyJitter(baseDuration, jitterRange);
+    boolean foundDifferent = false;
+
+    // Run up to 50 times to find a different value
+    for (int i = 0; i < 50; i++) {
+      Duration next = JitterUtil.applyJitter(baseDuration, jitterRange);
+      if (!next.equals(first)) {
+        foundDifferent = true;
+        break;
+      }
+    }
+
+    assertThat(foundDifferent)
+      .as("Should produce different jittered values")
+      .isTrue();
+  }
+
+  @Test
+  void testApplyJitter_withSmallDurations() {
+    Duration baseDuration = Duration.ofNanos(1000);
+    Duration jitterRange = Duration.ofNanos(100);
+
+    Duration jittered = JitterUtil.applyJitter(baseDuration, jitterRange);
+
+    assertThat(jittered.toNanos()).isBetween(900L, 1100L);
+  }
+
+  @Test
+  void testApplyJitter_withLargeDurations() {
+    Duration baseDuration = Duration.ofSeconds(10);
+    Duration jitterRange = Duration.ofSeconds(1);
+
+    Duration jittered = JitterUtil.applyJitter(baseDuration, jitterRange);
+
+    assertThat(jittered.toSeconds()).isBetween(9L, 11L);
+  }
+}

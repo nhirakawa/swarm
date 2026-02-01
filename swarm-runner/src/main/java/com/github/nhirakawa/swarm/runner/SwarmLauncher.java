@@ -1,15 +1,18 @@
 package com.github.nhirakawa.swarm.runner;
 
-import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.runner.cli.SwarmNodeConverter;
+import com.github.nhirakawa.swarm.runner.cmd.Local;
 import picocli.CommandLine;
 
-@CommandLine.Command
+@CommandLine.Command (
+    subcommands = Local.class
+)
 public class SwarmLauncher {
 
-  public static void main(String[] args) {
-    CommandLine commandLine = new CommandLine(new SwarmLauncher());
-    commandLine.registerConverter(SwarmNode.class, new SwarmNodeConverter());
+  SwarmLauncher() {}
+
+  static void main(String[] args) {
+		//noinspection InstantiationOfUtilityClass
+		CommandLine commandLine = new CommandLine(new SwarmLauncher());
     System.exit(commandLine.execute(args));
   }
 }

@@ -1,0 +1,173 @@
+package com.github.nhirakawa.swarm.protocol.transport.mem;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingAckResponse;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingRequestResponse;
+import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
+import java.time.Duration;
+import java.util.Optional;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class InMemoryMessageSenderTest {
+
+  private InMemoryTransportRegistry registry;
+  private SwarmAddress senderAddress;
+  private SwarmAddress receiverAddress;
+  private InMemoryTransport receiverTransport;
+  private InMemoryMessageSender sender;
+
+  @BeforeEach
+  void setUp() {
+    registry = new InMemoryTransportRegistry();
+    senderAddress = new SwarmAddress("192.168.1.1", 8080, "sender");
+    receiverAddress = new SwarmAddress("192.168.1.2", 8080, "receiver");
+    receiverTransport = new InMemoryTransport(receiverAddress, registry, 10);
+    registry.register(receiverAddress, receiverTransport);
+    sender = new InMemoryMessageSender(senderAddress, registry);
+  }
+
+  @AfterEach
+  void tearDown() {
+    registry.clear();
+  }
+
+  @Test
+  void testSendPingRequest() {
+    PingRequestResponse response = new PingRequestResponse(
+      receiverAddress,
+      Optional.empty(),
+      "period-1"
+    );
+
+    sender.send(response);
+
+    // Verify the message was received
+    InMemoryMessageReceiver receiver =
+      (InMemoryMessageReceiver) receiverTransport.receiver();
+    Optional<StateMachineMessage> receivedMessage = receiver.receive(
+      Duration.ofMillis(100)
+    );
+
+    assertThat(receivedMessage).isPresent();
+    assertThat(receivedMessage.get()).isInstanceOf(InboundPingRequest.class);
+
+    InboundPingRequest pingRequest = (InboundPingRequest) receivedMessage.get();
+    assertThat(pingRequest.from()).isEqualTo(senderAddress);
+    assertThat(pingRequest.onBehalfOf()).isEmpty();
+    assertThat(pingRequest.protocolPeriodId()).isEqualTo("period-1");
+  }
+
+  @Test
+  void testSendPingRequestWithProxy() {
+    SwarmAddress proxyAddress = new SwarmAddress(
+      "192.168.1.3",
+      8080,
+      "proxy"
+    );
+    PingRequestResponse response = new PingRequestResponse(
+      receiverAddress,
+      Optional.of(proxyAddress),
+      "period-2"
+    );
+
+    sender.send(response);
+
+    InMemoryMessageReceiver receiver =
+      (InMemoryMessageReceiver) receiverTransport.receiver();
+    Optional<StateMachineMessage> receivedMessage = receiver.receive(
+      Duration.ofMillis(100)
+    );
+
+    assertThat(receivedMessage).isPresent();
+    InboundPingRequest pingRequest = (InboundPingRequest) receivedMessage.get();
+    assertThat(pingRequest.from()).isEqualTo(senderAddress);
+    assertThat(pingRequest.onBehalfOf()).contains(proxyAddress);
+    assertThat(pingRequest.protocolPeriodId()).isEqualTo("period-2");
+  }
+
+  @Test
+  void testSendPingAck() {
+    PingAckResponse response = new PingAckResponse(
+      receiverAddress,
+      Optional.empty(),
+      "period-3"
+    );
+
+    sender.send(response);
+
+    InMemoryMessageReceiver receiver =
+      (InMemoryMessageReceiver) receiverTransport.receiver();
+    Optional<StateMachineMessage> receivedMessage = receiver.receive(
+      Duration.ofMillis(100)
+    );
+
+    assertThat(receivedMessage).isPresent();
+    assertThat(receivedMessage.get()).isInstanceOf(InboundPingAck.class);
+
+    InboundPingAck pingAck = (InboundPingAck) receivedMessage.get();
+    assertThat(pingAck.from()).isEqualTo(senderAddress);
+    assertThat(pingAck.proxyFor()).isEmpty();
+    assertThat(pingAck.protocolPeriodId()).isEqualTo("period-3");
+  }
+
+  @Test
+  void testSendPingAckWithProxy() {
+    SwarmAddress proxyAddress = new SwarmAddress(
+      "192.168.1.3",
+      8080,
+      "proxy"
+    );
+    PingAckResponse response = new PingAckResponse(
+      receiverAddress,
+      Optional.of(proxyAddress),
+      "period-4"
+    );
+
+    sender.send(response);
+
+    InMemoryMessageReceiver receiver =
+      (InMemoryMessageReceiver) receiverTransport.receiver();
+    Optional<StateMachineMessage> receivedMessage = receiver.receive(
+      Duration.ofMillis(100)
+    );
+
+    assertThat(receivedMessage).isPresent();
+    InboundPingAck pingAck = (InboundPingAck) receivedMessage.get();
+    assertThat(pingAck.from()).isEqualTo(senderAddress);
+    assertThat(pingAck.proxyFor()).contains(proxyAddress);
+    assertThat(pingAck.protocolPeriodId()).isEqualTo("period-4");
+  }
+
+  @Test
+  void testSendToNonExistentNode() {
+    SwarmAddress nonExistentAddress = new SwarmAddress(
+      "192.168.1.99",
+      8080,
+      "nonexistent"
+    );
+    PingRequestResponse response = new PingRequestResponse(
+      nonExistentAddress,
+      Optional.empty(),
+      "period-5"
+    );
+
+    // Should not throw, just log warning
+    sender.send(response);
+
+    // Verify message was not delivered to receiver
+    InMemoryMessageReceiver receiver =
+      (InMemoryMessageReceiver) receiverTransport.receiver();
+    Optional<StateMachineMessage> receivedMessage = receiver.receive(
+      Duration.ofMillis(10)
+    );
+
+    assertThat(receivedMessage).isEmpty();
+  }
+}

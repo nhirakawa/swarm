@@ -1,30 +1,31 @@
 package com.github.nhirakawa.swarm.protocol.model;
 
-import com.google.common.primitives.UnsignedBytes;
-import java.util.Optional;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum SwarmMessageType {
   PING_ACK(0),
   PING_REQUEST(1);
 
-  private final byte id;
+  private final int value;
 
-  SwarmMessageType(int id) {
-    this.id = UnsignedBytes.checkedCast(id);
+  SwarmMessageType(int value) {
+    this.value = value;
   }
 
-  public byte getId() {
-    return id;
+  @JsonCreator
+  public static SwarmMessageType parse(int value) {
+    return switch (value) {
+      case 0 -> SwarmMessageType.PING_ACK;
+      case 1 -> SwarmMessageType.PING_REQUEST;
+      default -> throw new IllegalArgumentException(
+        "%d is not a valid SwarmMessageType value".formatted(value)
+      );
+    };
   }
 
-  public static Optional<SwarmMessageType> fromId(byte id) {
-    switch (id) {
-      case 0:
-        return Optional.of(PING_ACK);
-      case 1:
-        return Optional.of(PING_REQUEST);
-      default:
-        return Optional.empty();
-    }
+  @JsonValue
+  public int value() {
+    return value;
   }
 }
