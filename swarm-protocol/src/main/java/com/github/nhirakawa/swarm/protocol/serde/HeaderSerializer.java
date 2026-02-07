@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 
 public class HeaderSerializer {
 
-  private static final int HEADER_SIZE = 18;
+  private static final int HEADER_SIZE = 34;
 
   public HeaderSerializer() {}
 
@@ -19,6 +19,15 @@ public class HeaderSerializer {
     buffer.put(UnsignedBytes.checkedCast(header.compression().value()));
     buffer.put(UnsignedBytes.checkedCast(header.serialization().value()));
 
+    // Payload length (2 bytes)
+    buffer.putShort((short) header.payloadLength());
+
+    // Message ID (4 bytes)
+    buffer.putInt((int) header.messageId());
+
+    // Timestamp (8 bytes)
+    buffer.putLong(header.timestamp());
+
     // Source address (4 bytes IP + 2 bytes port = 6 bytes)
     buffer.put(header.sourceIp());
     buffer.putShort((short) header.sourcePort());
@@ -27,8 +36,8 @@ public class HeaderSerializer {
     buffer.put(header.targetIp());
     buffer.putShort((short) header.targetPort());
 
-    // Payload length (2 bytes)
-    buffer.putShort((short) header.payloadLength());
+    // Checksum (4 bytes)
+    buffer.putInt((int) header.checksum());
 
     return buffer.array();
   }

@@ -155,11 +155,14 @@ class InMemoryMessageReceiverTest {
         SwarmMessageType.PING_REQUEST,
         Compression.NONE,
         Serialization.JSON,
+        0,                // payload length placeholder
+        1L,               // message ID placeholder
+        System.currentTimeMillis(), // timestamp
         sourceIp,
         source.port(),
         targetIp,
         target.port(),
-        0 // payload length placeholder for in-memory transport
+        0L                // checksum placeholder
       );
       return new WireMessage(source, target, header, payload);
     } catch (java.net.UnknownHostException e) {

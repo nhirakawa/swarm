@@ -14,6 +14,7 @@ import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageVersion;
 import com.github.nhirakawa.swarm.protocol.model.serde.header.Serialization;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.concurrent.ThreadSafe;
 
 import com.github.nhirakawa.swarm.protocol.transport.SwarmMessageSender;
@@ -33,6 +34,7 @@ public class InMemoryMessageSender implements SwarmMessageSender {
 
   private final SwarmAddress localAddress;
   private final NetworkSimulator networkSimulator;
+  private final AtomicLong messageIdCounter;
 
   public InMemoryMessageSender(
     SwarmAddress localAddress,
@@ -40,6 +42,7 @@ public class InMemoryMessageSender implements SwarmMessageSender {
   ) {
     this.localAddress = localAddress;
     this.networkSimulator = networkSimulator;
+    this.messageIdCounter = new AtomicLong(0);
   }
 
   @Override
@@ -111,23 +114,35 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     // Real transports will calculate actual payload length
     int payloadLength = 0;
 
+    // Generate unique message ID
+    long messageId = messageIdCounter.incrementAndGet();
+
+    // Current timestamp in milliseconds
+    long timestamp = System.currentTimeMillis();
+
+    // Checksum placeholder - in-memory transport doesn't need checksum
+    // Real transports will compute CRC32 over header + payload
+    long checksum = 0;
+
     return new MessageHeader(
       MessageVersion.V0,
       messageType,
       Compression.NONE,
       Serialization.JSON,
+      payloadLength,
+      messageId,
+      timestamp,
       sourceIp,
       source.port(),
       targetIp,
       target.port(),
-      payloadLength
+      checksum
     );
   }
 
   private byte[] extractIpBytes(String address) {
     try {
-      InetAddress inetAddress = InetAddress.getByName(address);
-      return inetAddress.getAddress();
+			return InetAddress.getByName(address).getAddress();
     } catch (UnknownHostException e) {
       throw new IllegalArgumentException(
         "Invalid IP address: " + address,
