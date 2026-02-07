@@ -12,6 +12,9 @@ import com.github.nhirakawa.swarm.protocol.model.serde.header.Compression;
 import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageHeader;
 import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageVersion;
 import com.github.nhirakawa.swarm.protocol.model.serde.header.Serialization;
+import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -35,6 +38,7 @@ public class InMemoryMessageSender implements SwarmMessageSender {
   private final SwarmAddress localAddress;
   private final NetworkSimulator networkSimulator;
   private final AtomicLong messageIdCounter;
+  private final ObjectMapper objectMapper;
 
   public InMemoryMessageSender(
     SwarmAddress localAddress,
@@ -43,29 +47,45 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     this.localAddress = localAddress;
     this.networkSimulator = networkSimulator;
     this.messageIdCounter = new AtomicLong(0);
+    this.objectMapper = ObjectMapperWrapper.instance();
   }
 
   @Override
   public void send(StateMachineResponse response) {
-    StateMachineMessage message = convertResponseToMessage(response);
-    SwarmAddress targetAddress = getTargetAddress(response);
-    MessageHeader header = createHeader(message, localAddress, targetAddress);
+    try {
+      StateMachineMessage message = convertResponseToMessage(response);
+      SwarmAddress targetAddress = getTargetAddress(response);
 
-    WireMessage wireMessage = new WireMessage(
-      localAddress,
-      targetAddress,
-      header,
-      message
-    );
+      // Serialize message to bytes
+      byte[] payloadBytes = objectMapper.writeValueAsBytes(message);
 
-    boolean enqueued = networkSimulator.enqueue(wireMessage);
-    if (enqueued) {
-      LOG.debug(
-        "Sent {} from {} to {}",
-        message.getClass().getSimpleName(),
-        formatAddress(localAddress),
-        formatAddress(targetAddress)
+      // Create header with actual payload length
+      MessageHeader header = createHeader(
+        message,
+        localAddress,
+        targetAddress,
+        payloadBytes.length
       );
+
+      WireMessage wireMessage = new WireMessage(
+        localAddress,
+        targetAddress,
+        header,
+        payloadBytes
+      );
+
+      boolean enqueued = networkSimulator.enqueue(wireMessage);
+      if (enqueued) {
+        LOG.debug(
+          "Sent {} from {} to {}",
+          message.getClass().getSimpleName(),
+          formatAddress(localAddress),
+          formatAddress(targetAddress)
+        );
+      }
+    } catch (IOException e) {
+      LOG.error("Failed to serialize message", e);
+      throw new RuntimeException("Failed to serialize message", e);
     }
   }
 
@@ -100,7 +120,8 @@ public class InMemoryMessageSender implements SwarmMessageSender {
   private MessageHeader createHeader(
     StateMachineMessage message,
     SwarmAddress source,
-    SwarmAddress target
+    SwarmAddress target,
+    int payloadLength
   ) {
     SwarmMessageType messageType = switch (message) {
       case InboundPingRequest ignored -> SwarmMessageType.PING_REQUEST;
@@ -110,17 +131,13 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     byte[] sourceIp = extractIpBytes(source.address());
     byte[] targetIp = extractIpBytes(target.address());
 
-    // In-memory transport doesn't serialize, so use 0 as placeholder
-    // Real transports will calculate actual payload length
-    int payloadLength = 0;
-
     // Generate unique message ID
     long messageId = messageIdCounter.incrementAndGet();
 
     // Current timestamp in milliseconds
     long timestamp = System.currentTimeMillis();
 
-    // Checksum placeholder - in-memory transport doesn't need checksum
+    // Checksum placeholder - in-memory transport doesn't compute checksum
     // Real transports will compute CRC32 over header + payload
     long checksum = 0;
 

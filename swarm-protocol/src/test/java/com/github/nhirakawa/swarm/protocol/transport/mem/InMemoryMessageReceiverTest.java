@@ -10,6 +10,8 @@ import com.github.nhirakawa.swarm.protocol.model.serde.header.Compression;
 import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageHeader;
 import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageVersion;
 import com.github.nhirakawa.swarm.protocol.model.serde.header.Serialization;
+import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -147,6 +149,9 @@ class InMemoryMessageReceiverTest {
     StateMachineMessage payload
   ) {
     try {
+      ObjectMapper objectMapper = ObjectMapperWrapper.instance();
+      byte[] payloadBytes = objectMapper.writeValueAsBytes(payload);
+
       byte[] sourceIp = java.net.InetAddress.getByName(source.address()).getAddress();
       byte[] targetIp = java.net.InetAddress.getByName(target.address()).getAddress();
 
@@ -155,17 +160,17 @@ class InMemoryMessageReceiverTest {
         SwarmMessageType.PING_REQUEST,
         Compression.NONE,
         Serialization.JSON,
-        0,                // payload length placeholder
-        1L,               // message ID placeholder
+        payloadBytes.length,  // Actual payload length
+        1L,                   // message ID placeholder
         System.currentTimeMillis(), // timestamp
         sourceIp,
         source.port(),
         targetIp,
         target.port(),
-        0L                // checksum placeholder
+        0L                    // checksum placeholder
       );
-      return new WireMessage(source, target, header, payload);
-    } catch (java.net.UnknownHostException e) {
+      return new WireMessage(source, target, header, payloadBytes);
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }

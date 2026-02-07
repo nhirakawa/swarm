@@ -1,9 +1,13 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.SwarmMessageType;
 import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
+import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
@@ -27,9 +31,11 @@ public class InMemoryMessageReceiver implements SwarmMessageReceiver {
   );
 
   private final BlockingQueue<StateMachineMessage> inboundQueue;
+  private final ObjectMapper objectMapper;
 
   public InMemoryMessageReceiver(int queueCapacity) {
     this.inboundQueue = new LinkedBlockingQueue<>(queueCapacity);
+    this.objectMapper = ObjectMapperWrapper.instance();
   }
 
   @Override
@@ -70,7 +76,7 @@ public class InMemoryMessageReceiver implements SwarmMessageReceiver {
   /**
    * Enqueue an inbound wire message with a timeout.
    * Called by NetworkSimulator when delivering messages.
-   * Unwraps the wire message to extract the payload.
+   * Deserializes the wire message payload and enqueues it.
    *
    * @param wireMessage the wire message to enqueue
    * @param timeout how long to wait if the queue is full
@@ -79,19 +85,45 @@ public class InMemoryMessageReceiver implements SwarmMessageReceiver {
    */
   boolean enqueue(WireMessage wireMessage, Duration timeout)
     throws InterruptedException {
-    StateMachineMessage message = wireMessage.payload();
-    boolean offered = inboundQueue.offer(
-      message,
-      timeout.toNanos(),
-      TimeUnit.NANOSECONDS
-    );
-    if (!offered) {
-      LOG.error(
-        "Failed to enqueue message after timeout, queue is full. Message: {}",
-        message
+    try {
+      // Deserialize payload based on message type in header
+      StateMachineMessage message = deserializePayload(
+        wireMessage.payload(),
+        wireMessage.header().type()
       );
+
+      boolean offered = inboundQueue.offer(
+        message,
+        timeout.toNanos(),
+        TimeUnit.NANOSECONDS
+      );
+      if (!offered) {
+        LOG.error(
+          "Failed to enqueue message after timeout, queue is full. Message: {}",
+          message
+        );
+      }
+      return offered;
+    } catch (IOException e) {
+      LOG.error("Failed to deserialize message", e);
+      throw new RuntimeException("Failed to deserialize message", e);
     }
-    return offered;
+  }
+
+  private StateMachineMessage deserializePayload(
+    byte[] payloadBytes,
+    SwarmMessageType messageType
+  ) throws IOException {
+    return switch (messageType) {
+      case PING_REQUEST -> objectMapper.readValue(
+        payloadBytes,
+        InboundPingRequest.class
+      );
+      case PING_ACK -> objectMapper.readValue(
+        payloadBytes,
+        InboundPingAck.class
+      );
+    };
   }
 
   /**
