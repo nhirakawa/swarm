@@ -58,7 +58,8 @@ public class WaitingForPingProxyProtocolStateTest {
     protocolState =
       new WaitingForPingProxyProtocolState(
         SWARM_CONFIG,
-        "protocol-period-id",
+        4L,
+        1L,
         Stopwatch.createStarted(ticker),
         new MemberRegistry(Set.of(TARGET, OTHER_1, OTHER_2)),
         TARGET,
@@ -70,7 +71,7 @@ public class WaitingForPingProxyProtocolStateTest {
   public void itTransitionsToWaitingForNextProtocolPeriodAfterProxyAck() {
     // TODO @nhirakawa - make this test more robust
     Optional<Transition> transition = protocolState.applyPingAck(
-      new InboundPingAck(OTHER_1, Optional.of(TARGET), "protocol-period-id")
+      new InboundPingAck(OTHER_1, Optional.of(TARGET), 4L)
     );
 
     assertThat(transition).isPresent();
@@ -96,14 +97,14 @@ public class WaitingForPingProxyProtocolStateTest {
       .get()
       .getNextSwarmProtocolState();
 
-    assertThat(nextState.getProtocolPeriodId())
-      .isEqualTo(protocolState.getProtocolPeriodId());
+    assertThat(nextState.protocolPeriodId)
+      .isEqualTo(protocolState.protocolPeriodId);
   }
 
   @Test
   public void itDoesNothingIfAckIsNotFromProxy() {
     Optional<Transition> transition = protocolState.applyPingAck(
-      new InboundPingAck(OTHER_2, Optional.of(TARGET), "protocol-period-id")
+      new InboundPingAck(OTHER_2, Optional.of(TARGET), 4L)
     );
 
     assertThat(transition).isEmpty();
@@ -112,7 +113,7 @@ public class WaitingForPingProxyProtocolStateTest {
   @Test
   public void itDoesNothingIfAckIsNotForTarget() {
     Optional<Transition> transition = protocolState.applyPingAck(
-      new InboundPingAck(OTHER_1, Optional.of(OTHER_2), "protocol-period-id")
+      new InboundPingAck(OTHER_1, Optional.of(OTHER_2), 4L)
     );
 
     assertThat(transition).isEmpty();

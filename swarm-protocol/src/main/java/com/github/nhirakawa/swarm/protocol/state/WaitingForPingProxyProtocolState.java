@@ -24,13 +24,14 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
 
   WaitingForPingProxyProtocolState(
     SwarmConfig swarmConfig,
-    String protocolPeriodId,
+    long protocolPeriodId,
+    long incarnation,
     Stopwatch stopwatch,
     MemberRegistry memberRegistry,
     SwarmAddress pingTarget,
     Set<SwarmAddress> proxyTargets
   ) {
-    super(swarmConfig, protocolPeriodId, stopwatch, memberRegistry);
+    super(swarmConfig, protocolPeriodId, incarnation, stopwatch, memberRegistry);
     this.pingTarget = pingTarget;
     this.proxyTargets = ImmutableSet.copyOf(proxyTargets);
   }
@@ -47,6 +48,7 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
     SwarmProtocolState nextSwarmProtocolState = new WaitingForNextProtocolPeriodProtocolState(
       swarmConfig,
       protocolPeriodId,
+      incarnation,
       stopwatch,
       registry
     );
@@ -100,6 +102,7 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
     SwarmProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(
       swarmConfig,
       protocolPeriodId,
+      incarnation,
       stopwatch,
       registry
     );

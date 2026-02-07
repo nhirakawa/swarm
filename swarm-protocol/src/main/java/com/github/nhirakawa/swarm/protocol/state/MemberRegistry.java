@@ -1,7 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -30,14 +29,16 @@ class MemberRegistry {
   private final TreeSet<Counted> sortedByGossipCount = new TreeSet<>();
 
   MemberRegistry(Set<SwarmAddress> initialGroup) {
-    Preconditions.checkArgument(!initialGroup.isEmpty(), "Must provide at least 1 initial member");
-
     for (SwarmAddress swarmAddress : initialGroup) {
       var memberStatus = MemberStatus.alive(swarmAddress, 0);
       var counted = Counted.initial(swarmAddress, memberStatus);
       registry.put(swarmAddress, counted);
       sortedByGossipCount.add(counted);
     }
+  }
+
+  int size() {
+    return registry.size();
   }
 
   void put(SwarmAddress swarmAddress, MemberStatus memberStatus) {

@@ -81,7 +81,7 @@ class InMemoryTransportTest {
     PingRequestResponse response = new PingRequestResponse(
       address2,
       Optional.empty(),
-      "period-1"
+      4L
     );
 
     transport1.sender().send(response);
@@ -96,7 +96,7 @@ class InMemoryTransportTest {
 
     InboundPingRequest pingRequest = (InboundPingRequest) receivedMessage.get();
     assertThat(pingRequest.from()).isEqualTo(address1);
-    assertThat(pingRequest.protocolPeriodId()).isEqualTo("period-1");
+    assertThat(pingRequest.protocolPeriodId()).isEqualTo(4L);
   }
 
   @Test
@@ -106,12 +106,12 @@ class InMemoryTransportTest {
 
     // Node 1 -> Node 2
     transport1.sender().send(
-        new PingRequestResponse(address2, Optional.empty(), "period-1")
+        new PingRequestResponse(address2, Optional.empty(), 4L)
       );
 
     // Node 2 -> Node 1
     transport2.sender().send(
-        new PingRequestResponse(address1, Optional.empty(), "period-2")
+        new PingRequestResponse(address1, Optional.empty(), 4L)
       );
 
     // Verify Node 2 received from Node 1

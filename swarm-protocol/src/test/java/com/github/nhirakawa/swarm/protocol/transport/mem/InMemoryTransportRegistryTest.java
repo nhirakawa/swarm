@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+
+import java.net.UnknownHostException;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +33,7 @@ class InMemoryTransportRegistryTest {
   }
 
   @Test
-  void testRegisterAndLookup() {
+  void testRegisterAndLookup() throws UnknownHostException {
     registry.register(address1, transport1);
 
     Optional<InMemoryTransport> result = registry.lookup(address1);
@@ -48,7 +50,7 @@ class InMemoryTransportRegistryTest {
   }
 
   @Test
-  void testRegisterDuplicateThrowsException() {
+  void testRegisterDuplicateThrowsException() throws UnknownHostException {
     registry.register(address1, transport1);
 
     assertThatThrownBy(() -> registry.register(address1, transport2))
@@ -57,7 +59,7 @@ class InMemoryTransportRegistryTest {
   }
 
   @Test
-  void testDeregister() {
+  void testDeregister() throws UnknownHostException {
     registry.register(address1, transport1);
     registry.deregister(address1);
 
@@ -75,7 +77,7 @@ class InMemoryTransportRegistryTest {
   }
 
   @Test
-  void testMultipleRegistrations() {
+  void testMultipleRegistrations() throws UnknownHostException {
     registry.register(address1, transport1);
     registry.register(address2, transport2);
 
@@ -85,7 +87,7 @@ class InMemoryTransportRegistryTest {
   }
 
   @Test
-  void testClear() {
+  void testClear() throws UnknownHostException {
     registry.register(address1, transport1);
     registry.register(address2, transport2);
 

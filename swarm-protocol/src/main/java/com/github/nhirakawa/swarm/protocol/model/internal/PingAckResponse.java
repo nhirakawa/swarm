@@ -6,6 +6,6 @@ import java.util.Optional;
 public record PingAckResponse(
   SwarmAddress target,
   Optional<SwarmAddress> proxyFor,
-  String protocolPeriodId
+  long protocolPeriodId
 )
   implements StateMachineResponse {}

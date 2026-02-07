@@ -10,7 +10,8 @@ import com.github.nhirakawa.swarm.protocol.util.JitterUtil;
 import com.google.common.base.Stopwatch;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,11 +27,12 @@ public class WaitingForNextProtocolPeriodProtocolState
 
   WaitingForNextProtocolPeriodProtocolState(
     SwarmConfig swarmConfig,
-    String protocolPeriodId,
+    long protocolPeriodId,
+    long incarnation,
     Stopwatch stopwatch,
     MemberRegistry memberRegistry
   ) {
-    super(swarmConfig, protocolPeriodId, stopwatch, memberRegistry);
+    super(swarmConfig, protocolPeriodId, incarnation, stopwatch, memberRegistry);
     this.jitteredProtocolPeriod = JitterUtil.applyJitter(
       swarmConfig.getProtocolPeriod(),
       swarmConfig.getProtocolPeriodJitter()
@@ -50,7 +52,8 @@ public class WaitingForNextProtocolPeriodProtocolState
     SwarmProtocolState newState = new WaitingForAckProtocolState(
       swarmConfig,
       pingTarget,
-      UUID.randomUUID().toString(),
+      ThreadLocalRandom.current().nextLong(),
+      incarnation,
       stopwatch,
       registry
     );

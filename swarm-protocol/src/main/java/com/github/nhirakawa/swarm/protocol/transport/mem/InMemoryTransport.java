@@ -6,6 +6,8 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Duration;
+
 /**
  * In-memory implementation of SwarmTransport for single-process, multi-node simulation.
  * Automatically registers/deregisters with the transport registry on start/stop.
@@ -46,6 +48,10 @@ public class InMemoryTransport
   protected void shutDown() throws Exception {
     LOG.info("Shutting down in-memory transport for address: {}", localAddress);
     registry.deregister(localAddress);
+  }
+
+  public void enqueue(WireMessage wireMessage, Duration timeout) throws InterruptedException {
+    receiver.enqueue(wireMessage, timeout);
   }
 
   @Override

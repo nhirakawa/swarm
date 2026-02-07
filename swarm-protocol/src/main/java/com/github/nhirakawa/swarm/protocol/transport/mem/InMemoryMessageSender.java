@@ -2,6 +2,10 @@ package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.SwarmMessageType;
+import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequestResponse;
+import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryResponseResponse;
+import com.github.nhirakawa.swarm.protocol.model.internal.InboundDiscoveryRequest;
+import com.github.nhirakawa.swarm.protocol.model.internal.InboundDiscoveryResponse;
 import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAckResponse;
@@ -53,39 +57,63 @@ public class InMemoryMessageSender implements SwarmMessageSender {
   @Override
   public void send(StateMachineResponse response) {
     try {
-      StateMachineMessage message = convertResponseToMessage(response);
-      SwarmAddress targetAddress = getTargetAddress(response);
-
-      // Serialize message to bytes
-      byte[] payloadBytes = objectMapper.writeValueAsBytes(message);
-
-      // Create header with actual payload length
-      MessageHeader header = createHeader(
-        message,
-        localAddress,
-        targetAddress,
-        payloadBytes.length
-      );
-
-      WireMessage wireMessage = new WireMessage(
-        localAddress,
-        targetAddress,
-        header,
-        payloadBytes
-      );
-
-      boolean enqueued = networkSimulator.enqueue(wireMessage);
-      if (enqueued) {
-        LOG.debug(
-          "Sent {} from {} to {}",
-          message.getClass().getSimpleName(),
-          formatAddress(localAddress),
-          formatAddress(targetAddress)
-        );
+      if (response instanceof DiscoveryRequestResponse discoveryRequest) {
+        sendBroadcast(discoveryRequest);
+      } else {
+        sendUnicast(response);
       }
     } catch (IOException e) {
       LOG.error("Failed to serialize message", e);
       throw new RuntimeException("Failed to serialize message", e);
+    }
+  }
+
+  private void sendBroadcast(DiscoveryRequestResponse ignored)
+    throws IOException {
+    StateMachineMessage message = new InboundDiscoveryRequest(
+      localAddress
+    );
+
+    // Serialize message to bytes (once for all targets)
+    byte[] payloadBytes = objectMapper.writeValueAsBytes(message);
+
+    MessageHeader header = createHeader(message, localAddress, SwarmAddress.createMulticastAddress(), payloadBytes.length);
+    WireMessage wireMessage = new WireMessage(localAddress, SwarmAddress.createMulticastAddress(), header, payloadBytes);
+    networkSimulator.enqueue(wireMessage);
+
+    LOG.debug("Sent multicast discovery request");
+  }
+
+  private void sendUnicast(StateMachineResponse response) throws IOException {
+    StateMachineMessage message = convertResponseToMessage(response);
+    SwarmAddress targetAddress = getTargetAddress(response);
+
+    // Serialize message to bytes
+    byte[] payloadBytes = objectMapper.writeValueAsBytes(message);
+
+    // Create header with actual payload length
+    MessageHeader header = createHeader(
+      message,
+      localAddress,
+      targetAddress,
+      payloadBytes.length
+    );
+
+    WireMessage wireMessage = new WireMessage(
+      localAddress,
+      targetAddress,
+      header,
+      payloadBytes
+    );
+
+    boolean enqueued = networkSimulator.enqueue(wireMessage);
+    if (enqueued) {
+      LOG.debug(
+        "Sent {} from {} to {}",
+        message.getClass().getSimpleName(),
+        formatAddress(localAddress),
+        formatAddress(targetAddress)
+      );
     }
   }
 
@@ -107,6 +135,13 @@ public class InMemoryMessageSender implements SwarmMessageSender {
         pingAck.proxyFor(),
         pingAck.protocolPeriodId()
       );
+      case DiscoveryRequestResponse discoveryRequest -> new InboundDiscoveryRequest(
+        localAddress
+      );
+      case DiscoveryResponseResponse discoveryResponse -> new InboundDiscoveryResponse(
+        localAddress,
+        discoveryResponse.memberList()
+      );
     };
   }
 
@@ -114,6 +149,10 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     return switch (response) {
       case PingRequestResponse pingRequest -> pingRequest.target();
       case PingAckResponse pingAck -> pingAck.target();
+      case DiscoveryResponseResponse discoveryResponse -> discoveryResponse.target();
+      case DiscoveryRequestResponse ignored -> throw new IllegalStateException(
+        "DiscoveryRequestResponse should be handled by sendBroadcast()"
+      );
     };
   }
 
@@ -126,6 +165,8 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     SwarmMessageType messageType = switch (message) {
       case InboundPingRequest ignored -> SwarmMessageType.PING_REQUEST;
       case InboundPingAck ignored -> SwarmMessageType.PING_ACK;
+      case InboundDiscoveryRequest ignored -> SwarmMessageType.DISCOVERY_REQUEST;
+      case InboundDiscoveryResponse ignored -> SwarmMessageType.DISCOVERY_RESPONSE;
     };
 
     byte[] sourceIp = extractIpBytes(source.address());

@@ -1,10 +1,16 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -19,10 +25,14 @@ public class InMemoryTransportRegistry {
     InMemoryTransportRegistry.class
   );
 
-  private final ConcurrentHashMap<SwarmAddress, InMemoryTransport> registry;
+  @GuardedBy("this")
+  private final ConcurrentMap<SwarmAddress, InMemoryTransport> registry;
+  @GuardedBy("this")
+  private final ConcurrentMap<SwarmAddress, byte[]> resolvedAddresses;
 
   public InMemoryTransportRegistry() {
     this.registry = new ConcurrentHashMap<>();
+    this.resolvedAddresses = new ConcurrentHashMap<>();
   }
 
   /**
@@ -32,7 +42,7 @@ public class InMemoryTransportRegistry {
    * @param transport the transport instance for that node
    * @throws IllegalStateException if address is already registered
    */
-  public void register(SwarmAddress address, InMemoryTransport transport) {
+  public synchronized void register(SwarmAddress address, InMemoryTransport transport) throws UnknownHostException {
     InMemoryTransport previous = registry.putIfAbsent(address, transport);
     if (previous != null) {
       throw new IllegalStateException(
@@ -42,6 +52,8 @@ public class InMemoryTransportRegistry {
         )
       );
     }
+    InetAddress inetAddress = InetAddress.getByName(address.address());
+    resolvedAddresses.put(address, inetAddress.getAddress());
     LOG.info("Registered transport for address: {}", address);
   }
 
@@ -50,7 +62,7 @@ public class InMemoryTransportRegistry {
    *
    * @param address the swarm address to deregister
    */
-  public void deregister(SwarmAddress address) {
+  public synchronized void deregister(SwarmAddress address) {
     InMemoryTransport removed = registry.remove(address);
     if (removed != null) {
       LOG.info("Deregistered transport for address: {}", address);
@@ -65,8 +77,12 @@ public class InMemoryTransportRegistry {
    * @param address the swarm address to lookup
    * @return the transport instance if registered, empty otherwise
    */
-  public Optional<InMemoryTransport> lookup(SwarmAddress address) {
+  public synchronized Optional<InMemoryTransport> lookup(SwarmAddress address) {
     return Optional.ofNullable(registry.get(address));
+  }
+
+  public synchronized Optional<byte[]> resolve(SwarmAddress address) {
+    return Optional.ofNullable(resolvedAddresses.get(address));
   }
 
   /**
@@ -75,16 +91,21 @@ public class InMemoryTransportRegistry {
    *
    * @return the count of registered transports
    */
-  public int size() {
+  public synchronized int size() {
     return registry.size();
+  }
+
+  public synchronized ImmutableSet<SwarmAddress> keys() {
+    return ImmutableSet.copyOf(registry.keySet());
   }
 
   /**
    * Clear all registered transports.
    * Primarily useful for testing.
    */
-  public void clear() {
+  public synchronized void clear() {
     registry.clear();
+    resolvedAddresses.clear();
     LOG.info("Cleared all registered transports");
   }
 }

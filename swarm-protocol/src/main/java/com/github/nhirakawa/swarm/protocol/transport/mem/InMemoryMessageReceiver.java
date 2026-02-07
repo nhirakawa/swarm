@@ -2,6 +2,8 @@ package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.SwarmMessageType;
+import com.github.nhirakawa.swarm.protocol.model.internal.InboundDiscoveryRequest;
+import com.github.nhirakawa.swarm.protocol.model.internal.InboundDiscoveryResponse;
 import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
@@ -66,6 +68,8 @@ public class InMemoryMessageReceiver implements SwarmMessageReceiver {
     return switch (message) {
       case InboundPingRequest req -> req.from();
       case InboundPingAck ack -> ack.from();
+      case InboundDiscoveryRequest req -> req.from();
+      case InboundDiscoveryResponse res -> res.from();
     };
   }
 
@@ -122,6 +126,14 @@ public class InMemoryMessageReceiver implements SwarmMessageReceiver {
       case PING_ACK -> objectMapper.readValue(
         payloadBytes,
         InboundPingAck.class
+      );
+      case DISCOVERY_REQUEST -> objectMapper.readValue(
+        payloadBytes,
+        InboundDiscoveryRequest.class
+      );
+      case DISCOVERY_RESPONSE -> objectMapper.readValue(
+        payloadBytes,
+        InboundDiscoveryResponse.class
       );
     };
   }

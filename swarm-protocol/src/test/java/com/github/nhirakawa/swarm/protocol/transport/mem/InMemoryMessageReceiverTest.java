@@ -44,7 +44,7 @@ class InMemoryMessageReceiverTest {
     StateMachineMessage message = new InboundPingRequest(
       from,
       Optional.empty(),
-      "period-1"
+      4L
     );
 
     WireMessage wireMessage = createWireMessage(from, to, message);
@@ -66,12 +66,12 @@ class InMemoryMessageReceiverTest {
     StateMachineMessage message1 = new InboundPingRequest(
       from,
       Optional.empty(),
-      "period-1"
+      4L
     );
     StateMachineMessage message2 = new InboundPingRequest(
       from,
       Optional.empty(),
-      "period-2"
+      4L
     );
 
     WireMessage wireMessage1 = createWireMessage(from, to, message1);
@@ -103,7 +103,7 @@ class InMemoryMessageReceiverTest {
       StateMachineMessage message = new InboundPingRequest(
         from,
         Optional.empty(),
-        "period-" + i
+        4 + i
       );
       WireMessage wireMessage = createWireMessage(from, to, message);
       boolean enqueued = receiver.enqueue(wireMessage, Duration.ofMillis(100));
@@ -114,7 +114,7 @@ class InMemoryMessageReceiverTest {
     StateMachineMessage extraMessage = new InboundPingRequest(
       from,
       Optional.empty(),
-      "period-extra"
+      4L
     );
     WireMessage extraWireMessage = createWireMessage(from, to, extraMessage);
     boolean enqueued = receiver.enqueue(extraWireMessage, Duration.ofMillis(10));
@@ -132,7 +132,7 @@ class InMemoryMessageReceiverTest {
     StateMachineMessage message = new InboundPingRequest(
       from,
       Optional.empty(),
-      "period-1"
+      4L
     );
 
     WireMessage wireMessage = createWireMessage(from, to, message);

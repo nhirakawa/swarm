@@ -48,7 +48,8 @@ public class WaitingForNextProtocolPeriodStateTest {
     protocolState =
       new WaitingForNextProtocolPeriodProtocolState(
         SWARM_CONFIG,
-        "protocol period id",
+        4L,
+        1L,
         Stopwatch.createStarted(ticker),
         new MemberRegistry(Set.of(OTHER))
       );
@@ -81,7 +82,7 @@ public class WaitingForNextProtocolPeriodStateTest {
       new InboundPingAck(
         OTHER,
         Optional.empty(),
-        protocolState.protocolPeriodId
+        4L
       )
     );
 

@@ -8,6 +8,8 @@ import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAckResponse;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequestResponse;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
+
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -25,7 +27,7 @@ class InMemoryMessageSenderTest {
   private InMemoryMessageSender sender;
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws UnknownHostException {
     NetworkSimulationConfig config = DefaultNetworkSimulationConfig.perfect();
     registry = new InMemoryTransportRegistry();
     networkSimulator = new NetworkSimulator(registry, config);
@@ -48,7 +50,7 @@ class InMemoryMessageSenderTest {
     PingRequestResponse response = new PingRequestResponse(
       receiverAddress,
       Optional.empty(),
-      "period-1"
+      4L
     );
 
     sender.send(response);
@@ -66,7 +68,7 @@ class InMemoryMessageSenderTest {
     InboundPingRequest pingRequest = (InboundPingRequest) receivedMessage.get();
     assertThat(pingRequest.from()).isEqualTo(senderAddress);
     assertThat(pingRequest.onBehalfOf()).isEmpty();
-    assertThat(pingRequest.protocolPeriodId()).isEqualTo("period-1");
+    assertThat(pingRequest.protocolPeriodId()).isEqualTo(4L);
   }
 
   @Test
@@ -79,7 +81,7 @@ class InMemoryMessageSenderTest {
     PingRequestResponse response = new PingRequestResponse(
       receiverAddress,
       Optional.of(proxyAddress),
-      "period-2"
+      4L
     );
 
     sender.send(response);
@@ -94,7 +96,7 @@ class InMemoryMessageSenderTest {
     InboundPingRequest pingRequest = (InboundPingRequest) receivedMessage.get();
     assertThat(pingRequest.from()).isEqualTo(senderAddress);
     assertThat(pingRequest.onBehalfOf()).contains(proxyAddress);
-    assertThat(pingRequest.protocolPeriodId()).isEqualTo("period-2");
+    assertThat(pingRequest.protocolPeriodId()).isEqualTo(4L);
   }
 
   @Test
@@ -102,7 +104,7 @@ class InMemoryMessageSenderTest {
     PingAckResponse response = new PingAckResponse(
       receiverAddress,
       Optional.empty(),
-      "period-3"
+      4L
     );
 
     sender.send(response);
@@ -119,7 +121,7 @@ class InMemoryMessageSenderTest {
     InboundPingAck pingAck = (InboundPingAck) receivedMessage.get();
     assertThat(pingAck.from()).isEqualTo(senderAddress);
     assertThat(pingAck.proxyFor()).isEmpty();
-    assertThat(pingAck.protocolPeriodId()).isEqualTo("period-3");
+    assertThat(pingAck.protocolPeriodId()).isEqualTo(4L);
   }
 
   @Test
@@ -132,7 +134,7 @@ class InMemoryMessageSenderTest {
     PingAckResponse response = new PingAckResponse(
       receiverAddress,
       Optional.of(proxyAddress),
-      "period-4"
+      4L
     );
 
     sender.send(response);
@@ -147,7 +149,7 @@ class InMemoryMessageSenderTest {
     InboundPingAck pingAck = (InboundPingAck) receivedMessage.get();
     assertThat(pingAck.from()).isEqualTo(senderAddress);
     assertThat(pingAck.proxyFor()).contains(proxyAddress);
-    assertThat(pingAck.protocolPeriodId()).isEqualTo("period-4");
+    assertThat(pingAck.protocolPeriodId()).isEqualTo(4L);
   }
 
   @Test
@@ -160,7 +162,7 @@ class InMemoryMessageSenderTest {
     PingRequestResponse response = new PingRequestResponse(
       nonExistentAddress,
       Optional.empty(),
-      "period-5"
+      4L
     );
 
     // Should not throw, just log warning

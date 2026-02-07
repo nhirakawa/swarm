@@ -6,6 +6,6 @@ import java.util.Optional;
 public record PingRequestResponse(
   SwarmAddress target,
   Optional<SwarmAddress> onBehalfOf,
-  String protocolPeriodId
+  long protocolPeriodId
 )
   implements StateMachineResponse {}

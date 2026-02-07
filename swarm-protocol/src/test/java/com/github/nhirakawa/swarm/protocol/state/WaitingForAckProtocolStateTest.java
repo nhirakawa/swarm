@@ -59,7 +59,8 @@ public class WaitingForAckProtocolStateTest {
       new WaitingForAckProtocolState(
         SWARM_CONFIG,
         PING_TARGET,
-        "protocol-period-id",
+        4L,
+        1L,
         Stopwatch.createStarted(ticker),
         new MemberRegistry(Set.of(PING_TARGET, OTHER_NODE_1, OTHER_NODE_2))
       );

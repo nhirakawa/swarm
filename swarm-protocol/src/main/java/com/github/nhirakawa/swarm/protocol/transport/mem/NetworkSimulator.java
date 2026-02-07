@@ -1,7 +1,9 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageHeader;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
+
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.DelayQueue;
@@ -57,7 +59,56 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
       return false;
     }
 
-    Duration latency = config.sampleLatency(source, target);
+    // Check for multicast address
+    if (target.address().equals("224.0.2.0")) {
+      return multicast(wireMessage);
+    } else {
+      return unicast(wireMessage);
+    }
+  }
+
+  private boolean multicast(WireMessage wireMessage) {
+    boolean deliveredAny = false;
+
+    for (SwarmAddress target : registry.keys()) {
+      if (target.equals(wireMessage.source())) {
+        continue;
+      }
+
+      Optional<byte[]> targetIp = registry.resolve(target);
+
+      if (targetIp.isEmpty()) {
+        LOG.debug("Could not resolve address for {}", target);
+        continue;
+      }
+
+      MessageHeader messageHeader = new MessageHeader(
+          wireMessage.header().messageVersion(),
+          wireMessage.header().type(),
+          wireMessage.header().compression(),
+          wireMessage.header().serialization(),
+          wireMessage.header().payloadLength(),
+          wireMessage.header().messageId(),
+          wireMessage.header().timestamp(),
+          wireMessage.header().sourceIp(),
+          wireMessage.header().sourcePort(),
+          targetIp.get(),
+          wireMessage.header().targetPort(),
+          0L
+      );
+
+      WireMessage unicastWireMessage = new WireMessage(wireMessage.source(), target, messageHeader, wireMessage.payload());
+
+      boolean unicastWasSuccessful = unicast(unicastWireMessage);
+
+      deliveredAny = deliveredAny || unicastWasSuccessful;
+    }
+
+    return deliveredAny;
+  }
+
+  private boolean unicast(WireMessage wireMessage) {
+    Duration latency = config.sampleLatency(wireMessage.source(), wireMessage.target());
     long deliveryTimeNanos = System.nanoTime() + latency.toNanos();
 
     DelayedMessage delayed = new DelayedMessage(wireMessage, deliveryTimeNanos);
@@ -96,37 +147,42 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
     LOG.info("Network simulator drainer thread stopped");
   }
 
-  private void deliverToReceiver(WireMessage wireMessage) {
+  private void deliverToReceiver(WireMessage wireMessage) throws InterruptedException {
     SwarmAddress target = wireMessage.target();
-    Optional<InMemoryTransport> maybeTransport = registry.lookup(target);
 
-    if (maybeTransport.isEmpty()) {
-      LOG.warn(
-        "No transport registered for target address: {}. Message dropped.",
-        target
-      );
-      return;
-    }
+    if (target.address().equals("224.0.2.1")) {
+      for (SwarmAddress unicastTarget : registry.keys()) {
+        InMemoryTransport inMemoryTransport = registry.lookup(unicastTarget).orElseThrow();
+        inMemoryTransport.enqueue(wireMessage, RECEIVER_ENQUEUE_TIMEOUT);
+			}
+    } else {
+      Optional<InMemoryTransport> maybeTransport = registry.lookup(target);
 
-    InMemoryTransport transport = maybeTransport.get();
-    InMemoryMessageReceiver receiver = transport.receiver();
-
-    try {
-      boolean enqueued = receiver.enqueue(
-        wireMessage,
-        RECEIVER_ENQUEUE_TIMEOUT
-      );
-
-      if (!enqueued) {
+      if (maybeTransport.isEmpty()) {
         LOG.warn(
-          "Failed to enqueue message to receiver at {} after timeout. Queue full or slow processing.",
-          target
+            "No transport registered for target address: {}. Message dropped.",
+            target
         );
+        return;
       }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      LOG.warn("Interrupted while enqueueing to receiver at {}", target);
-    }
+
+      InMemoryTransport transport = maybeTransport.get();
+      InMemoryMessageReceiver receiver = transport.receiver();
+
+        boolean enqueued = receiver.enqueue(
+            wireMessage,
+            RECEIVER_ENQUEUE_TIMEOUT
+        );
+
+			if (enqueued) {
+					LOG.trace("Delivered {} message to {}:{}", wireMessage.header().type(), wireMessage.header().targetIp(), wireMessage.header().targetPort());
+			} else {
+				LOG.warn(
+						"Failed to enqueue message to receiver at {} after timeout",
+						target
+				);
+			}
+		}
   }
 
   private String formatAddress(SwarmAddress address) {

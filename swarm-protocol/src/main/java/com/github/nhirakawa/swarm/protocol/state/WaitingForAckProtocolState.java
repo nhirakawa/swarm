@@ -16,7 +16,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 // todo(nhirakawa) document this
 public class WaitingForAckProtocolState extends SwarmProtocolState {
@@ -29,11 +29,12 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
   WaitingForAckProtocolState(
     SwarmConfig swarmConfig,
     SwarmAddress pingTarget,
-    String protocolPeriodId,
+    long protocolPeriodId,
+    long incarnation,
     Stopwatch stopwatch,
     MemberRegistry memberRegistry
   ) {
-    super(swarmConfig, protocolPeriodId, stopwatch, memberRegistry);
+    super(swarmConfig, protocolPeriodId, incarnation, stopwatch, memberRegistry);
     this.pingTarget = pingTarget;
     this.jitteredMessageTimeout = JitterUtil.applyJitter(
       swarmConfig.getMessageTimeout(),
@@ -66,6 +67,7 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
     SwarmProtocolState nextState = new WaitingForPingProxyProtocolState(
       swarmConfig,
       protocolPeriodId,
+      incarnation,
       stopwatch,
       registry,
       pingTarget,
@@ -90,7 +92,8 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
 
     WaitingForNextProtocolPeriodProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(
       swarmConfig,
-      UUID.randomUUID().toString(),
+      ThreadLocalRandom.current().nextLong(),
+      incarnation,
       stopwatch,
       registry
     );

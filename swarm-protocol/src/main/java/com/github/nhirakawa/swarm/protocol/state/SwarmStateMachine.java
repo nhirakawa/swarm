@@ -2,6 +2,8 @@ package com.github.nhirakawa.swarm.protocol.state;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
+import com.github.nhirakawa.swarm.protocol.model.internal.InboundDiscoveryRequest;
+import com.github.nhirakawa.swarm.protocol.model.internal.InboundDiscoveryResponse;
 import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
@@ -11,7 +13,8 @@ import com.github.nhirakawa.swarm.protocol.transport.SwarmMessageSender;
 import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.concurrent.ThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,12 +47,12 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
   protected void startUp() {
     LOG.info("Starting state machine");
 
-    MemberRegistry memberRegistry = new MemberRegistry(swarmConfig.getInitialClusterMembership());
+    MemberRegistry memberRegistry = new MemberRegistry(Set.of());
 
     this.swarmProtocolState =
       SwarmProtocolState.initial(
         swarmConfig,
-        UUID.randomUUID().toString(),
+        ThreadLocalRandom.current().nextLong(),
         Stopwatch.createStarted(),
         memberRegistry
       );
@@ -70,6 +73,8 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
       var maybeTransition = maybeStateMachineMessage.flatMap(stateMachineMessage -> switch (stateMachineMessage) {
 				case InboundPingAck inboundPingAck -> applyPingAck(inboundPingAck);
 				case InboundPingRequest inboundPingRequest -> applyPingRequest(inboundPingRequest);
+				case InboundDiscoveryRequest inboundDiscoveryRequest -> applyDiscoveryRequest(inboundDiscoveryRequest);
+				case InboundDiscoveryResponse inboundDiscoveryResponse -> applyDiscoveryResponse(inboundDiscoveryResponse);
 			});
 
       if (maybeTransition.isPresent()) {
@@ -119,5 +124,17 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
     InboundPingRequest pingRequest
   ) {
     return swarmProtocolState.applyPing(pingRequest);
+  }
+
+  private Optional<Transition> applyDiscoveryRequest(
+    InboundDiscoveryRequest discoveryRequest
+  ) {
+    return swarmProtocolState.applyDiscoveryRequest(discoveryRequest);
+  }
+
+  private Optional<Transition> applyDiscoveryResponse(
+    InboundDiscoveryResponse discoveryResponse
+  ) {
+    return swarmProtocolState.applyDiscoveryResponse(discoveryResponse);
   }
 }
