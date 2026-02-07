@@ -1,6 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.serde;
 
-import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageHeader;
+import com.github.nhirakawa.swarm.protocol.model.header.MessageHeader;
 import com.google.common.primitives.UnsignedBytes;
 import java.nio.ByteBuffer;
 

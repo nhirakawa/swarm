@@ -2,12 +2,10 @@ package com.github.nhirakawa.swarm.protocol.state;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
-import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryResponseResponse;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundDiscoveryRequest;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundDiscoveryResponse;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest;
-import com.github.nhirakawa.swarm.protocol.model.internal.PingAckResponse;
+import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
+import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryResponse;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.google.common.base.Stopwatch;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,26 +68,26 @@ public abstract class SwarmProtocolState {
 
   abstract Optional<Transition> applyTick();
 
-  Optional<Transition> applyPing(InboundPingRequest pingRequest) {
+  Optional<Transition> applyPing(PingRequest pingRequest) {
     return Optional.of(
         Transition
             .builder()
             .setNextSwarmProtocolState(this)
-            .addResponsesToSend(new PingAckResponse(pingRequest.from(), Optional.empty(), ThreadLocalRandom.current().nextLong()))
+            .addResponsesToSend(new PingAck(swarmConfig.getLocalAddress(), pingRequest.source(), Optional.empty(), ThreadLocalRandom.current().nextLong()))
             .build()
     );
   }
 
-  Optional<Transition> applyPingAck(InboundPingAck pingAck) {
+  Optional<Transition> applyPingAck(PingAck pingAck) {
     return Optional.empty();
   }
 
   Optional<Transition> applyDiscoveryRequest(
-    InboundDiscoveryRequest request
+    DiscoveryRequest request
   ) {
-    LOG.debug("Received discovery request from {}", request.from());
+    LOG.debug("Received discovery request source {}", request.source());
 
-    // Always include our own status so that bootstrapping from nothing works -
+    // Always include our own status so that bootstrapping source nothing works -
     // even if the registry is empty, the requester learns about us.
     MemberStatus self = MemberStatus.alive(swarmConfig.getLocalAddress(), incarnation);
     List<MemberStatus> gossip = registry.getGossipPayload(10);
@@ -102,8 +100,9 @@ public abstract class SwarmProtocolState {
       }
     }
 
-    DiscoveryResponseResponse response = new DiscoveryResponseResponse(
-      request.from(),
+    DiscoveryResponse response = new DiscoveryResponse(
+        swarmConfig.getLocalAddress(),
+      request.source(),
       memberList
     );
 
@@ -116,12 +115,12 @@ public abstract class SwarmProtocolState {
   }
 
   Optional<Transition> applyDiscoveryResponse(
-    InboundDiscoveryResponse response
+    DiscoveryResponse response
   ) {
     // Default: ignore discovery responses when not initializing
     LOG.debug(
-      "Ignoring discovery response from {} - not initializing",
-      response.from()
+      "Ignoring discovery response source {} - not initializing",
+      response.source()
     );
     return Optional.empty();
   }

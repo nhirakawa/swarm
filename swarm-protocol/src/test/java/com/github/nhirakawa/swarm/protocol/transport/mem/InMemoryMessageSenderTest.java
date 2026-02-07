@@ -3,10 +3,8 @@ package com.github.nhirakawa.swarm.protocol.transport.mem;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest;
-import com.github.nhirakawa.swarm.protocol.model.internal.PingAckResponse;
-import com.github.nhirakawa.swarm.protocol.model.internal.PingRequestResponse;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 
 import java.net.UnknownHostException;
@@ -47,7 +45,8 @@ class InMemoryMessageSenderTest {
 
   @Test
   void testSendPingRequest() {
-    PingRequestResponse response = new PingRequestResponse(
+    StateMachineMessage response = new PingRequest(
+        senderAddress,
       receiverAddress,
       Optional.empty(),
       4L
@@ -63,11 +62,11 @@ class InMemoryMessageSenderTest {
     );
 
     assertThat(receivedMessage).isPresent();
-    assertThat(receivedMessage.get()).isInstanceOf(InboundPingRequest.class);
+    assertThat(receivedMessage.get()).isInstanceOf(PingRequest.class);
 
-    InboundPingRequest pingRequest = (InboundPingRequest) receivedMessage.get();
-    assertThat(pingRequest.from()).isEqualTo(senderAddress);
-    assertThat(pingRequest.onBehalfOf()).isEmpty();
+    PingRequest pingRequest = (PingRequest) receivedMessage.get();
+    assertThat(pingRequest.source()).isEqualTo(senderAddress);
+    assertThat(pingRequest.proxyFor()).isEmpty();
     assertThat(pingRequest.protocolPeriodId()).isEqualTo(4L);
   }
 
@@ -78,7 +77,8 @@ class InMemoryMessageSenderTest {
       8080,
       "proxy"
     );
-    PingRequestResponse response = new PingRequestResponse(
+    StateMachineMessage response = new PingRequest(
+        senderAddress,
       receiverAddress,
       Optional.of(proxyAddress),
       4L
@@ -87,21 +87,22 @@ class InMemoryMessageSenderTest {
     sender.send(response);
 
     InMemoryMessageReceiver receiver =
-      (InMemoryMessageReceiver) receiverTransport.receiver();
+				receiverTransport.receiver();
     Optional<StateMachineMessage> receivedMessage = receiver.receive(
       Duration.ofMillis(100)
     );
 
     assertThat(receivedMessage).isPresent();
-    InboundPingRequest pingRequest = (InboundPingRequest) receivedMessage.get();
-    assertThat(pingRequest.from()).isEqualTo(senderAddress);
-    assertThat(pingRequest.onBehalfOf()).contains(proxyAddress);
+    PingRequest pingRequest = (PingRequest) receivedMessage.get();
+    assertThat(pingRequest.source()).isEqualTo(senderAddress);
+    assertThat(pingRequest.proxyFor()).contains(proxyAddress);
     assertThat(pingRequest.protocolPeriodId()).isEqualTo(4L);
   }
 
   @Test
   void testSendPingAck() {
-    PingAckResponse response = new PingAckResponse(
+    StateMachineMessage response = new PingAck(
+        senderAddress,
       receiverAddress,
       Optional.empty(),
       4L
@@ -116,10 +117,10 @@ class InMemoryMessageSenderTest {
     );
 
     assertThat(receivedMessage).isPresent();
-    assertThat(receivedMessage.get()).isInstanceOf(InboundPingAck.class);
+    assertThat(receivedMessage.get()).isInstanceOf(PingAck.class);
 
-    InboundPingAck pingAck = (InboundPingAck) receivedMessage.get();
-    assertThat(pingAck.from()).isEqualTo(senderAddress);
+    PingAck pingAck = (PingAck) receivedMessage.get();
+    assertThat(pingAck.source()).isEqualTo(senderAddress);
     assertThat(pingAck.proxyFor()).isEmpty();
     assertThat(pingAck.protocolPeriodId()).isEqualTo(4L);
   }
@@ -131,7 +132,8 @@ class InMemoryMessageSenderTest {
       8080,
       "proxy"
     );
-    PingAckResponse response = new PingAckResponse(
+    StateMachineMessage response = new PingAck(
+        senderAddress,
       receiverAddress,
       Optional.of(proxyAddress),
       4L
@@ -140,14 +142,14 @@ class InMemoryMessageSenderTest {
     sender.send(response);
 
     InMemoryMessageReceiver receiver =
-      (InMemoryMessageReceiver) receiverTransport.receiver();
+				receiverTransport.receiver();
     Optional<StateMachineMessage> receivedMessage = receiver.receive(
       Duration.ofMillis(100)
     );
 
     assertThat(receivedMessage).isPresent();
-    InboundPingAck pingAck = (InboundPingAck) receivedMessage.get();
-    assertThat(pingAck.from()).isEqualTo(senderAddress);
+    PingAck pingAck = (PingAck) receivedMessage.get();
+    assertThat(pingAck.source()).isEqualTo(senderAddress);
     assertThat(pingAck.proxyFor()).contains(proxyAddress);
     assertThat(pingAck.protocolPeriodId()).isEqualTo(4L);
   }
@@ -159,7 +161,8 @@ class InMemoryMessageSenderTest {
       8080,
       "nonexistent"
     );
-    PingRequestResponse response = new PingRequestResponse(
+    StateMachineMessage response = new PingRequest(
+        senderAddress,
       nonExistentAddress,
       Optional.empty(),
       4L
@@ -170,7 +173,7 @@ class InMemoryMessageSenderTest {
 
     // Verify message was not delivered to receiver
     InMemoryMessageReceiver receiver =
-      (InMemoryMessageReceiver) receiverTransport.receiver();
+				receiverTransport.receiver();
     Optional<StateMachineMessage> receivedMessage = receiver.receive(
       Duration.ofMillis(10)
     );

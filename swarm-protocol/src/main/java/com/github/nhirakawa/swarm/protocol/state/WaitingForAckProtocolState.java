@@ -3,9 +3,9 @@ package com.github.nhirakawa.swarm.protocol.state;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
-import com.github.nhirakawa.swarm.protocol.model.internal.PingRequestResponse;
-import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineResponse;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
+import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import com.github.nhirakawa.swarm.protocol.util.JitterUtil;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
@@ -53,10 +53,11 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
       pingTarget
     );
 
-    List<StateMachineResponse> responses = failureSubGroup
+    List<StateMachineMessage> responses = failureSubGroup
       .stream()
       .map(swarmNode ->
-        new PingRequestResponse(
+        new PingRequest(
+            swarmConfig.getLocalAddress(),
           swarmNode,
           Optional.of(pingTarget),
           protocolPeriodId
@@ -84,9 +85,9 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
   }
 
   @Override
-  public Optional<Transition> applyPingAck(InboundPingAck pingAck) {
-    if (!pingAck.from().equals(pingTarget)) {
-      LOG.debug("Received ACK from {}, expecting ACK from {}", pingAck.from(), pingTarget);
+  public Optional<Transition> applyPingAck(PingAck pingAck) {
+    if (!pingAck.source().equals(pingTarget)) {
+      LOG.debug("Received ACK source {}, expecting ACK source {}", pingAck.source(), pingTarget);
       return Optional.empty();
     }
 

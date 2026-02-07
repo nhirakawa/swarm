@@ -6,7 +6,7 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.fake.FakeTicker;
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.google.common.base.Stopwatch;
 import java.time.Duration;
 import java.util.Optional;
@@ -91,8 +91,9 @@ public class WaitingForAckProtocolStateTest {
   public void itTransitionsToWaitingForNextProtocolPeriodAfterReceivingAck() {
     // TODO @nhirakawa - make this test more robust
     Optional<Transition> transition = protocolState.applyPingAck(
-      new InboundPingAck(
+      new PingAck(
         PING_TARGET,
+        LOCAL,
         Optional.empty(),
         protocolState.protocolPeriodId
       )

@@ -24,16 +24,16 @@ public class LifecycleLogger extends Service.Listener {
 
 	@Override
 	public void stopping(Service.State from) {
-		log.info("Stopping from {}", from);
+		log.info("Stopping source {}", from);
 	}
 
 	@Override
 	public void terminated(Service.State from) {
-		log.info("Terminated from {}", from);
+		log.info("Terminated source {}", from);
 	}
 
 	@Override
 	public void failed(Service.State from, Throwable failure) {
-		log.error("Failed from {}", from, failure);
+		log.error("Failed source {}", from, failure);
 	}
 }

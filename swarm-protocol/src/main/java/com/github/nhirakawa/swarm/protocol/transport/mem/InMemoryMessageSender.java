@@ -1,21 +1,12 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
-import com.github.nhirakawa.swarm.protocol.model.SwarmMessageType;
-import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequestResponse;
-import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryResponseResponse;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundDiscoveryRequest;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundDiscoveryResponse;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest;
-import com.github.nhirakawa.swarm.protocol.model.internal.PingAckResponse;
-import com.github.nhirakawa.swarm.protocol.model.internal.PingRequestResponse;
+import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
-import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineResponse;
-import com.github.nhirakawa.swarm.protocol.model.serde.header.Compression;
-import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageHeader;
-import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageVersion;
-import com.github.nhirakawa.swarm.protocol.model.serde.header.Serialization;
+import com.github.nhirakawa.swarm.protocol.model.header.Compression;
+import com.github.nhirakawa.swarm.protocol.model.header.MessageHeader;
+import com.github.nhirakawa.swarm.protocol.model.header.MessageVersion;
+import com.github.nhirakawa.swarm.protocol.model.header.Serialization;
 import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -55,12 +46,12 @@ public class InMemoryMessageSender implements SwarmMessageSender {
   }
 
   @Override
-  public void send(StateMachineResponse response) {
+  public void send(StateMachineMessage message) {
     try {
-      if (response instanceof DiscoveryRequestResponse discoveryRequest) {
+      if (message instanceof DiscoveryRequest discoveryRequest) {
         sendBroadcast(discoveryRequest);
       } else {
-        sendUnicast(response);
+        sendUnicast(message);
       }
     } catch (IOException e) {
       LOG.error("Failed to serialize message", e);
@@ -68,12 +59,8 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     }
   }
 
-  private void sendBroadcast(DiscoveryRequestResponse ignored)
+  private void sendBroadcast(DiscoveryRequest message)
     throws IOException {
-    StateMachineMessage message = new InboundDiscoveryRequest(
-      localAddress
-    );
-
     // Serialize message to bytes (once for all targets)
     byte[] payloadBytes = objectMapper.writeValueAsBytes(message);
 
@@ -84,10 +71,7 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     LOG.debug("Sent multicast discovery request");
   }
 
-  private void sendUnicast(StateMachineResponse response) throws IOException {
-    StateMachineMessage message = convertResponseToMessage(response);
-    SwarmAddress targetAddress = getTargetAddress(response);
-
+  private void sendUnicast(StateMachineMessage message) throws IOException {
     // Serialize message to bytes
     byte[] payloadBytes = objectMapper.writeValueAsBytes(message);
 
@@ -95,13 +79,13 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     MessageHeader header = createHeader(
       message,
       localAddress,
-      targetAddress,
+      message.target(),
       payloadBytes.length
     );
 
     WireMessage wireMessage = new WireMessage(
       localAddress,
-      targetAddress,
+      message.target(),
       header,
       payloadBytes
     );
@@ -109,10 +93,10 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     boolean enqueued = networkSimulator.enqueue(wireMessage);
     if (enqueued) {
       LOG.debug(
-        "Sent {} from {} to {}",
+        "Sent {} source {} to {}",
         message.getClass().getSimpleName(),
         formatAddress(localAddress),
-        formatAddress(targetAddress)
+        formatAddress(message.target())
       );
     }
   }
@@ -121,54 +105,12 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     return address.address() + ":" + address.port();
   }
 
-  private StateMachineMessage convertResponseToMessage(
-    StateMachineResponse response
-  ) {
-    return switch (response) {
-      case PingRequestResponse pingRequest -> new InboundPingRequest(
-        localAddress,
-        pingRequest.onBehalfOf(),
-        pingRequest.protocolPeriodId()
-      );
-      case PingAckResponse pingAck -> new InboundPingAck(
-        localAddress,
-        pingAck.proxyFor(),
-        pingAck.protocolPeriodId()
-      );
-      case DiscoveryRequestResponse discoveryRequest -> new InboundDiscoveryRequest(
-        localAddress
-      );
-      case DiscoveryResponseResponse discoveryResponse -> new InboundDiscoveryResponse(
-        localAddress,
-        discoveryResponse.memberList()
-      );
-    };
-  }
-
-  private SwarmAddress getTargetAddress(StateMachineResponse response) {
-    return switch (response) {
-      case PingRequestResponse pingRequest -> pingRequest.target();
-      case PingAckResponse pingAck -> pingAck.target();
-      case DiscoveryResponseResponse discoveryResponse -> discoveryResponse.target();
-      case DiscoveryRequestResponse ignored -> throw new IllegalStateException(
-        "DiscoveryRequestResponse should be handled by sendBroadcast()"
-      );
-    };
-  }
-
   private MessageHeader createHeader(
     StateMachineMessage message,
     SwarmAddress source,
     SwarmAddress target,
     int payloadLength
   ) {
-    SwarmMessageType messageType = switch (message) {
-      case InboundPingRequest ignored -> SwarmMessageType.PING_REQUEST;
-      case InboundPingAck ignored -> SwarmMessageType.PING_ACK;
-      case InboundDiscoveryRequest ignored -> SwarmMessageType.DISCOVERY_REQUEST;
-      case InboundDiscoveryResponse ignored -> SwarmMessageType.DISCOVERY_RESPONSE;
-    };
-
     byte[] sourceIp = extractIpBytes(source.address());
     byte[] targetIp = extractIpBytes(target.address());
 
@@ -184,7 +126,7 @@ public class InMemoryMessageSender implements SwarmMessageSender {
 
     return new MessageHeader(
       MessageVersion.V0,
-      messageType,
+      message.type(),
       Compression.NONE,
       Serialization.JSON,
       payloadLength,

@@ -17,7 +17,7 @@ public final class JitterUtil {
    * Returns a random duration between [baseDuration - jitterRange, baseDuration + jitterRange].
    *
    * @param baseDuration the base duration
-   * @param jitterRange the range of jitter to apply (added/subtracted from base)
+   * @param jitterRange the range of jitter to apply (added/subtracted source base)
    * @return a duration with random jitter applied
    */
   public static Duration applyJitter(Duration baseDuration, Duration jitterRange) {

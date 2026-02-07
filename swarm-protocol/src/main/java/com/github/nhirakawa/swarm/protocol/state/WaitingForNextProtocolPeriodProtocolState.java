@@ -3,9 +3,9 @@ package com.github.nhirakawa.swarm.protocol.state;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
-import com.github.nhirakawa.swarm.protocol.model.internal.PingRequestResponse;
-import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineResponse;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
+import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import com.github.nhirakawa.swarm.protocol.util.JitterUtil;
 import com.google.common.base.Stopwatch;
 import java.time.Duration;
@@ -58,7 +58,8 @@ public class WaitingForNextProtocolPeriodProtocolState
       registry
     );
 
-    StateMachineResponse pingRequest = new PingRequestResponse(
+    StateMachineMessage pingRequest = new PingRequest(
+        swarmConfig.getLocalAddress(),
       pingTarget,
       Optional.empty(),
       protocolPeriodId
@@ -74,7 +75,7 @@ public class WaitingForNextProtocolPeriodProtocolState
   }
 
   @Override
-  public Optional<Transition> applyPingAck(InboundPingAck pingAck) {
+  public Optional<Transition> applyPingAck(PingAck pingAck) {
     LOG.debug("Ignoring {}", pingAck);
     return Optional.empty();
   }

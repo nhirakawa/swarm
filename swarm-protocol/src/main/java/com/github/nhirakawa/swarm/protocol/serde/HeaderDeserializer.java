@@ -1,10 +1,10 @@
 package com.github.nhirakawa.swarm.protocol.serde;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmMessageType;
-import com.github.nhirakawa.swarm.protocol.model.serde.header.Compression;
-import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageHeader;
-import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageVersion;
-import com.github.nhirakawa.swarm.protocol.model.serde.header.Serialization;
+import com.github.nhirakawa.swarm.protocol.model.header.Compression;
+import com.github.nhirakawa.swarm.protocol.model.header.MessageHeader;
+import com.github.nhirakawa.swarm.protocol.model.header.MessageVersion;
+import com.github.nhirakawa.swarm.protocol.model.header.Serialization;
 import com.google.common.base.Preconditions;
 import java.nio.ByteBuffer;
 

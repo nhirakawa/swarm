@@ -1,4 +1,4 @@
-package com.github.nhirakawa.swarm.protocol.model.serde.header;
+package com.github.nhirakawa.swarm.protocol.model.header;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmMessageType;
 import java.util.Arrays;

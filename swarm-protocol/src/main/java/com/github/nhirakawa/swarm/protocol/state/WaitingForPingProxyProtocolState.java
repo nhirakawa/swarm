@@ -3,7 +3,7 @@ package com.github.nhirakawa.swarm.protocol.state;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import java.util.Optional;
@@ -70,7 +70,7 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
   }
 
   @Override
-  public Optional<Transition> applyPingAck(InboundPingAck pingAckMessage) {
+  public Optional<Transition> applyPingAck(PingAck pingAckMessage) {
     if (pingAckMessage.proxyFor().isEmpty()) {
       LOG.warn("Expected proxy-for but did not find one - {}", pingAckMessage);
 
@@ -88,10 +88,10 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
       return Optional.empty();
     }
 
-    if (!proxyTargets.contains(pingAckMessage.from())) {
+    if (!proxyTargets.contains(pingAckMessage.source())) {
       LOG.warn(
         "{} was not one of the expected proxy targets ({}) - {}",
-        pingAckMessage.from(),
+        pingAckMessage.source(),
         proxyTargets,
         pingAckMessage
       );

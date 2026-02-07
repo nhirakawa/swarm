@@ -1,7 +1,7 @@
 package com.github.nhirakawa.swarm.protocol.transport;
 
-import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineResponse;
+import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 
 public interface SwarmMessageSender {
-  void send(StateMachineResponse response);
+  void send(StateMachineMessage message);
 }

@@ -1,25 +1,25 @@
-package com.github.nhirakawa.swarm.protocol.model.serde.header;
+package com.github.nhirakawa.swarm.protocol.model.header;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum Serialization {
-  JSON(0),
-  CBOR(1);
+public enum Compression {
+  NONE(0),
+  GZIP(1);
 
   private final int value;
 
-  Serialization(int value) {
+  Compression(int value) {
     this.value = value;
   }
 
   @JsonCreator
-  public static Serialization parse(int value) {
+  public static Compression parse(int value) {
     return switch (value) {
-      case 0 -> Serialization.JSON;
-      case 1 -> Serialization.CBOR;
+      case 0 -> Compression.NONE;
+      case 1 -> Compression.GZIP;
       default -> throw new IllegalArgumentException(
-        "%d is not a valid Serialization value".formatted(value)
+        "%d is not a valid Compression value".formatted(value)
       );
     };
   }

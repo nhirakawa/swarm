@@ -3,8 +3,7 @@ package com.github.nhirakawa.swarm.protocol.transport.mem;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest;
-import com.github.nhirakawa.swarm.protocol.model.internal.PingRequestResponse;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import java.time.Duration;
 import java.util.Optional;
@@ -78,7 +77,8 @@ class InMemoryTransportTest {
     transport2.startAsync().awaitRunning();
 
     // Node 1 sends a ping request to Node 2
-    PingRequestResponse response = new PingRequestResponse(
+    StateMachineMessage response = new PingRequest(
+        address1,
       address2,
       Optional.empty(),
       4L
@@ -92,10 +92,10 @@ class InMemoryTransportTest {
       .receive(Duration.ofMillis(100));
 
     assertThat(receivedMessage).isPresent();
-    assertThat(receivedMessage.get()).isInstanceOf(InboundPingRequest.class);
+    assertThat(receivedMessage.get()).isInstanceOf(PingRequest.class);
 
-    InboundPingRequest pingRequest = (InboundPingRequest) receivedMessage.get();
-    assertThat(pingRequest.from()).isEqualTo(address1);
+    PingRequest pingRequest = (PingRequest) receivedMessage.get();
+    assertThat(pingRequest.source()).isEqualTo(address1);
     assertThat(pingRequest.protocolPeriodId()).isEqualTo(4L);
   }
 
@@ -106,31 +106,28 @@ class InMemoryTransportTest {
 
     // Node 1 -> Node 2
     transport1.sender().send(
-        new PingRequestResponse(address2, Optional.empty(), 4L)
+        new PingRequest(address1, address2, Optional.empty(), 4L)
       );
 
     // Node 2 -> Node 1
     transport2.sender().send(
-        new PingRequestResponse(address1, Optional.empty(), 4L)
+        new PingRequest(address2, address1, Optional.empty(), 4L)
       );
 
-    // Verify Node 2 received from Node 1
+    // Verify Node 2 received source Node 1
     Optional<StateMachineMessage> message1 = transport2
       .receiver()
       .receive(Duration.ofMillis(100));
-    assertThat(message1).isPresent();
-    assertThat(((InboundPingRequest) message1.get()).from()).isEqualTo(
-      address1
-    );
+    assertThat(message1)
+        .isPresent()
+        .hasValueSatisfying(innerMessage1 -> assertThat(innerMessage1.source()).isEqualTo(address1));
 
-    // Verify Node 1 received from Node 2
+    // Verify Node 1 received source Node 2
     Optional<StateMachineMessage> message2 = transport1
       .receiver()
       .receive(Duration.ofMillis(100));
-    assertThat(message2).isPresent();
-    assertThat(((InboundPingRequest) message2.get()).from()).isEqualTo(
-      address2
-    );
+    assertThat(message2).isPresent()
+            .hasValueSatisfying(innerMessage2 -> assertThat(innerMessage2.source()).isEqualTo(address2));
   }
 
   @Test

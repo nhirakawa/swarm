@@ -1,7 +1,7 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
-import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageHeader;
+import com.github.nhirakawa.swarm.protocol.model.header.MessageHeader;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 
 import java.time.Duration;
@@ -52,7 +52,7 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
     // Simulate packet loss on send
     if (config.shouldDropOnSend(source, target)) {
       LOG.debug(
-        "Dropped message on send from {} to {}",
+        "Dropped message on send source {} to {}",
         formatAddress(source),
         formatAddress(target)
       );
@@ -134,7 +134,7 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
       // Simulate packet loss in transit
       if (config.shouldDropInTransit(source, target)) {
         LOG.debug(
-          "Dropped message in transit from {} to {}",
+          "Dropped message in transit source {} to {}",
           formatAddress(source),
           formatAddress(target)
         );

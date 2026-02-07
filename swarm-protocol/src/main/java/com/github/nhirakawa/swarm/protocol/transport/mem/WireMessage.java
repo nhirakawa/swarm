@@ -1,7 +1,7 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
-import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageHeader;
+import com.github.nhirakawa.swarm.protocol.model.header.MessageHeader;
 
 /**
  * Represents a message on the wire with routing information and header.

@@ -2,10 +2,10 @@ package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.SwarmMessageType;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundDiscoveryRequest;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundDiscoveryResponse;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest;
+import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
+import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryResponse;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,9 +49,9 @@ public class InMemoryMessageReceiver implements SwarmMessageReceiver {
       );
       if (message != null) {
         LOG.debug(
-          "Received {} from {}",
+          "Received {} source {}",
           message.getClass().getSimpleName(),
-          formatAddress(getMessageSource(message))
+          formatAddress(message.source())
         );
       }
       return Optional.ofNullable(message);
@@ -60,17 +60,6 @@ public class InMemoryMessageReceiver implements SwarmMessageReceiver {
       LOG.warn("Interrupted while waiting for message", e);
       return Optional.empty();
     }
-  }
-
-  private SwarmAddress getMessageSource(
-    StateMachineMessage message
-  ) {
-    return switch (message) {
-      case InboundPingRequest req -> req.from();
-      case InboundPingAck ack -> ack.from();
-      case InboundDiscoveryRequest req -> req.from();
-      case InboundDiscoveryResponse res -> res.from();
-    };
   }
 
   private String formatAddress(SwarmAddress address) {
@@ -121,19 +110,19 @@ public class InMemoryMessageReceiver implements SwarmMessageReceiver {
     return switch (messageType) {
       case PING_REQUEST -> objectMapper.readValue(
         payloadBytes,
-        InboundPingRequest.class
+        PingRequest.class
       );
       case PING_ACK -> objectMapper.readValue(
         payloadBytes,
-        InboundPingAck.class
+        PingAck.class
       );
       case DISCOVERY_REQUEST -> objectMapper.readValue(
         payloadBytes,
-        InboundDiscoveryRequest.class
+        DiscoveryRequest.class
       );
       case DISCOVERY_RESPONSE -> objectMapper.readValue(
         payloadBytes,
-        InboundDiscoveryResponse.class
+        DiscoveryResponse.class
       );
     };
   }

@@ -6,7 +6,7 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.fake.FakeTicker;
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.google.common.base.Stopwatch;
 import java.time.Duration;
 import java.util.Optional;
@@ -71,7 +71,7 @@ public class WaitingForPingProxyProtocolStateTest {
   public void itTransitionsToWaitingForNextProtocolPeriodAfterProxyAck() {
     // TODO @nhirakawa - make this test more robust
     Optional<Transition> transition = protocolState.applyPingAck(
-      new InboundPingAck(OTHER_1, Optional.of(TARGET), 4L)
+      new PingAck(OTHER_1, LOCAL, Optional.of(TARGET), 4L)
     );
 
     assertThat(transition).isPresent();
@@ -104,7 +104,7 @@ public class WaitingForPingProxyProtocolStateTest {
   @Test
   public void itDoesNothingIfAckIsNotFromProxy() {
     Optional<Transition> transition = protocolState.applyPingAck(
-      new InboundPingAck(OTHER_2, Optional.of(TARGET), 4L)
+      new PingAck(OTHER_2, LOCAL, Optional.of(TARGET), 4L)
     );
 
     assertThat(transition).isEmpty();
@@ -113,7 +113,7 @@ public class WaitingForPingProxyProtocolStateTest {
   @Test
   public void itDoesNothingIfAckIsNotForTarget() {
     Optional<Transition> transition = protocolState.applyPingAck(
-      new InboundPingAck(OTHER_1, Optional.of(OTHER_2), 4L)
+      new PingAck(OTHER_1, LOCAL, Optional.of(OTHER_2), 4L)
     );
 
     assertThat(transition).isEmpty();

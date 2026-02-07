@@ -2,9 +2,8 @@ package com.github.nhirakawa.swarm.protocol.state;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
-import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequestResponse;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundDiscoveryRequest;
-import com.github.nhirakawa.swarm.protocol.model.internal.InboundDiscoveryResponse;
+import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
+import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryResponse;
 import com.google.common.base.Stopwatch;
 import java.time.Duration;
 import java.util.Optional;
@@ -86,7 +85,7 @@ public class InitializingProtocolState extends SwarmProtocolState {
       attemptNumber + 1
     );
 
-    DiscoveryRequestResponse discoveryRequest = new DiscoveryRequestResponse();
+    DiscoveryRequest discoveryRequest = new DiscoveryRequest(swarmConfig.getLocalAddress());
 
     return Optional.of(
       Transition.builder()
@@ -97,10 +96,10 @@ public class InitializingProtocolState extends SwarmProtocolState {
   }
 
   @Override
-  Optional<Transition> applyDiscoveryResponse(InboundDiscoveryResponse response) {
+  Optional<Transition> applyDiscoveryResponse(DiscoveryResponse response) {
     LOG.info(
-      "Received discovery response from {} with {} members after {} attempts",
-      response.from(),
+      "Received discovery response source {} with {} members after {} attempts",
+      response.source(),
       response.memberList().size(),
       attemptNumber + 1
     );
@@ -114,11 +113,11 @@ public class InitializingProtocolState extends SwarmProtocolState {
   }
 
   @Override
-  Optional<Transition> applyDiscoveryRequest(InboundDiscoveryRequest request) {
-    // During initialization, respond to discovery requests from other nodes
+  Optional<Transition> applyDiscoveryRequest(DiscoveryRequest request) {
+    // During initialization, respond to discovery requests source other nodes
     LOG.debug(
-      "Received discovery request from {} during initialization",
-      request.from()
+      "Received discovery request source {} during initialization",
+      request.source()
     );
 
     // Use parent implementation to respond with member list
