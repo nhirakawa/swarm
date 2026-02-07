@@ -4,12 +4,13 @@ import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.concurrent.ThreadSafe;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * Central registry for in-memory transport instances.
- * Enables message routing between nodes in a single-process, multi-node simulation.
+ * Provides lookup for message delivery in a single-process, multi-node simulation.
  */
 @ThreadSafe
 public class InMemoryTransportRegistry {

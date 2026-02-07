@@ -1,13 +1,19 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.SwarmMessageType;
 import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAckResponse;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequestResponse;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineResponse;
-import java.util.Optional;
+import com.github.nhirakawa.swarm.protocol.model.serde.header.Compression;
+import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageHeader;
+import com.github.nhirakawa.swarm.protocol.model.serde.header.MessageVersion;
+import com.github.nhirakawa.swarm.protocol.model.serde.header.Serialization;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import javax.annotation.concurrent.ThreadSafe;
 
 import com.github.nhirakawa.swarm.protocol.transport.SwarmMessageSender;
@@ -16,7 +22,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * In-memory implementation of SwarmMessageSender.
- * Routes messages to other nodes via the transport registry.
+ * Routes messages to other nodes via the network simulator.
  */
 @ThreadSafe
 public class InMemoryMessageSender implements SwarmMessageSender {
@@ -26,39 +32,30 @@ public class InMemoryMessageSender implements SwarmMessageSender {
   );
 
   private final SwarmAddress localAddress;
-  private final InMemoryTransportRegistry registry;
+  private final NetworkSimulator networkSimulator;
 
   public InMemoryMessageSender(
     SwarmAddress localAddress,
-    InMemoryTransportRegistry registry
+    NetworkSimulator networkSimulator
   ) {
     this.localAddress = localAddress;
-    this.registry = registry;
+    this.networkSimulator = networkSimulator;
   }
 
   @Override
   public void send(StateMachineResponse response) {
     StateMachineMessage message = convertResponseToMessage(response);
     SwarmAddress targetAddress = getTargetAddress(response);
+    MessageHeader header = createHeader(message, localAddress, targetAddress);
 
-    Optional<InMemoryTransport> maybeTargetTransport = registry.lookup(
-      targetAddress
+    WireMessage wireMessage = new WireMessage(
+      localAddress,
+      targetAddress,
+      header,
+      message
     );
 
-    if (maybeTargetTransport.isEmpty()) {
-      LOG.warn(
-        "No transport registered for target address: {}. Message will be dropped: {}",
-        targetAddress,
-        response
-      );
-      return;
-    }
-
-    InMemoryTransport targetTransport = maybeTargetTransport.get();
-    InMemoryMessageReceiver targetReceiver =
-      (InMemoryMessageReceiver) targetTransport.receiver();
-
-    boolean enqueued = targetReceiver.enqueue(message);
+    boolean enqueued = networkSimulator.enqueue(wireMessage);
     if (enqueued) {
       LOG.debug(
         "Sent {} from {} to {}",
@@ -95,5 +92,47 @@ public class InMemoryMessageSender implements SwarmMessageSender {
       case PingRequestResponse pingRequest -> pingRequest.target();
       case PingAckResponse pingAck -> pingAck.target();
     };
+  }
+
+  private MessageHeader createHeader(
+    StateMachineMessage message,
+    SwarmAddress source,
+    SwarmAddress target
+  ) {
+    SwarmMessageType messageType = switch (message) {
+      case InboundPingRequest ignored -> SwarmMessageType.PING_REQUEST;
+      case InboundPingAck ignored -> SwarmMessageType.PING_ACK;
+    };
+
+    byte[] sourceIp = extractIpBytes(source.address());
+    byte[] targetIp = extractIpBytes(target.address());
+
+    // In-memory transport doesn't serialize, so use 0 as placeholder
+    // Real transports will calculate actual payload length
+    int payloadLength = 0;
+
+    return new MessageHeader(
+      MessageVersion.V0,
+      messageType,
+      Compression.NONE,
+      Serialization.JSON,
+      sourceIp,
+      source.port(),
+      targetIp,
+      target.port(),
+      payloadLength
+    );
+  }
+
+  private byte[] extractIpBytes(String address) {
+    try {
+      InetAddress inetAddress = InetAddress.getByName(address);
+      return inetAddress.getAddress();
+    } catch (UnknownHostException e) {
+      throw new IllegalArgumentException(
+        "Invalid IP address: " + address,
+        e
+      );
+    }
   }
 }

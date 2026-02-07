@@ -8,6 +8,7 @@ import com.github.nhirakawa.swarm.protocol.model.internal.PingRequestResponse;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,29 +17,34 @@ import org.junit.jupiter.api.Test;
 class InMemoryTransportTest {
 
   private InMemoryTransportRegistry registry;
+  private NetworkSimulator networkSimulator;
   private InMemoryTransport transport1;
   private InMemoryTransport transport2;
   private SwarmAddress address1;
   private SwarmAddress address2;
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws TimeoutException {
+    NetworkSimulationConfig config = DefaultNetworkSimulationConfig.perfect();
     registry = new InMemoryTransportRegistry();
+    networkSimulator = new NetworkSimulator(registry, config);
+    networkSimulator.startAsync().awaitRunning(Duration.ofSeconds(1));
     address1 = new SwarmAddress("192.168.1.1", 8080, "node-1");
     address2 = new SwarmAddress("192.168.1.2", 8080, "node-2");
-    transport1 = new InMemoryTransport(address1, registry, 10);
-    transport2 = new InMemoryTransport(address2, registry, 10);
+    transport1 = new InMemoryTransport(address1, registry, networkSimulator);
+    transport2 = new InMemoryTransport(address2, registry, networkSimulator);
   }
 
   @AfterEach
-  void tearDown() {
+  void tearDown() throws TimeoutException {
     if (transport1.isRunning()) {
-      transport1.stopAsync().awaitTerminated();
+      transport1.stopAsync().awaitTerminated(Duration.ofSeconds(1));
     }
     if (transport2.isRunning()) {
-      transport2.stopAsync().awaitTerminated();
+      transport2.stopAsync().awaitTerminated(Duration.ofSeconds(1));
     }
     registry.clear();
+    networkSimulator.stopAsync().awaitTerminated(Duration.ofSeconds(1));
   }
 
   @Test

@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 class InMemoryMessageSenderTest {
 
   private InMemoryTransportRegistry registry;
+  private NetworkSimulator networkSimulator;
   private SwarmAddress senderAddress;
   private SwarmAddress receiverAddress;
   private InMemoryTransport receiverTransport;
@@ -25,17 +26,21 @@ class InMemoryMessageSenderTest {
 
   @BeforeEach
   void setUp() {
+    NetworkSimulationConfig config = DefaultNetworkSimulationConfig.perfect();
     registry = new InMemoryTransportRegistry();
+    networkSimulator = new NetworkSimulator(registry, config);
+    networkSimulator.startAsync().awaitRunning();
     senderAddress = new SwarmAddress("192.168.1.1", 8080, "sender");
     receiverAddress = new SwarmAddress("192.168.1.2", 8080, "receiver");
-    receiverTransport = new InMemoryTransport(receiverAddress, registry, 10);
+    receiverTransport = new InMemoryTransport(receiverAddress, registry, networkSimulator);
     registry.register(receiverAddress, receiverTransport);
-    sender = new InMemoryMessageSender(senderAddress, registry);
+    sender = new InMemoryMessageSender(senderAddress, networkSimulator);
   }
 
   @AfterEach
   void tearDown() {
     registry.clear();
+    networkSimulator.stopAsync().awaitTerminated();
   }
 
   @Test

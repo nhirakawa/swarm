@@ -5,8 +5,11 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.state.SwarmStateMachine;
 import com.github.nhirakawa.swarm.protocol.transport.SwarmTransport;
+import com.github.nhirakawa.swarm.protocol.transport.mem.DefaultNetworkSimulationConfig;
 import com.github.nhirakawa.swarm.protocol.transport.mem.InMemoryTransport;
 import com.github.nhirakawa.swarm.protocol.transport.mem.InMemoryTransportRegistry;
+import com.github.nhirakawa.swarm.protocol.transport.mem.NetworkSimulator;
+import com.github.nhirakawa.swarm.protocol.transport.mem.NetworkSimulationConfig;
 import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.runner.BannerUtil;
 import com.github.nhirakawa.swarm.runner.model.LocalSwarmConfig;
@@ -72,14 +75,17 @@ public class Local implements Callable<Integer> {
 	}
 
 	private List<SwarmService> createServices(LocalSwarmConfig config) {
+		NetworkSimulationConfig networkConfig = DefaultNetworkSimulationConfig.perfect();
 		InMemoryTransportRegistry registry = new InMemoryTransportRegistry();
+		NetworkSimulator networkSimulator = new NetworkSimulator(registry, networkConfig);
+		networkSimulator.startAsync().awaitRunning();
 
 		List<SwarmService> services = new ArrayList<>(config.getNumberOfNodes());
 
 		List<SwarmAddress> swarmAddresses = generateSwarmAddresses(config.getNumberOfNodes());
 
 		for (SwarmAddress swarmAddress : swarmAddresses) {
-			SwarmTransport transport = new InMemoryTransport(swarmAddress, registry, 10);
+			SwarmTransport transport = new InMemoryTransport(swarmAddress, registry, networkSimulator);
 
 			Set<SwarmAddress> restOfCluster = swarmAddresses.stream().filter(other -> !other.equals(swarmAddress)).collect(
 					Collectors.toUnmodifiableSet());

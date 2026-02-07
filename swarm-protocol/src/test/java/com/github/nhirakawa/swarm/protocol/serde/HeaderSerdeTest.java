@@ -16,6 +16,12 @@ public class HeaderSerdeTest {
   private HeaderSerializer serializer;
   private HeaderDeserializer deserializer;
 
+  private static final byte[] SOURCE_IP = new byte[] { (byte) 192, (byte) 168, 1, 1 };
+  private static final int SOURCE_PORT = 8080;
+  private static final byte[] TARGET_IP = new byte[] { (byte) 192, (byte) 168, 1, 2 };
+  private static final int TARGET_PORT = 9090;
+  private static final int PAYLOAD_LENGTH = 1234;
+
   @BeforeEach
   public void setup() {
     serializer = new HeaderSerializer();
@@ -28,16 +34,41 @@ public class HeaderSerdeTest {
       MessageVersion.V0,
       SwarmMessageType.PING_REQUEST,
       Compression.NONE,
-      Serialization.JSON
+      Serialization.JSON,
+      SOURCE_IP,
+      SOURCE_PORT,
+      TARGET_IP,
+      TARGET_PORT,
+      PAYLOAD_LENGTH
     );
 
     byte[] bytes = serializer.serialize(header);
 
-    assertThat(bytes).hasSize(4);
+    assertThat(bytes).hasSize(18);
+    // Metadata
     assertThat(bytes[0]).isEqualTo((byte) 0); // MessageVersion.V0
     assertThat(bytes[1]).isEqualTo((byte) 1); // PING_REQUEST
     assertThat(bytes[2]).isEqualTo((byte) 0); // NONE
     assertThat(bytes[3]).isEqualTo((byte) 0); // JSON
+    // Source IP
+    assertThat(bytes[4]).isEqualTo((byte) 192);
+    assertThat(bytes[5]).isEqualTo((byte) 168);
+    assertThat(bytes[6]).isEqualTo((byte) 1);
+    assertThat(bytes[7]).isEqualTo((byte) 1);
+    // Source port (8080 = 0x1F90)
+    assertThat(bytes[8]).isEqualTo((byte) 0x1F);
+    assertThat(bytes[9]).isEqualTo((byte) 0x90);
+    // Target IP
+    assertThat(bytes[10]).isEqualTo((byte) 192);
+    assertThat(bytes[11]).isEqualTo((byte) 168);
+    assertThat(bytes[12]).isEqualTo((byte) 1);
+    assertThat(bytes[13]).isEqualTo((byte) 2);
+    // Target port (9090 = 0x2382)
+    assertThat(bytes[14]).isEqualTo((byte) 0x23);
+    assertThat(bytes[15]).isEqualTo((byte) 0x82);
+    // Payload length (1234 = 0x04D2)
+    assertThat(bytes[16]).isEqualTo((byte) 0x04);
+    assertThat(bytes[17]).isEqualTo((byte) 0xD2);
   }
 
   @Test
@@ -46,12 +77,17 @@ public class HeaderSerdeTest {
       MessageVersion.V0,
       SwarmMessageType.PING_ACK,
       Compression.GZIP,
-      Serialization.CBOR
+      Serialization.CBOR,
+      SOURCE_IP,
+      SOURCE_PORT,
+      TARGET_IP,
+      TARGET_PORT,
+      PAYLOAD_LENGTH
     );
 
     byte[] bytes = serializer.serialize(header);
 
-    assertThat(bytes).hasSize(4);
+    assertThat(bytes).hasSize(18);
     assertThat(bytes[0]).isEqualTo((byte) 0); // MessageVersion.V0
     assertThat(bytes[1]).isEqualTo((byte) 0); // PING_ACK
     assertThat(bytes[2]).isEqualTo((byte) 1); // GZIP
@@ -60,7 +96,14 @@ public class HeaderSerdeTest {
 
   @Test
   public void testDeserializeBasicHeader() {
-    byte[] bytes = new byte[] { 0, 1, 0, 0 };
+    byte[] bytes = new byte[] {
+      0, 1, 0, 0,                                // metadata
+      (byte) 192, (byte) 168, 1, 1,              // source IP
+      (byte) 0x1F, (byte) 0x90,                  // source port (8080)
+      (byte) 192, (byte) 168, 1, 2,              // target IP
+      (byte) 0x23, (byte) 0x82,                  // target port (9090)
+      (byte) 0x04, (byte) 0xD2                   // payload length (1234)
+    };
 
     MessageHeader header = deserializer.deserialize(bytes);
 
@@ -68,11 +111,23 @@ public class HeaderSerdeTest {
     assertThat(header.type()).isEqualTo(SwarmMessageType.PING_REQUEST);
     assertThat(header.compression()).isEqualTo(Compression.NONE);
     assertThat(header.serialization()).isEqualTo(Serialization.JSON);
+    assertThat(header.sourceIp()).isEqualTo(SOURCE_IP);
+    assertThat(header.sourcePort()).isEqualTo(SOURCE_PORT);
+    assertThat(header.targetIp()).isEqualTo(TARGET_IP);
+    assertThat(header.targetPort()).isEqualTo(TARGET_PORT);
+    assertThat(header.payloadLength()).isEqualTo(PAYLOAD_LENGTH);
   }
 
   @Test
   public void testDeserializeWithCompression() {
-    byte[] bytes = new byte[] { 0, 0, 1, 1 };
+    byte[] bytes = new byte[] {
+      0, 0, 1, 1,                                // metadata
+      (byte) 192, (byte) 168, 1, 1,              // source IP
+      (byte) 0x1F, (byte) 0x90,                  // source port (8080)
+      (byte) 192, (byte) 168, 1, 2,              // target IP
+      (byte) 0x23, (byte) 0x82,                  // target port (9090)
+      (byte) 0x04, (byte) 0xD2                   // payload length (1234)
+    };
 
     MessageHeader header = deserializer.deserialize(bytes);
 
@@ -80,25 +135,39 @@ public class HeaderSerdeTest {
     assertThat(header.type()).isEqualTo(SwarmMessageType.PING_ACK);
     assertThat(header.compression()).isEqualTo(Compression.GZIP);
     assertThat(header.serialization()).isEqualTo(Serialization.CBOR);
+    assertThat(header.sourceIp()).isEqualTo(SOURCE_IP);
+    assertThat(header.sourcePort()).isEqualTo(SOURCE_PORT);
+    assertThat(header.targetIp()).isEqualTo(TARGET_IP);
+    assertThat(header.targetPort()).isEqualTo(TARGET_PORT);
+    assertThat(header.payloadLength()).isEqualTo(PAYLOAD_LENGTH);
   }
 
   @Test
   public void testDeserializeThrowsOnInvalidLength() {
     byte[] tooShort = new byte[] { 0, 1, 0 };
-    byte[] tooLong = new byte[] { 0, 1, 0, 0, 1 };
+    byte[] tooLong = new byte[] {
+      0, 1, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+    };
 
     assertThatThrownBy(() -> deserializer.deserialize(tooShort))
       .isInstanceOf(IllegalArgumentException.class)
-      .hasMessageContaining("Expected 4 bytes, got 3");
+      .hasMessageContaining("Expected 18 bytes, got 3");
 
     assertThatThrownBy(() -> deserializer.deserialize(tooLong))
       .isInstanceOf(IllegalArgumentException.class)
-      .hasMessageContaining("Expected 4 bytes, got 5");
+      .hasMessageContaining("Expected 18 bytes, got 19");
   }
 
   @Test
   public void testDeserializeThrowsOnInvalidMessageVersion() {
-    byte[] invalidVersion = new byte[] { 99, 0, 0, 0 };
+    byte[] invalidVersion = new byte[] {
+      99, 0, 0, 0,                               // invalid version
+      (byte) 192, (byte) 168, 1, 1,
+      (byte) 0x1F, (byte) 0x90,
+      (byte) 192, (byte) 168, 1, 2,
+      (byte) 0x23, (byte) 0x82,
+      (byte) 0x04, (byte) 0xD2
+    };
 
     assertThatThrownBy(() -> deserializer.deserialize(invalidVersion))
       .isInstanceOf(IllegalArgumentException.class)
@@ -107,7 +176,14 @@ public class HeaderSerdeTest {
 
   @Test
   public void testDeserializeThrowsOnInvalidMessageType() {
-    byte[] invalidType = new byte[] { 0, 99, 0, 0 };
+    byte[] invalidType = new byte[] {
+      0, 99, 0, 0,                               // invalid type
+      (byte) 192, (byte) 168, 1, 1,
+      (byte) 0x1F, (byte) 0x90,
+      (byte) 192, (byte) 168, 1, 2,
+      (byte) 0x23, (byte) 0x82,
+      (byte) 0x04, (byte) 0xD2
+    };
 
     assertThatThrownBy(() -> deserializer.deserialize(invalidType))
       .isInstanceOf(IllegalArgumentException.class)
@@ -116,7 +192,14 @@ public class HeaderSerdeTest {
 
   @Test
   public void testDeserializeThrowsOnInvalidCompression() {
-    byte[] invalidCompression = new byte[] { 0, 0, 99, 0 };
+    byte[] invalidCompression = new byte[] {
+      0, 0, 99, 0,                               // invalid compression
+      (byte) 192, (byte) 168, 1, 1,
+      (byte) 0x1F, (byte) 0x90,
+      (byte) 192, (byte) 168, 1, 2,
+      (byte) 0x23, (byte) 0x82,
+      (byte) 0x04, (byte) 0xD2
+    };
 
     assertThatThrownBy(() -> deserializer.deserialize(invalidCompression))
       .isInstanceOf(IllegalArgumentException.class)
@@ -125,7 +208,14 @@ public class HeaderSerdeTest {
 
   @Test
   public void testDeserializeThrowsOnInvalidSerialization() {
-    byte[] invalidSerialization = new byte[] { 0, 0, 0, 99 };
+    byte[] invalidSerialization = new byte[] {
+      0, 0, 0, 99,                               // invalid serialization
+      (byte) 192, (byte) 168, 1, 1,
+      (byte) 0x1F, (byte) 0x90,
+      (byte) 192, (byte) 168, 1, 2,
+      (byte) 0x23, (byte) 0x82,
+      (byte) 0x04, (byte) 0xD2
+    };
 
     assertThatThrownBy(() -> deserializer.deserialize(invalidSerialization))
       .isInstanceOf(IllegalArgumentException.class)
@@ -138,7 +228,12 @@ public class HeaderSerdeTest {
       MessageVersion.V0,
       SwarmMessageType.PING_REQUEST,
       Compression.NONE,
-      Serialization.JSON
+      Serialization.JSON,
+      SOURCE_IP,
+      SOURCE_PORT,
+      TARGET_IP,
+      TARGET_PORT,
+      PAYLOAD_LENGTH
     );
 
     byte[] serialized = serializer.serialize(original);
@@ -153,7 +248,12 @@ public class HeaderSerdeTest {
       MessageVersion.V0,
       SwarmMessageType.PING_ACK,
       Compression.GZIP,
-      Serialization.CBOR
+      Serialization.CBOR,
+      SOURCE_IP,
+      SOURCE_PORT,
+      TARGET_IP,
+      TARGET_PORT,
+      PAYLOAD_LENGTH
     );
 
     byte[] serialized = serializer.serialize(original);
@@ -172,7 +272,12 @@ public class HeaderSerdeTest {
               version,
               type,
               compression,
-              serialization
+              serialization,
+              SOURCE_IP,
+              SOURCE_PORT,
+              TARGET_IP,
+              TARGET_PORT,
+              PAYLOAD_LENGTH
             );
 
             byte[] serialized = serializer.serialize(original);

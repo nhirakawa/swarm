@@ -1,5 +1,8 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
+import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import java.time.Duration;
 import java.util.Optional;
@@ -51,33 +54,40 @@ public class InMemoryMessageReceiver implements SwarmMessageReceiver {
     }
   }
 
-  private com.github.nhirakawa.swarm.protocol.model.SwarmAddress getMessageSource(
+  private SwarmAddress getMessageSource(
     StateMachineMessage message
   ) {
     return switch (message) {
-      case com.github.nhirakawa.swarm.protocol.model.internal.InboundPingRequest req -> req.from();
-      case com.github.nhirakawa.swarm.protocol.model.internal.InboundPingAck ack -> ack.from();
+      case InboundPingRequest req -> req.from();
+      case InboundPingAck ack -> ack.from();
     };
   }
 
-  private String formatAddress(
-    com.github.nhirakawa.swarm.protocol.model.SwarmAddress address
-  ) {
+  private String formatAddress(SwarmAddress address) {
     return address.address() + ":" + address.port();
   }
 
   /**
-   * Enqueue an inbound message.
-   * Called by InMemoryMessageSender when routing messages.
+   * Enqueue an inbound wire message with a timeout.
+   * Called by NetworkSimulator when delivering messages.
+   * Unwraps the wire message to extract the payload.
    *
-   * @param message the message to enqueue
-   * @return true if the message was enqueued, false if the queue is full
+   * @param wireMessage the wire message to enqueue
+   * @param timeout how long to wait if the queue is full
+   * @return true if the message was enqueued, false if timeout expired
+   * @throws InterruptedException if interrupted while waiting
    */
-  boolean enqueue(StateMachineMessage message) {
-    boolean offered = inboundQueue.offer(message);
+  boolean enqueue(WireMessage wireMessage, Duration timeout)
+    throws InterruptedException {
+    StateMachineMessage message = wireMessage.payload();
+    boolean offered = inboundQueue.offer(
+      message,
+      timeout.toNanos(),
+      TimeUnit.NANOSECONDS
+    );
     if (!offered) {
       LOG.error(
-        "Failed to enqueue message, queue is full. Message: {}",
+        "Failed to enqueue message after timeout, queue is full. Message: {}",
         message
       );
     }

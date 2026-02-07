@@ -19,13 +19,15 @@ class InMemoryTransportRegistryTest {
 
   @BeforeEach
   void setUp() {
+    NetworkSimulationConfig config = DefaultNetworkSimulationConfig.perfect();
     registry = new InMemoryTransportRegistry();
     address1 = new SwarmAddress("192.168.1.1", 8080, "node-1");
     address2 = new SwarmAddress("192.168.1.2", 8080, "node-2");
-    // Create transports with a dummy registry to avoid auto-registration
+    // Create transports with a dummy registry and simulator to avoid auto-registration
     InMemoryTransportRegistry dummyRegistry = new InMemoryTransportRegistry();
-    transport1 = new InMemoryTransport(address1, dummyRegistry, 10);
-    transport2 = new InMemoryTransport(address2, dummyRegistry, 10);
+    NetworkSimulator dummySimulator = new NetworkSimulator(dummyRegistry, config);
+    transport1 = new InMemoryTransport(address1, dummyRegistry, dummySimulator);
+    transport2 = new InMemoryTransport(address2, dummyRegistry, dummySimulator);
   }
 
   @Test

@@ -1,8 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
-import com.github.nhirakawa.swarm.protocol.transport.SwarmMessageReceiver;
-import com.github.nhirakawa.swarm.protocol.transport.SwarmMessageSender;
 import com.github.nhirakawa.swarm.protocol.transport.SwarmTransport;
 import com.google.common.util.concurrent.AbstractIdleService;
 import org.apache.logging.log4j.LogManager;
@@ -25,15 +23,17 @@ public class InMemoryTransport
   private final InMemoryMessageSender sender;
   private final InMemoryMessageReceiver receiver;
 
+  private static final int RECEIVER_QUEUE_CAPACITY = 1000;
+
   public InMemoryTransport(
     SwarmAddress localAddress,
     InMemoryTransportRegistry registry,
-    int queueCapacity
+    NetworkSimulator networkSimulator
   ) {
     this.localAddress = localAddress;
     this.registry = registry;
-    this.receiver = new InMemoryMessageReceiver(queueCapacity);
-    this.sender = new InMemoryMessageSender(localAddress, registry);
+    this.receiver = new InMemoryMessageReceiver(RECEIVER_QUEUE_CAPACITY);
+    this.sender = new InMemoryMessageSender(localAddress, networkSimulator);
   }
 
   @Override
@@ -49,12 +49,12 @@ public class InMemoryTransport
   }
 
   @Override
-  public SwarmMessageReceiver receiver() {
+  public InMemoryMessageReceiver receiver() {
     return receiver;
   }
 
   @Override
-  public SwarmMessageSender sender() {
+  public InMemoryMessageSender sender() {
     return sender;
   }
 
