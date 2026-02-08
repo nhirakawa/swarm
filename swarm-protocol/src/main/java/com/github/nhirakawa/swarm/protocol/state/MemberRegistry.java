@@ -37,6 +37,10 @@ class MemberRegistry {
     }
   }
 
+  List<MemberStatus> getMemberStatuses() {
+    return registry.values().stream().map(Counted::memberStatus).toList();
+  }
+
   int size() {
     return registry.size();
   }

@@ -1,8 +1,11 @@
 package com.github.nhirakawa.swarm.protocol;
 
+import com.github.nhirakawa.swarm.protocol.state.StateSnapshot;
 import com.github.nhirakawa.swarm.protocol.state.SwarmStateMachine;
 import com.github.nhirakawa.swarm.protocol.transport.SwarmTransport;
 import com.google.common.util.concurrent.AbstractIdleService;
+
+import javax.annotation.Nullable;
 import java.time.Duration;
 
 public class SwarmService extends AbstractIdleService {
@@ -38,5 +41,10 @@ public class SwarmService extends AbstractIdleService {
 
   public String getName() {
     return stateMachine.getName();
+  }
+
+  @Nullable
+  public StateSnapshot getSnapshot() {
+    return stateMachine.getSnapshot();
   }
 }

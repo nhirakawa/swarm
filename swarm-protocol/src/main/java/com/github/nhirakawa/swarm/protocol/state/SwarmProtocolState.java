@@ -66,6 +66,10 @@ public abstract class SwarmProtocolState {
     }
   }
 
+  final List<MemberStatus> getMemberStatuses() {
+    return registry.getMemberStatuses();
+  }
+
   abstract Optional<Transition> applyTick();
 
   Optional<Transition> applyPing(PingRequest pingRequest) {

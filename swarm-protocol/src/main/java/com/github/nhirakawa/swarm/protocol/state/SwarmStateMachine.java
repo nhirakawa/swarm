@@ -14,6 +14,8 @@ import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,6 +31,7 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
   private final SwarmConfig swarmConfig;
   private final SwarmMessageReceiver swarmMessageReceiver;
   private final SwarmMessageSender swarmMessageSender;
+  private final AtomicReference<StateSnapshot> stateSnapshot = new AtomicReference<>(null);
 
   private SwarmProtocolState swarmProtocolState;
 
@@ -92,6 +95,16 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
     }
     swarmProtocolState = transition.getNextSwarmProtocolState();
 
+    stateSnapshot.set(
+        StateSnapshot
+            .builder()
+            .setLocalAddress(swarmConfig.getLocalAddress())
+            .setProtocolPeriodId(swarmProtocolState.protocolPeriodId)
+            .setIncarnation(swarmProtocolState.incarnation)
+            .addAllMemberStatuses(swarmProtocolState.getMemberStatuses())
+            .build()
+    );
+
     for (StateMachineMessage response : transition.getResponsesToSend()) {
       swarmMessageSender.send(response);
     }
@@ -109,6 +122,11 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
 
   public String getName() {
     return serviceName();
+  }
+
+  @Nullable
+  public StateSnapshot getSnapshot() {
+    return stateSnapshot.get();
   }
 
   private Optional<Transition> applyTick() {

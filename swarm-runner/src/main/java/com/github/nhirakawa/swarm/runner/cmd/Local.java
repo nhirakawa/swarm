@@ -3,6 +3,7 @@ package com.github.nhirakawa.swarm.runner.cmd;
 import com.github.nhirakawa.swarm.protocol.SwarmService;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.state.StateSnapshot;
 import com.github.nhirakawa.swarm.protocol.state.SwarmStateMachine;
 import com.github.nhirakawa.swarm.protocol.transport.SwarmTransport;
 import com.github.nhirakawa.swarm.protocol.transport.mem.DefaultNetworkSimulationConfig;
@@ -12,10 +13,13 @@ import com.github.nhirakawa.swarm.protocol.transport.mem.NetworkSimulator;
 import com.github.nhirakawa.swarm.protocol.transport.mem.NetworkSimulationConfig;
 import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.runner.BannerUtil;
+import com.github.nhirakawa.swarm.runner.admin.AdminConfig;
+import com.github.nhirakawa.swarm.runner.admin.AdminService;
 import com.github.nhirakawa.swarm.runner.model.LocalSwarmConfig;
 import com.github.nhirakawa.swarm.runner.service.LifecycleLogger;
 import com.github.nhirakawa.swarm.runner.service.ServiceObserver;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.hubspot.jinjava.Jinjava;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
@@ -28,8 +32,11 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "local")
@@ -47,17 +54,20 @@ public class Local implements Callable<Integer> {
 		LOG.info("\n{}\n", BannerUtil.getOrDefault("swarm-local.txt", "swarm-local"));
 		var config = readConfigFile();
 
-		List<SwarmService> services = createServices(config);
+		List<SwarmService> swarmServices = createServices(config);
 
-		if (services.isEmpty()) {
+		if (swarmServices.isEmpty()) {
 			return 0;
 		}
 
-		for (SwarmService swarmService : services) {
+		for (SwarmService swarmService : swarmServices) {
 			swarmService.startAsync();
 		}
 
-		ServiceObserver serviceObserver = new ServiceObserver(services);
+		Supplier<List<StateSnapshot>> snapshotListSupplier = () -> swarmServices.stream().map(SwarmService::getSnapshot).toList();
+		Optional<AdminService> adminService = createAndStartAdminService(config.getAdminConfig(), snapshotListSupplier);
+
+		ServiceObserver serviceObserver = new ServiceObserver(swarmServices, adminService);
 
 		serviceObserver.startAsync().awaitRunning(Duration.ofSeconds(5));
 
@@ -111,6 +121,17 @@ public class Local implements Callable<Integer> {
 		}
 
 		return services;
+	}
+
+	@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+	private Optional<AdminService> createAndStartAdminService(Optional<AdminConfig> config, Supplier<List<StateSnapshot>> snapshotListSupplier) throws TimeoutException {
+		if (config.isEmpty()) {
+			return Optional.empty();
+		}
+
+		AdminService adminService = new AdminService(config.get(), new Jinjava(), snapshotListSupplier);
+		adminService.startAsync().awaitRunning(Duration.ofSeconds(10));
+		return Optional.of(adminService);
 	}
 
 	private static List<SwarmAddress> generateSwarmAddresses(int count) {

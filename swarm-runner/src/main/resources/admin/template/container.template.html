@@ -1,0 +1,14 @@
+{% for snapshot in snapshots %}
+<div class="snapshot">
+    <h2 class="address">Address: {{ snapshot.localAddress.address }}:{{ snapshot.localAddress.port }}</h2>
+    <div><span class="protocol-period-id">Protocol Period ID: {{ snapshot.protocolPeriodId }}</span></div>
+    <div><span class="incarnation">Incarnation: {{ snapshot.incarnation }}</span></div>
+    {% for memberStatus in snapshot.memberStatuses %}
+    <div class="member-status">
+        <div><span class="address">Address: {{ memberStatus.address.address }}:{{ memberStatus.address.port }}</span></div>
+        <div><span class="type">Status: {{ memberStatus.type | lower }}</span></div>
+        <div><span class="incarnation">Incarnation: {{ memberStatus.incarnation }}</span></div>
+    </div>
+    {% endfor %}
+</div>
+{% endfor %}
