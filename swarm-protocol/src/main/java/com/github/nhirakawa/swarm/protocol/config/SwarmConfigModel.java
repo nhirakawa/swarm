@@ -4,7 +4,6 @@ import com.github.nhirakawa.immutable.style.guava.ImmutableStyle;
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import com.google.common.base.Preconditions;
 import java.time.Duration;
-import java.util.Set;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -12,8 +11,6 @@ import org.immutables.value.Value;
 public abstract class SwarmConfigModel {
 
   public abstract SwarmAddress getLocalAddress();
-
-  public abstract Set<SwarmAddress> getInitialClusterMembership();
 
   public abstract Duration getProtocolPeriod();
 

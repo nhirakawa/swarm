@@ -40,7 +40,6 @@ public class WaitingForAckProtocolStateTest {
   private static final SwarmConfig SWARM_CONFIG = SwarmConfig
     .builder()
       .setLocalAddress(LOCAL)
-    .addInitialClusterMembership(PING_TARGET, OTHER_NODE_1, OTHER_NODE_2)
     .setFailureSubGroup(1)
     .setProtocolTick(Duration.ofMillis(100))
     .setMessageTimeout(Duration.ofMillis(20))

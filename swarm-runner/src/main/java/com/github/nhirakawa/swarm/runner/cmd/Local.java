@@ -33,11 +33,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "local")
 public class Local implements Callable<Integer> {
@@ -97,12 +95,8 @@ public class Local implements Callable<Integer> {
 		for (SwarmAddress swarmAddress : swarmAddresses) {
 			SwarmTransport transport = new InMemoryTransport(swarmAddress, registry, networkSimulator);
 
-			Set<SwarmAddress> restOfCluster = swarmAddresses.stream().filter(other -> !other.equals(swarmAddress)).collect(
-					Collectors.toUnmodifiableSet());
-
 			SwarmConfig swarmConfig = SwarmConfig.builder()
 					.setLocalAddress(swarmAddress)
-					.addAllInitialClusterMembership(restOfCluster)
 					.setProtocolPeriod(config.getProtocolPeriod())
 					.setMessageTimeout(config.getMessageTimeout())
 					.setProtocolTick(config.getProtocolTick())

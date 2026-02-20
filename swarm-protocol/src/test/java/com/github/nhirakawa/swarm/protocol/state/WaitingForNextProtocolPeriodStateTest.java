@@ -30,7 +30,6 @@ public class WaitingForNextProtocolPeriodStateTest {
   private static final SwarmConfig SWARM_CONFIG = SwarmConfig
     .builder()
       .setLocalAddress(LOCAL)
-      .addInitialClusterMembership(OTHER)
     .setProtocolPeriod(Duration.ofSeconds(1))
     .setProtocolTick(Duration.ofMillis(100))
     .setMessageTimeout(Duration.ofMillis(200))
