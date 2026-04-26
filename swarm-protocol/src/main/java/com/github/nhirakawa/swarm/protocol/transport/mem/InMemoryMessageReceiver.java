@@ -48,7 +48,7 @@ public class InMemoryMessageReceiver implements SwarmMessageReceiver {
         TimeUnit.NANOSECONDS
       );
       if (message != null) {
-        LOG.debug(
+        LOG.trace(
           "Received {} source {}",
           message.getClass().getSimpleName(),
           formatAddress(message.source())

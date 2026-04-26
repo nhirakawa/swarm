@@ -51,6 +51,7 @@ public class InMemoryTransport
   }
 
   public void enqueue(WireMessage wireMessage, Duration timeout) throws InterruptedException {
+    LOG.trace("Enqueueing message from {} to {}", wireMessage.source().uid(), wireMessage.target().uid());
     receiver.enqueue(wireMessage, timeout);
   }
 

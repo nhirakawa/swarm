@@ -110,6 +110,8 @@ public abstract class SwarmProtocolState {
       memberList
     );
 
+    LOG.debug("Sending discovery response to {} with {} members", request.source(), memberList.size());
+
     return Optional.of(
       Transition.builder()
         .setNextSwarmProtocolState(this)

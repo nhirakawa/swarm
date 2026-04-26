@@ -2,8 +2,11 @@ package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.header.MessageHeader;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.DelayQueue;
@@ -59,8 +62,7 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
       return false;
     }
 
-    // Check for multicast address
-    if (target.address().equals("224.0.2.0")) {
+    if (isMulticast(target)) {
       return multicast(wireMessage);
     } else {
       return unicast(wireMessage);
@@ -69,8 +71,10 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
 
   private boolean multicast(WireMessage wireMessage) {
     boolean deliveredAny = false;
+    ImmutableSet<SwarmAddress> keys = registry.keys();
+    LOG.trace("Multicasting from {} - {} node(s) in registry", formatAddress(wireMessage.source()), keys.size());
 
-    for (SwarmAddress target : registry.keys()) {
+    for (SwarmAddress target : keys) {
       if (target.equals(wireMessage.source())) {
         continue;
       }
@@ -130,6 +134,7 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
       WireMessage wireMessage = delayed.wireMessage();
       SwarmAddress source = wireMessage.source();
       SwarmAddress target = wireMessage.target();
+      LOG.trace("Drainer dequeued {} from {} to {}", wireMessage.header().type(), formatAddress(source), formatAddress(target));
 
       // Simulate packet loss in transit
       if (config.shouldDropInTransit(source, target)) {
@@ -150,7 +155,7 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
   private void deliverToReceiver(WireMessage wireMessage) throws InterruptedException {
     SwarmAddress target = wireMessage.target();
 
-    if (target.address().equals("224.0.2.1")) {
+    if (isMulticast(target)) {
       for (SwarmAddress unicastTarget : registry.keys()) {
         InMemoryTransport inMemoryTransport = registry.lookup(unicastTarget).orElseThrow();
         inMemoryTransport.enqueue(wireMessage, RECEIVER_ENQUEUE_TIMEOUT);
@@ -183,6 +188,14 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
 				);
 			}
 		}
+  }
+
+  private boolean isMulticast(SwarmAddress address) {
+    try {
+      return InetAddress.getByName(address.address()).isMulticastAddress();
+    } catch (UnknownHostException e) {
+      return false;
+    }
   }
 
   private String formatAddress(SwarmAddress address) {

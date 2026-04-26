@@ -92,7 +92,7 @@ public class InMemoryMessageSender implements SwarmMessageSender {
 
     boolean enqueued = networkSimulator.enqueue(wireMessage);
     if (enqueued) {
-      LOG.debug(
+      LOG.trace(
         "Sent {} source {} to {}",
         message.getClass().getSimpleName(),
         formatAddress(localAddress),

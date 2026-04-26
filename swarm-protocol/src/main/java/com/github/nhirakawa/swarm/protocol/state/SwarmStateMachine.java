@@ -87,8 +87,8 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
 
   private void handleTransition(Transition transition) {
     if (!swarmProtocolState.getClass().getSimpleName().equals(transition.getNextSwarmProtocolState().getClass().getSimpleName())) {
-      LOG.debug(
-          "Transitioning source {} to {}",
+      LOG.info(
+          "Transitioning from {} to {}",
           swarmProtocolState.getClass().getSimpleName(),
           transition.getNextSwarmProtocolState().getClass().getSimpleName()
       );

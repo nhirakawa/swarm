@@ -55,6 +55,8 @@ public class InitializingProtocolState extends SwarmProtocolState {
       return Optional.empty(); // Not time to retry yet
     }
 
+    LOG.debug("Tick fired - registry size is {}", registry.size());
+
     if (registry.size() > 0) {
       // Transition to normal operation
       SwarmProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(
@@ -108,6 +110,8 @@ public class InitializingProtocolState extends SwarmProtocolState {
     for (MemberStatus memberStatus : response.memberList()) {
       registry.put(memberStatus.address(), memberStatus);
     }
+
+    LOG.info("Registry size after merge: {}", registry.size());
 
     return Optional.empty();
   }
