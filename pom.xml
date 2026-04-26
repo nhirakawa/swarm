@@ -78,7 +78,7 @@
       <dependency>
         <groupId>com.google.inject</groupId>
         <artifactId>guice</artifactId>
-        <version>6.0.0</version>
+        <version>7.0.0</version>
       </dependency>
       <dependency>
         <groupId>com.hubspot.jinjava</groupId>
@@ -95,7 +95,11 @@
         <artifactId>javalin</artifactId>
         <version>6.7.0</version>
       </dependency>
-
+      <dependency>
+        <groupId>jakarta.inject</groupId>
+        <artifactId>jakarta.inject-api</artifactId>
+        <version>2.0.1</version>
+      </dependency>
       <dependency>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>

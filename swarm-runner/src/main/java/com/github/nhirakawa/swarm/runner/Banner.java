@@ -4,9 +4,9 @@ import com.google.common.io.Resources;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public final class BannerUtil {
+public final class Banner {
 
-  private BannerUtil() {
+  private Banner() {
     throw new UnsupportedOperationException();
   }
 
