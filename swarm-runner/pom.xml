@@ -10,30 +10,22 @@
   <artifactId>swarm-runner</artifactId>
 
   <dependencies>
-      <dependency>
-          <groupId>com.fasterxml.jackson.core</groupId>
-          <artifactId>jackson-annotations</artifactId>
-      </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
+      <artifactId>jackson-annotations</artifactId>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
     </dependency>
-      <dependency>
-          <groupId>com.github.nhirakawa</groupId>
-          <artifactId>immutable-style</artifactId>
-      </dependency>
+    <dependency>
+      <groupId>com.github.nhirakawa</groupId>
+      <artifactId>immutable-style</artifactId>
+    </dependency>
     <dependency>
       <groupId>com.github.nhirakawa</groupId>
       <artifactId>swarm-protocol</artifactId>
       <version>1.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.dagger</groupId>
-      <artifactId>dagger</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
@@ -47,23 +39,6 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.github.nhirakawa</groupId>
-      <artifactId>swarm-protocol</artifactId>
-      <version>1.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>javax.inject</groupId>
-      <artifactId>javax.inject</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
       <groupId>com.hubspot.jinjava</groupId>
