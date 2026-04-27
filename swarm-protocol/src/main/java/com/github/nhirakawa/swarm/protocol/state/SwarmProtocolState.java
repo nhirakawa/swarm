@@ -91,6 +91,10 @@ public abstract class SwarmProtocolState {
   ) {
     LOG.debug("Received discovery request source {}", request.source());
 
+    // TODO return a response less than 100% of the time
+    // This would help limit the number of messages on the network if several new
+    // members started in a short period of time
+
     // Always include our own status so that bootstrapping source nothing works -
     // even if the registry is empty, the requester learns about us.
     MemberStatus self = MemberStatus.alive(swarmConfig.getLocalAddress(), incarnation);
