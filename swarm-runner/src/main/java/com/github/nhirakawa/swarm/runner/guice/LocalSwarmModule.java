@@ -1,9 +1,9 @@
 package com.github.nhirakawa.swarm.runner.guice;
 
-import com.github.nhirakawa.swarm.protocol.transport.mem.DefaultNetworkSimulationConfig;
 import com.github.nhirakawa.swarm.protocol.transport.mem.InMemoryTransportRegistry;
 import com.github.nhirakawa.swarm.protocol.transport.mem.NetworkSimulationConfig;
 import com.github.nhirakawa.swarm.protocol.transport.mem.NetworkSimulator;
+import com.github.nhirakawa.swarm.protocol.transport.mem.PerfectNetworkSimulationConfig;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -18,7 +18,7 @@ public class LocalSwarmModule extends AbstractModule {
 
 	@Provides
 	NetworkSimulationConfig provideNetworkSimulationConfig() {
-		return DefaultNetworkSimulationConfig.perfect();
+		return new PerfectNetworkSimulationConfig();
 	}
 
 	@Provides

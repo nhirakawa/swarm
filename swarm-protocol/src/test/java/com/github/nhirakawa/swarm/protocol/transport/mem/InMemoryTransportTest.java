@@ -24,7 +24,7 @@ class InMemoryTransportTest {
 
   @BeforeEach
   void setUp() throws TimeoutException {
-    NetworkSimulationConfig config = DefaultNetworkSimulationConfig.perfect();
+    NetworkSimulationConfig config = new PerfectNetworkSimulationConfig();
     registry = new InMemoryTransportRegistry();
     networkSimulator = new NetworkSimulator(registry, config);
     networkSimulator.startAsync().awaitRunning(Duration.ofSeconds(1));

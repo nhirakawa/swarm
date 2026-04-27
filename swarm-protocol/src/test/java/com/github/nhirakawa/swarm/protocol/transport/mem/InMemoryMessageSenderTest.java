@@ -26,7 +26,7 @@ class InMemoryMessageSenderTest {
 
   @BeforeEach
   void setUp() throws UnknownHostException {
-    NetworkSimulationConfig config = DefaultNetworkSimulationConfig.perfect();
+    NetworkSimulationConfig config = new PerfectNetworkSimulationConfig();
     registry = new InMemoryTransportRegistry();
     networkSimulator = new NetworkSimulator(registry, config);
     networkSimulator.startAsync().awaitRunning();

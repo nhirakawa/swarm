@@ -21,7 +21,7 @@ class InMemoryTransportRegistryTest {
 
   @BeforeEach
   void setUp() {
-    NetworkSimulationConfig config = DefaultNetworkSimulationConfig.perfect();
+    NetworkSimulationConfig config = new PerfectNetworkSimulationConfig();
     registry = new InMemoryTransportRegistry();
     address1 = new SwarmAddress("192.168.1.1", 8080, "node-1");
     address2 = new SwarmAddress("192.168.1.2", 8080, "node-2");
