@@ -1,3 +1,4 @@
+<div id="snapshots">
 {% for snapshot in snapshots %}
 <div class="snapshot">
     <h2 class="address">Address: {{ snapshot.localAddress.address }}:{{ snapshot.localAddress.port }}</h2>
@@ -12,3 +13,4 @@
     {% endfor %}
 </div>
 {% endfor %}
+</div>

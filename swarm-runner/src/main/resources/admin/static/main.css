@@ -14,9 +14,16 @@ body {
 }
 
 #main {
-    max-width: 960px;
+    max-width: 1560px;
     margin: 0 auto;
     padding: 2rem 1rem;
+}
+
+#snapshots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 480px);
+    gap: 1rem;
+    align-items: start;
 }
 
 h1, h2, h3 {
@@ -65,7 +72,6 @@ pre, code {
     background: #fff;
     border-radius: 4px;
     padding: 1rem 1.25rem;
-    margin-bottom: 1rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
