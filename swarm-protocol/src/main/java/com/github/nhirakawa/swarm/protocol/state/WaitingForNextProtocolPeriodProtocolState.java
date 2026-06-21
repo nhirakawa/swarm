@@ -6,7 +6,7 @@ import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
-import com.github.nhirakawa.swarm.protocol.util.JitterUtil;
+import com.github.nhirakawa.swarm.protocol.util.Jitter;
 import com.google.common.base.Stopwatch;
 import java.time.Duration;
 import java.util.Optional;
@@ -33,7 +33,7 @@ public class WaitingForNextProtocolPeriodProtocolState
     MemberRegistry memberRegistry
   ) {
     super(swarmConfig, protocolPeriodId, incarnation, stopwatch, memberRegistry);
-    this.jitteredProtocolPeriod = JitterUtil.applyJitter(
+    this.jitteredProtocolPeriod = Jitter.apply(
       swarmConfig.getProtocolPeriod(),
       swarmConfig.getProtocolPeriodJitter()
     );

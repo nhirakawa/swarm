@@ -6,9 +6,9 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Utility for applying jitter to durations to prevent thundering herd problems.
  */
-public final class JitterUtil {
+public final class Jitter {
 
-  private JitterUtil() {
+  private Jitter() {
     throw new UnsupportedOperationException();
   }
 
@@ -20,7 +20,7 @@ public final class JitterUtil {
    * @param jitterRange the range of jitter to apply (added/subtracted source base)
    * @return a duration with random jitter applied
    */
-  public static Duration applyJitter(Duration baseDuration, Duration jitterRange) {
+  public static Duration apply(Duration baseDuration, Duration jitterRange) {
     long baseNanos = baseDuration.toNanos();
     long jitterNanos = jitterRange.toNanos();
 

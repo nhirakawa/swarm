@@ -6,7 +6,7 @@ import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
-import com.github.nhirakawa.swarm.protocol.util.JitterUtil;
+import com.github.nhirakawa.swarm.protocol.util.Jitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
@@ -36,7 +36,7 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
   ) {
     super(swarmConfig, protocolPeriodId, incarnation, stopwatch, memberRegistry);
     this.pingTarget = pingTarget;
-    this.jitteredMessageTimeout = JitterUtil.applyJitter(
+    this.jitteredMessageTimeout = Jitter.apply(
       swarmConfig.getMessageTimeout(),
       swarmConfig.getMessageTimeoutJitter()
     );
