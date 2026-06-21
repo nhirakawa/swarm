@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -46,12 +47,12 @@ public class InMemoryMessageSender implements SwarmMessageSender {
   }
 
   @Override
-  public void send(StateMachineMessage message) {
+  public void send(StateMachineMessage message, Duration timeout) {
     try {
       if (message instanceof DiscoveryRequest discoveryRequest) {
-        sendBroadcast(discoveryRequest);
+        sendBroadcast(discoveryRequest, timeout);
       } else {
-        sendUnicast(message);
+        sendUnicast(message, timeout);
       }
     } catch (IOException e) {
       LOG.error("Failed to serialize message", e);
@@ -59,19 +60,19 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     }
   }
 
-  private void sendBroadcast(DiscoveryRequest message)
+  private void sendBroadcast(DiscoveryRequest message, Duration timeout)
     throws IOException {
     // Serialize message to bytes (once for all targets)
     byte[] payloadBytes = objectMapper.writeValueAsBytes(message);
 
     MessageHeader header = createHeader(message, localAddress, SwarmAddress.createMulticastAddress(), payloadBytes.length);
     WireMessage wireMessage = new WireMessage(localAddress, SwarmAddress.createMulticastAddress(), header, payloadBytes);
-    networkSimulator.enqueue(wireMessage);
+    networkSimulator.enqueue(wireMessage, timeout);
 
     LOG.debug("Sent multicast discovery request");
   }
 
-  private void sendUnicast(StateMachineMessage message) throws IOException {
+  private void sendUnicast(StateMachineMessage message, Duration timeout) throws IOException {
     // Serialize message to bytes
     byte[] payloadBytes = objectMapper.writeValueAsBytes(message);
 
@@ -90,7 +91,7 @@ public class InMemoryMessageSender implements SwarmMessageSender {
       payloadBytes
     );
 
-    boolean enqueued = networkSimulator.enqueue(wireMessage);
+    boolean enqueued = networkSimulator.enqueue(wireMessage, timeout);
     if (enqueued) {
       LOG.trace(
         "Sent {} source {} to {}",

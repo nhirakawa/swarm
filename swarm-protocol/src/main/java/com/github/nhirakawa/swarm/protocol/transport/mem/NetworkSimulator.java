@@ -48,7 +48,7 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
    * @param wireMessage the wire message to deliver
    * @return true if message was enqueued, false if dropped during send
    */
-  public boolean enqueue(WireMessage wireMessage) {
+  public boolean enqueue(WireMessage wireMessage, Duration timeout) {
     SwarmAddress source = wireMessage.source();
     SwarmAddress target = wireMessage.target();
 
@@ -63,13 +63,13 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
     }
 
     if (isMulticast(target)) {
-      return multicast(wireMessage);
+      return multicast(wireMessage, timeout);
     } else {
-      return unicast(wireMessage);
+      return unicast(wireMessage, timeout);
     }
   }
 
-  private boolean multicast(WireMessage wireMessage) {
+  private boolean multicast(WireMessage wireMessage, Duration timeout) {
     boolean deliveredAny = false;
     ImmutableSet<SwarmAddress> keys = registry.keys();
     LOG.trace("Multicasting from {} - {} node(s) in registry", formatAddress(wireMessage.source()), keys.size());
@@ -103,7 +103,7 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
 
       WireMessage unicastWireMessage = new WireMessage(wireMessage.source(), target, messageHeader, wireMessage.payload());
 
-      boolean unicastWasSuccessful = unicast(unicastWireMessage);
+      boolean unicastWasSuccessful = unicast(unicastWireMessage, timeout);
 
       deliveredAny = deliveredAny || unicastWasSuccessful;
     }
@@ -111,13 +111,13 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
     return deliveredAny;
   }
 
-  private boolean unicast(WireMessage wireMessage) {
+  private boolean unicast(WireMessage wireMessage, Duration timeout) {
     Duration latency = config.sampleLatency(wireMessage.source(), wireMessage.target());
     long deliveryTimeNanos = System.nanoTime() + latency.toNanos();
 
     DelayedMessage delayed = new DelayedMessage(wireMessage, deliveryTimeNanos);
 
-    return delayQueue.offer(delayed);
+    return delayQueue.offer(delayed, timeout.toNanos(), TimeUnit.NANOSECONDS);
   }
 
   @Override

@@ -11,6 +11,8 @@ import com.github.nhirakawa.swarm.protocol.transport.SwarmMessageReceiver;
 import com.github.nhirakawa.swarm.protocol.transport.SwarmMessageSender;
 import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
+
+import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -106,7 +108,7 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
     );
 
     for (StateMachineMessage response : transition.getResponsesToSend()) {
-      swarmMessageSender.send(response);
+      swarmMessageSender.send(response, Duration.ofMillis(10));
     }
   }
 

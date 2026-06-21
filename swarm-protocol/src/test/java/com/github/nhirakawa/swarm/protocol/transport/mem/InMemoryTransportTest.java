@@ -84,7 +84,7 @@ class InMemoryTransportTest {
       4L
     );
 
-    transport1.sender().send(response);
+    transport1.sender().send(response, Duration.ofMillis(10));
 
     // Node 2 receives the message
     Optional<StateMachineMessage> receivedMessage = transport2
@@ -106,12 +106,14 @@ class InMemoryTransportTest {
 
     // Node 1 -> Node 2
     transport1.sender().send(
-        new PingRequest(address1, address2, Optional.empty(), 4L)
+        new PingRequest(address1, address2, Optional.empty(), 4L),
+        Duration.ofMillis(10)
       );
 
     // Node 2 -> Node 1
     transport2.sender().send(
-        new PingRequest(address2, address1, Optional.empty(), 4L)
+        new PingRequest(address2, address1, Optional.empty(), 4L),
+        Duration.ofMillis(10)
       );
 
     // Verify Node 2 received source Node 1

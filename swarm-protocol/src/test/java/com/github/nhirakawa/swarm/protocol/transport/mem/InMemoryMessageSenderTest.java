@@ -52,7 +52,7 @@ class InMemoryMessageSenderTest {
       4L
     );
 
-    sender.send(response);
+    sender.send(response, Duration.ofMillis(10));
 
     // Verify the message was received
     InMemoryMessageReceiver receiver =
@@ -84,7 +84,7 @@ class InMemoryMessageSenderTest {
       4L
     );
 
-    sender.send(response);
+    sender.send(response, Duration.ofMillis(10));
 
     InMemoryMessageReceiver receiver =
 				receiverTransport.receiver();
@@ -108,7 +108,7 @@ class InMemoryMessageSenderTest {
       4L
     );
 
-    sender.send(response);
+    sender.send(response, Duration.ofMillis(10));
 
     InMemoryMessageReceiver receiver =
       (InMemoryMessageReceiver) receiverTransport.receiver();
@@ -139,7 +139,7 @@ class InMemoryMessageSenderTest {
       4L
     );
 
-    sender.send(response);
+    sender.send(response, Duration.ofMillis(10));
 
     InMemoryMessageReceiver receiver =
 				receiverTransport.receiver();
@@ -169,7 +169,7 @@ class InMemoryMessageSenderTest {
     );
 
     // Should not throw, just log warning
-    sender.send(response);
+    sender.send(response, Duration.ofMillis(10));
 
     // Verify message was not delivered to receiver
     InMemoryMessageReceiver receiver =
