@@ -42,7 +42,7 @@ public class InMemoryTransportRegistry {
    * @param transport the transport instance for that node
    * @throws IllegalStateException if address is already registered
    */
-  public synchronized void register(SwarmAddress address, InMemoryTransport transport) throws UnknownHostException {
+  synchronized void register(SwarmAddress address, InMemoryTransport transport) throws UnknownHostException {
     InMemoryTransport previous = registry.putIfAbsent(address, transport);
     if (previous != null) {
       throw new IllegalStateException(
@@ -62,7 +62,7 @@ public class InMemoryTransportRegistry {
    *
    * @param address the swarm address to deregister
    */
-  public synchronized void deregister(SwarmAddress address) {
+  synchronized void deregister(SwarmAddress address) {
     InMemoryTransport removed = registry.remove(address);
     if (removed != null) {
       LOG.info("Deregistered transport for address: {}", address);
@@ -77,11 +77,11 @@ public class InMemoryTransportRegistry {
    * @param address the swarm address to lookup
    * @return the transport instance if registered, empty otherwise
    */
-  public synchronized Optional<InMemoryTransport> lookup(SwarmAddress address) {
+  synchronized Optional<InMemoryTransport> lookup(SwarmAddress address) {
     return Optional.ofNullable(registry.get(address));
   }
 
-  public synchronized Optional<byte[]> resolve(SwarmAddress address) {
+  synchronized Optional<byte[]> resolve(SwarmAddress address) {
     return Optional.ofNullable(resolvedAddresses.get(address));
   }
 
@@ -91,11 +91,11 @@ public class InMemoryTransportRegistry {
    *
    * @return the count of registered transports
    */
-  public synchronized int size() {
+  synchronized int size() {
     return registry.size();
   }
 
-  public synchronized ImmutableSet<SwarmAddress> keys() {
+  synchronized ImmutableSet<SwarmAddress> keys() {
     return ImmutableSet.copyOf(registry.keySet());
   }
 
@@ -103,7 +103,7 @@ public class InMemoryTransportRegistry {
    * Clear all registered transports.
    * Primarily useful for testing.
    */
-  public synchronized void clear() {
+  synchronized void clear() {
     registry.clear();
     resolvedAddresses.clear();
     LOG.info("Cleared all registered transports");

@@ -133,7 +133,7 @@ public class InMemoryMessageReceiver implements SwarmMessageReceiver {
    *
    * @return the number of messages in the queue
    */
-  public int queueSize() {
+  int queueSize() {
     return inboundQueue.size();
   }
 }

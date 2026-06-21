@@ -48,7 +48,7 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
    * @param wireMessage the wire message to deliver
    * @return true if message was enqueued, false if dropped during send
    */
-  public boolean enqueue(WireMessage wireMessage, Duration timeout) {
+  boolean enqueue(WireMessage wireMessage, Duration timeout) {
     SwarmAddress source = wireMessage.source();
     SwarmAddress target = wireMessage.target();
 

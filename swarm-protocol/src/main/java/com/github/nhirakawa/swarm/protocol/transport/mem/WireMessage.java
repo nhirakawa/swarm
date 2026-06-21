@@ -7,7 +7,7 @@ import com.github.nhirakawa.swarm.protocol.model.header.MessageHeader;
  * Represents a message on the wire with routing information and header.
  * Payload is serialized bytes ready for transmission.
  */
-public record WireMessage(
+record WireMessage(
   SwarmAddress source,
   SwarmAddress target,
   MessageHeader header,
