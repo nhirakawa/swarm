@@ -8,6 +8,7 @@ import com.github.nhirakawa.swarm.protocol.model.header.Compression;
 import com.github.nhirakawa.swarm.protocol.model.header.MessageHeader;
 import com.github.nhirakawa.swarm.protocol.model.header.MessageVersion;
 import com.github.nhirakawa.swarm.protocol.model.header.Serialization;
+import com.google.common.primitives.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -24,6 +25,13 @@ public class HeaderSerdeTest {
   private static final byte[] TARGET_IP = new byte[] { (byte) 192, (byte) 168, 1, 2 };
   private static final int TARGET_PORT = 9090;
   private static final long CHECKSUM = 0x12345678L;
+
+  private static final byte[] PAYLOAD_LENGTH_BYTES = new byte[] { (byte) 0x04, (byte) 0xD2 };
+  private static final byte[] MESSAGE_ID_BYTES     = new byte[] { 0, 0, 0, (byte) 0x2A };
+  private static final byte[] TIMESTAMP_BYTES      = new byte[] { 0, 0, (byte) 0x01, (byte) 0x76, (byte) 0xC3, (byte) 0x23, (byte) 0xC0, 0 };
+  private static final byte[] SOURCE_PORT_BYTES    = new byte[] { (byte) 0x1F, (byte) 0x90 };
+  private static final byte[] TARGET_PORT_BYTES    = new byte[] { (byte) 0x23, (byte) 0x82 };
+  private static final byte[] CHECKSUM_BYTES       = new byte[] { (byte) 0x12, (byte) 0x34, (byte) 0x56, (byte) 0x78 };
 
   @BeforeEach
   public void setup() {
@@ -124,19 +132,17 @@ public class HeaderSerdeTest {
 
   @Test
   public void testDeserializeBasicHeader() {
-    byte[] bytes = new byte[] {
-      0, 1, 0, 0,                                // metadata
-      (byte) 0x04, (byte) 0xD2,                  // payload length (1234)
-      0, 0, 0, (byte) 0x2A,                      // message ID (42)
-      0, 0, (byte) 0x01, (byte) 0x76,            // timestamp (1609591668736L)
-      (byte) 0xC3, (byte) 0x23, (byte) 0xC0, 0,
-      (byte) 192, (byte) 168, 1, 1,              // source IP
-      (byte) 0x1F, (byte) 0x90,                  // source port (8080)
-      (byte) 192, (byte) 168, 1, 2,              // target IP
-      (byte) 0x23, (byte) 0x82,                  // target port (9090)
-      (byte) 0x12, (byte) 0x34,                  // checksum (0x12345678)
-      (byte) 0x56, (byte) 0x78
-    };
+    byte[] bytes = Bytes.concat(
+      new byte[] { 0, 1, 0, 0 },      // metadata
+      PAYLOAD_LENGTH_BYTES,
+      MESSAGE_ID_BYTES,
+      TIMESTAMP_BYTES,
+      SOURCE_IP,
+      SOURCE_PORT_BYTES,
+      TARGET_IP,
+      TARGET_PORT_BYTES,
+      CHECKSUM_BYTES
+    );
 
     MessageHeader header = deserializer.deserialize(bytes);
 
@@ -156,19 +162,17 @@ public class HeaderSerdeTest {
 
   @Test
   public void testDeserializeWithCompression() {
-    byte[] bytes = new byte[] {
-      0, 0, 1, 1,                                // metadata
-      (byte) 0x04, (byte) 0xD2,                  // payload length (1234)
-      0, 0, 0, (byte) 0x2A,                      // message ID (42)
-      0, 0, (byte) 0x01, (byte) 0x76,            // timestamp (1609591668736L)
-      (byte) 0xC3, (byte) 0x23, (byte) 0xC0, 0,
-      (byte) 192, (byte) 168, 1, 1,              // source IP
-      (byte) 0x1F, (byte) 0x90,                  // source port (8080)
-      (byte) 192, (byte) 168, 1, 2,              // target IP
-      (byte) 0x23, (byte) 0x82,                  // target port (9090)
-      (byte) 0x12, (byte) 0x34,                  // checksum (0x12345678)
-      (byte) 0x56, (byte) 0x78
-    };
+    byte[] bytes = Bytes.concat(
+      new byte[] { 0, 0, 1, 1 },      // metadata
+      PAYLOAD_LENGTH_BYTES,
+      MESSAGE_ID_BYTES,
+      TIMESTAMP_BYTES,
+      SOURCE_IP,
+      SOURCE_PORT_BYTES,
+      TARGET_IP,
+      TARGET_PORT_BYTES,
+      CHECKSUM_BYTES
+    );
 
     MessageHeader header = deserializer.deserialize(bytes);
 
@@ -189,10 +193,18 @@ public class HeaderSerdeTest {
   @Test
   public void testDeserializeThrowsOnInvalidLength() {
     byte[] tooShort = new byte[] { 0, 1, 0 };
-    byte[] tooLong = new byte[] {
-      0, 1, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-      16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
-    };
+    byte[] tooLong = Bytes.concat(
+      new byte[] { 0, 1, 0, 0 },
+      PAYLOAD_LENGTH_BYTES,
+      MESSAGE_ID_BYTES,
+      TIMESTAMP_BYTES,
+      SOURCE_IP,
+      SOURCE_PORT_BYTES,
+      TARGET_IP,
+      TARGET_PORT_BYTES,
+      CHECKSUM_BYTES,
+      new byte[] { 0 }               // extra byte → 35 total
+    );
 
     assertThatThrownBy(() -> deserializer.deserialize(tooShort))
       .isInstanceOf(IllegalArgumentException.class)
@@ -205,18 +217,17 @@ public class HeaderSerdeTest {
 
   @Test
   public void testDeserializeThrowsOnInvalidMessageVersion() {
-    byte[] invalidVersion = new byte[] {
-      99, 0, 0, 0,                               // invalid version
-      (byte) 0x04, (byte) 0xD2,
-      0, 0, 0, (byte) 0x2A,
-      0, 0, (byte) 0x01, (byte) 0x76,
-      (byte) 0xC3, (byte) 0x23, (byte) 0xC0, 0,
-      (byte) 192, (byte) 168, 1, 1,
-      (byte) 0x1F, (byte) 0x90,
-      (byte) 192, (byte) 168, 1, 2,
-      (byte) 0x23, (byte) 0x82,
-      (byte) 0x12, (byte) 0x34, (byte) 0x56, (byte) 0x78
-    };
+    byte[] invalidVersion = Bytes.concat(
+      new byte[] { 99, 0, 0, 0 },    // invalid version
+      PAYLOAD_LENGTH_BYTES,
+      MESSAGE_ID_BYTES,
+      TIMESTAMP_BYTES,
+      SOURCE_IP,
+      SOURCE_PORT_BYTES,
+      TARGET_IP,
+      TARGET_PORT_BYTES,
+      CHECKSUM_BYTES
+    );
 
     assertThatThrownBy(() -> deserializer.deserialize(invalidVersion))
       .isInstanceOf(IllegalArgumentException.class)
@@ -225,18 +236,17 @@ public class HeaderSerdeTest {
 
   @Test
   public void testDeserializeThrowsOnInvalidMessageType() {
-    byte[] invalidType = new byte[] {
-      0, 99, 0, 0,                               // invalid type
-      (byte) 0x04, (byte) 0xD2,
-      0, 0, 0, (byte) 0x2A,
-      0, 0, (byte) 0x01, (byte) 0x76,
-      (byte) 0xC3, (byte) 0x23, (byte) 0xC0, 0,
-      (byte) 192, (byte) 168, 1, 1,
-      (byte) 0x1F, (byte) 0x90,
-      (byte) 192, (byte) 168, 1, 2,
-      (byte) 0x23, (byte) 0x82,
-      (byte) 0x12, (byte) 0x34, (byte) 0x56, (byte) 0x78
-    };
+    byte[] invalidType = Bytes.concat(
+      new byte[] { 0, 99, 0, 0 },    // invalid type
+      PAYLOAD_LENGTH_BYTES,
+      MESSAGE_ID_BYTES,
+      TIMESTAMP_BYTES,
+      SOURCE_IP,
+      SOURCE_PORT_BYTES,
+      TARGET_IP,
+      TARGET_PORT_BYTES,
+      CHECKSUM_BYTES
+    );
 
     assertThatThrownBy(() -> deserializer.deserialize(invalidType))
       .isInstanceOf(IllegalArgumentException.class)
@@ -245,18 +255,17 @@ public class HeaderSerdeTest {
 
   @Test
   public void testDeserializeThrowsOnInvalidCompression() {
-    byte[] invalidCompression = new byte[] {
-      0, 0, 99, 0,                               // invalid compression
-      (byte) 0x04, (byte) 0xD2,
-      0, 0, 0, (byte) 0x2A,
-      0, 0, (byte) 0x01, (byte) 0x76,
-      (byte) 0xC3, (byte) 0x23, (byte) 0xC0, 0,
-      (byte) 192, (byte) 168, 1, 1,
-      (byte) 0x1F, (byte) 0x90,
-      (byte) 192, (byte) 168, 1, 2,
-      (byte) 0x23, (byte) 0x82,
-      (byte) 0x12, (byte) 0x34, (byte) 0x56, (byte) 0x78
-    };
+    byte[] invalidCompression = Bytes.concat(
+      new byte[] { 0, 0, 99, 0 },    // invalid compression
+      PAYLOAD_LENGTH_BYTES,
+      MESSAGE_ID_BYTES,
+      TIMESTAMP_BYTES,
+      SOURCE_IP,
+      SOURCE_PORT_BYTES,
+      TARGET_IP,
+      TARGET_PORT_BYTES,
+      CHECKSUM_BYTES
+    );
 
     assertThatThrownBy(() -> deserializer.deserialize(invalidCompression))
       .isInstanceOf(IllegalArgumentException.class)
@@ -265,18 +274,17 @@ public class HeaderSerdeTest {
 
   @Test
   public void testDeserializeThrowsOnInvalidSerialization() {
-    byte[] invalidSerialization = new byte[] {
-      0, 0, 0, 99,                               // invalid serialization
-      (byte) 0x04, (byte) 0xD2,
-      0, 0, 0, (byte) 0x2A,
-      0, 0, (byte) 0x01, (byte) 0x76,
-      (byte) 0xC3, (byte) 0x23, (byte) 0xC0, 0,
-      (byte) 192, (byte) 168, 1, 1,
-      (byte) 0x1F, (byte) 0x90,
-      (byte) 192, (byte) 168, 1, 2,
-      (byte) 0x23, (byte) 0x82,
-      (byte) 0x12, (byte) 0x34, (byte) 0x56, (byte) 0x78
-    };
+    byte[] invalidSerialization = Bytes.concat(
+      new byte[] { 0, 0, 0, 99 },    // invalid serialization
+      PAYLOAD_LENGTH_BYTES,
+      MESSAGE_ID_BYTES,
+      TIMESTAMP_BYTES,
+      SOURCE_IP,
+      SOURCE_PORT_BYTES,
+      TARGET_IP,
+      TARGET_PORT_BYTES,
+      CHECKSUM_BYTES
+    );
 
     assertThatThrownBy(() -> deserializer.deserialize(invalidSerialization))
       .isInstanceOf(IllegalArgumentException.class)
