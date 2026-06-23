@@ -2,12 +2,13 @@ package com.github.nhirakawa.swarm.protocol.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.transport.mem.InMemorySwarmAddress;
 import org.junit.jupiter.api.Test;
 
 class MemberStatusTest {
 
-  private static final SwarmAddress ADDRESS = new SwarmAddress("some", 1000, "some-1000");
+  private static final SwarmAddress ADDRESS = new InMemorySwarmAddress("asdf");
 
   @Test
   void testAliveMergeWithAlive_higherIncarnation() {

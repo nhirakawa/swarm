@@ -3,14 +3,15 @@ package com.github.nhirakawa.swarm.protocol.state;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.transport.mem.InMemorySwarmAddress;
 import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import org.junit.jupiter.api.Test;
 
 class MemberStatusSerializationTest {
 
   private static final ObjectMapper OBJECT_MAPPER = ObjectMapperWrapper.instance();
-  private static final SwarmAddress ADDRESS = new SwarmAddress("192.168.1.1", 8080, "host1-8080");
+  private static final SwarmAddress ADDRESS = new InMemorySwarmAddress("asdf");
 
   @Test
   void testSerializeAndDeserializeAlive() throws Exception {

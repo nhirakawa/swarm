@@ -1,11 +1,9 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.DelayQueue;
@@ -55,8 +53,8 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
     if (config.shouldDropOnSend(source, target)) {
       LOG.debug(
         "Dropped message on send source {} to {}",
-        formatAddress(source),
-        formatAddress(target)
+        source.asString(),
+        target.asString()
       );
       return false;
     }
@@ -71,17 +69,10 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
   private boolean multicast(WireMessage wireMessage, Duration timeout) {
     boolean deliveredAny = false;
     ImmutableSet<SwarmAddress> keys = registry.keys();
-    LOG.trace("Multicasting from {} - {} node(s) in registry", formatAddress(wireMessage.source()), keys.size());
+    LOG.trace("Multicasting from {} - {} node(s) in registry", wireMessage.source().asString(), keys.size());
 
     for (SwarmAddress target : keys) {
       if (target.equals(wireMessage.source())) {
-        continue;
-      }
-
-      Optional<byte[]> targetIp = registry.resolve(target);
-
-      if (targetIp.isEmpty()) {
-        LOG.debug("Could not resolve address for {}", target);
         continue;
       }
 
@@ -118,14 +109,14 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
       WireMessage wireMessage = delayed.wireMessage();
       SwarmAddress source = wireMessage.source();
       SwarmAddress target = wireMessage.target();
-      LOG.trace("Drainer dequeued {} from {} to {}", wireMessage.header().type(), formatAddress(source), formatAddress(target));
+      LOG.trace("Drainer dequeued {} from {} to {}", wireMessage.header().type(), source.asString(), target.asString());
 
       // Simulate packet loss in transit
       if (config.shouldDropInTransit(source, target)) {
         LOG.debug(
           "Dropped message in transit source {} to {}",
-          formatAddress(source),
-          formatAddress(target)
+          source.asString(),
+          target.asString()
         );
         continue;
       }
@@ -164,7 +155,7 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
         );
 
 			if (enqueued) {
-					LOG.trace("Delivered {} message to {}:{}", wireMessage.header().type(), formatAddress(wireMessage.source()), formatAddress(wireMessage.target()));
+					LOG.trace("Delivered {} message to {}:{}", wireMessage.header().type(), wireMessage.source().asString(), wireMessage.target().asString());
 			} else {
 				LOG.warn(
 						"Failed to enqueue message to receiver at {} after timeout",
@@ -175,14 +166,6 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
   }
 
   private boolean isMulticast(SwarmAddress address) {
-    try {
-      return InetAddress.getByName(address.address()).isMulticastAddress();
-    } catch (UnknownHostException e) {
-      return false;
-    }
-  }
-
-  private String formatAddress(SwarmAddress address) {
-    return address.address() + ":" + address.port();
+    return address.isMulticastAddress();
   }
 }

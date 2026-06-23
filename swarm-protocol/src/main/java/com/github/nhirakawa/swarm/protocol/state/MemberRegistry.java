@@ -1,6 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.google.common.collect.ComparisonChain;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -129,7 +129,7 @@ class MemberRegistry {
     public int compareTo(Counted other) {
       return ComparisonChain.start()
           .compare(gossipCount, other.gossipCount)
-          .compare(swarmAddress, other.swarmAddress, Comparator.comparing(SwarmAddress::address).thenComparingInt(SwarmAddress::port))
+          .compare(swarmAddress, other.swarmAddress, Comparator.comparing(SwarmAddress::asString))
           .result();
     }
   }

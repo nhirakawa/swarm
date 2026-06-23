@@ -1,8 +1,9 @@
 package com.github.nhirakawa.swarm.runner.cmd;
 
 import com.github.nhirakawa.swarm.protocol.SwarmService;
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.state.StateSnapshot;
+import com.github.nhirakawa.swarm.protocol.transport.mem.InMemorySwarmAddress;
 import com.github.nhirakawa.swarm.protocol.transport.mem.NetworkSimulator;
 import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.runner.Banner;
@@ -111,7 +112,7 @@ public class Local implements Callable<Integer> {
 		for (int i = 0; i < count; i++) {
 			String host = "127.0.0.1";
 			int port = 1000 * (i + 1);
-			SwarmAddress swarmAddress = new SwarmAddress(host, port, "%s-%d".formatted(host, port));
+			SwarmAddress swarmAddress = new InMemorySwarmAddress("%s-%d".formatted(host, port));
 			swarmAddresses.add(swarmAddress);
 		}
 

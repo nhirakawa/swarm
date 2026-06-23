@@ -2,7 +2,7 @@ package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.SwarmMessageType;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
@@ -25,7 +25,10 @@ class InMemoryMessageReceiverTest {
 
   @BeforeEach
   void setUp() {
-    receiver = new InMemoryMessageReceiver(QUEUE_CAPACITY);
+    receiver = new InMemoryMessageReceiver(
+        QUEUE_CAPACITY,
+        ObjectMapperWrapper.instance().reader()
+    );
   }
 
   @Test
@@ -39,8 +42,8 @@ class InMemoryMessageReceiverTest {
 
   @Test
   void testEnqueueAndReceive() throws Exception {
-    SwarmAddress from = new SwarmAddress("192.168.1.1", 8080, "node-1");
-    SwarmAddress to = new SwarmAddress("192.168.1.2", 8080, "node-2");
+    SwarmAddress from = new InMemorySwarmAddress("node-1");
+    SwarmAddress to = new InMemorySwarmAddress("node-2");
     StateMachineMessage message = new PingRequest(
       from,
       to,
@@ -62,8 +65,8 @@ class InMemoryMessageReceiverTest {
 
   @Test
   void testEnqueueMultipleMessages() throws Exception {
-    SwarmAddress from = new SwarmAddress("192.168.1.1", 8080, "node-1");
-    SwarmAddress to = new SwarmAddress("192.168.1.2", 8080, "node-2");
+    SwarmAddress from = new InMemorySwarmAddress("node-1");
+    SwarmAddress to = new InMemorySwarmAddress("node-2");
     StateMachineMessage message1 = new PingRequest(
       from,
       to,
@@ -98,8 +101,8 @@ class InMemoryMessageReceiverTest {
 
   @Test
   void testEnqueueWhenQueueFull() throws Exception {
-    SwarmAddress from = new SwarmAddress("192.168.1.1", 8080, "node-1");
-    SwarmAddress to = new SwarmAddress("192.168.1.2", 8080, "node-2");
+    SwarmAddress from = new InMemorySwarmAddress("node-1");
+    SwarmAddress to = new InMemorySwarmAddress("node-2");
 
     // Fill the queue to capacity
     for (int i = 0; i < QUEUE_CAPACITY; i++) {
@@ -132,8 +135,8 @@ class InMemoryMessageReceiverTest {
   void testQueueSize() throws Exception {
     assertThat(receiver.queueSize()).isEqualTo(0);
 
-    SwarmAddress from = new SwarmAddress("192.168.1.1", 8080, "node-1");
-    SwarmAddress to = new SwarmAddress("192.168.1.2", 8080, "node-2");
+    SwarmAddress from = new InMemorySwarmAddress("node-1");
+    SwarmAddress to = new InMemorySwarmAddress("node-2");
     StateMachineMessage message = new PingRequest(
       from,
       to,

@@ -1,6 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import java.time.Duration;
 
 /**

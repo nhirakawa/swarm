@@ -1,6 +1,5 @@
 package com.github.nhirakawa.swarm.runner.admin.http;
 
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.state.MemberStatus;
 import com.github.nhirakawa.swarm.protocol.state.StateSnapshot;
 import com.google.common.base.Suppliers;
@@ -50,7 +49,7 @@ public class ContainerHandler implements Handler {
 				.toList();
 
 		return Map.of(
-				"localAddress", toTemplateMap(snapshot.getLocalAddress()),
+				"localAddress", snapshot.getLocalAddress().asString(),
 				"protocolPeriodId", snapshot.getProtocolPeriodId(),
 				"incarnation", snapshot.getIncarnation(),
 				"memberStatuses", memberStatuses
@@ -59,16 +58,9 @@ public class ContainerHandler implements Handler {
 
 	private static Map<String, Object> toTemplateMap(MemberStatus memberStatus) {
 		return Map.of(
-				"address", toTemplateMap(memberStatus.address()),
+				"address", memberStatus.address().asString(),
 				"type", memberStatus.type(),
 				"incarnation", memberStatus.incarnation()
-		);
-	}
-
-	private static Map<String, Object> toTemplateMap(SwarmAddress address) {
-		return Map.of(
-				"address", address.address(),
-				"port", address.port()
 		);
 	}
 }

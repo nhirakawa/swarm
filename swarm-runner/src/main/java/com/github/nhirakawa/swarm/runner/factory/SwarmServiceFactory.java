@@ -2,7 +2,7 @@ package com.github.nhirakawa.swarm.runner.factory;
 
 import com.github.nhirakawa.swarm.protocol.SwarmService;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.state.SwarmStateMachine;
 import com.github.nhirakawa.swarm.protocol.transport.SwarmTransport;
 import com.github.nhirakawa.swarm.runner.model.LocalSwarmConfig;
@@ -26,6 +26,7 @@ public class SwarmServiceFactory {
 
 		SwarmConfig swarmConfig = SwarmConfig.builder()
 				.setLocalAddress(address)
+				.setMulticastAddress(transport.getMulticastAddress())
 				.setProtocolPeriod(localSwarmConfig.getProtocolPeriod())
 				.setMessageTimeout(localSwarmConfig.getMessageTimeout())
 				.setProtocolTick(localSwarmConfig.getProtocolTick())

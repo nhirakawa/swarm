@@ -1,16 +1,21 @@
 package com.github.nhirakawa.swarm.protocol.config;
 
 import com.github.nhirakawa.immutable.style.guava.ImmutableStyle;
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.google.common.base.Preconditions;
 import java.time.Duration;
 import org.immutables.value.Value;
+import org.jspecify.annotations.NonNull;
 
 @Value.Immutable
 @ImmutableStyle
 public abstract class SwarmConfigModel {
 
+  @NonNull
   public abstract SwarmAddress getLocalAddress();
+
+  @NonNull
+  public abstract SwarmAddress getMulticastAddress();
 
   public abstract Duration getProtocolPeriod();
 

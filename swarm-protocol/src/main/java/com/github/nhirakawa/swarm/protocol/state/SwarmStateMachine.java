@@ -119,7 +119,7 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
 
   @Override
   protected String serviceName() {
-    return "%s-%s-state-machine".formatted(swarmConfig.getLocalAddress().address(), swarmConfig.getLocalAddress().port());
+    return "%s-state-machine".formatted(swarmConfig.getLocalAddress().asString());
   }
 
   public String getName() {

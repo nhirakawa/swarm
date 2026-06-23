@@ -87,7 +87,10 @@ public class InitializingProtocolState extends SwarmProtocolState {
       attemptNumber + 1
     );
 
-    DiscoveryRequest discoveryRequest = new DiscoveryRequest(swarmConfig.getLocalAddress());
+    DiscoveryRequest discoveryRequest = new DiscoveryRequest(
+        swarmConfig.getLocalAddress(),
+        swarmConfig.getMulticastAddress()
+    );
 
     return Optional.of(
       Transition.builder()

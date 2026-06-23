@@ -1,6 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.google.common.base.Preconditions;
 import java.time.Duration;
 import java.util.HashMap;

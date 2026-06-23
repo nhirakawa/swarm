@@ -1,6 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import com.github.nhirakawa.swarm.protocol.model.header.Compression;
@@ -64,7 +64,7 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     byte[] payloadBytes = objectMapper.writeValueAsBytes(message);
 
     MessageHeader header = createHeader(message, payloadBytes.length);
-    WireMessage wireMessage = new WireMessage(localAddress, SwarmAddress.createMulticastAddress(), header, payloadBytes);
+    WireMessage wireMessage = new WireMessage(localAddress, new InMemorySwarmAddress("MULTICAST"), header, payloadBytes);
     networkSimulator.enqueue(wireMessage, timeout);
 
     LOG.debug("Sent multicast discovery request");
@@ -92,14 +92,10 @@ public class InMemoryMessageSender implements SwarmMessageSender {
       LOG.trace(
         "Sent {} source {} to {}",
         message.getClass().getSimpleName(),
-        formatAddress(localAddress),
-        formatAddress(message.target())
+        localAddress.asString(),
+        message.target().asString()
       );
     }
-  }
-
-  private String formatAddress(SwarmAddress address) {
-    return address.address() + ":" + address.port();
   }
 
   private MessageHeader createHeader(

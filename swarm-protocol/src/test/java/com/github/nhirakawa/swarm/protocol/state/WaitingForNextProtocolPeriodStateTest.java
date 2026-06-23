@@ -4,9 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.fake.FakeTicker;
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
+import com.github.nhirakawa.swarm.protocol.transport.mem.InMemorySwarmAddress;
 import com.google.common.base.Stopwatch;
 import java.time.Duration;
 import java.util.Optional;
@@ -16,16 +17,8 @@ import org.junit.jupiter.api.Test;
 
 public class WaitingForNextProtocolPeriodStateTest {
 
-  private static final SwarmAddress LOCAL = new SwarmAddress(
-    "host",
-    1000,
-    "host-1000"
-  );
-  private static final SwarmAddress OTHER = new SwarmAddress(
-    "host",
-    2000,
-    "host-2000"
-  );
+  private static final SwarmAddress LOCAL = new InMemorySwarmAddress("host-1000");
+  private static final SwarmAddress OTHER = new InMemorySwarmAddress("host-2000");
 
   private static final SwarmConfig SWARM_CONFIG = SwarmConfig
     .builder()

@@ -1,6 +1,8 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.transport.SwarmTransport;
 import com.google.common.util.concurrent.AbstractIdleService;
 import org.apache.logging.log4j.LogManager;
@@ -20,6 +22,8 @@ public class InMemoryTransport
     InMemoryTransport.class
   );
 
+  private static final InMemorySwarmAddress MULTICAST = new InMemorySwarmAddress("MULTICAST");
+
   private final SwarmAddress localAddress;
   private final InMemoryTransportRegistry registry;
   private final InMemoryMessageSender sender;
@@ -30,12 +34,14 @@ public class InMemoryTransport
   public InMemoryTransport(
     SwarmAddress localAddress,
     InMemoryTransportRegistry registry,
+    ObjectWriter objectWriter,
+    ObjectReader objectReader,
     NetworkSimulator networkSimulator
   ) {
     this.localAddress = localAddress;
     this.registry = registry;
-    this.receiver = new InMemoryMessageReceiver(RECEIVER_QUEUE_CAPACITY);
     this.sender = new InMemoryMessageSender(localAddress, networkSimulator);
+    this.receiver = new InMemoryMessageReceiver(RECEIVER_QUEUE_CAPACITY, objectReader);
   }
 
   @Override
@@ -51,7 +57,7 @@ public class InMemoryTransport
   }
 
   void enqueue(WireMessage wireMessage, Duration timeout) throws InterruptedException {
-    LOG.trace("Enqueueing message from {} to {}", wireMessage.source().uid(), wireMessage.target().uid());
+    LOG.trace("Enqueueing message from {} to {}", wireMessage.source().asString(), wireMessage.target().asString());
     receiver.enqueue(wireMessage, timeout);
   }
 
@@ -63,6 +69,11 @@ public class InMemoryTransport
   @Override
   public InMemoryMessageSender sender() {
     return sender;
+  }
+
+  @Override
+  public SwarmAddress getMulticastAddress() {
+    return MULTICAST;
   }
 
   public SwarmAddress getLocalAddress() {

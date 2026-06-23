@@ -2,15 +2,16 @@ package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 
-import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 
+import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,22 +26,22 @@ class InMemoryMessageSenderTest {
   private InMemoryMessageSender sender;
 
   @BeforeEach
-  void setUp() throws UnknownHostException {
+  void setUp() throws TimeoutException {
     NetworkSimulationConfig config = new PerfectNetworkSimulationConfig();
     registry = new InMemoryTransportRegistry();
     networkSimulator = new NetworkSimulator(registry, config);
-    networkSimulator.startAsync().awaitRunning();
-    senderAddress = new SwarmAddress("192.168.1.1", 8080, "sender");
-    receiverAddress = new SwarmAddress("192.168.1.2", 8080, "receiver");
-    receiverTransport = new InMemoryTransport(receiverAddress, registry, networkSimulator);
+    networkSimulator.startAsync().awaitRunning(Duration.ofSeconds(10));
+    senderAddress = new InMemorySwarmAddress("sender");
+    receiverAddress = new InMemorySwarmAddress("receiver");
+    receiverTransport = new InMemoryTransport(receiverAddress, registry, ObjectMapperWrapper.instance().writer(), ObjectMapperWrapper.instance().reader(), networkSimulator);
     registry.register(receiverAddress, receiverTransport);
     sender = new InMemoryMessageSender(senderAddress, networkSimulator);
   }
 
   @AfterEach
-  void tearDown() {
+  void tearDown() throws TimeoutException {
     registry.clear();
-    networkSimulator.stopAsync().awaitTerminated();
+    networkSimulator.stopAsync().awaitTerminated(Duration.ofSeconds(10));
   }
 
   @Test
@@ -55,8 +56,7 @@ class InMemoryMessageSenderTest {
     sender.send(response, Duration.ofMillis(10));
 
     // Verify the message was received
-    InMemoryMessageReceiver receiver =
-      (InMemoryMessageReceiver) receiverTransport.receiver();
+    InMemoryMessageReceiver receiver = receiverTransport.receiver();
     Optional<StateMachineMessage> receivedMessage = receiver.receive(
       Duration.ofMillis(100)
     );
@@ -72,11 +72,7 @@ class InMemoryMessageSenderTest {
 
   @Test
   void testSendPingRequestWithProxy() {
-    SwarmAddress proxyAddress = new SwarmAddress(
-      "192.168.1.3",
-      8080,
-      "proxy"
-    );
+    SwarmAddress proxyAddress = new InMemorySwarmAddress("proxy");
     StateMachineMessage response = new PingRequest(
         senderAddress,
       receiverAddress,
@@ -110,8 +106,7 @@ class InMemoryMessageSenderTest {
 
     sender.send(response, Duration.ofMillis(10));
 
-    InMemoryMessageReceiver receiver =
-      (InMemoryMessageReceiver) receiverTransport.receiver();
+    InMemoryMessageReceiver receiver = receiverTransport.receiver();
     Optional<StateMachineMessage> receivedMessage = receiver.receive(
       Duration.ofMillis(100)
     );
@@ -127,11 +122,7 @@ class InMemoryMessageSenderTest {
 
   @Test
   void testSendPingAckWithProxy() {
-    SwarmAddress proxyAddress = new SwarmAddress(
-      "192.168.1.3",
-      8080,
-      "proxy"
-    );
+    SwarmAddress proxyAddress = new InMemorySwarmAddress("proxy");
     StateMachineMessage response = new PingAck(
         senderAddress,
       receiverAddress,
@@ -156,11 +147,7 @@ class InMemoryMessageSenderTest {
 
   @Test
   void testSendToNonExistentNode() {
-    SwarmAddress nonExistentAddress = new SwarmAddress(
-      "192.168.1.99",
-      8080,
-      "nonexistent"
-    );
+    SwarmAddress nonExistentAddress = new InMemorySwarmAddress("nonexistent");
     StateMachineMessage response = new PingRequest(
         senderAddress,
       nonExistentAddress,
@@ -172,8 +159,7 @@ class InMemoryMessageSenderTest {
     sender.send(response, Duration.ofMillis(10));
 
     // Verify message was not delivered to receiver
-    InMemoryMessageReceiver receiver =
-				receiverTransport.receiver();
+    InMemoryMessageReceiver receiver = receiverTransport.receiver();
     Optional<StateMachineMessage> receivedMessage = receiver.receive(
       Duration.ofMillis(10)
     );

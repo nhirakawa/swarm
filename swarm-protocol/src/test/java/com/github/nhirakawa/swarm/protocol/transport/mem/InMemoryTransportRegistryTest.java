@@ -3,11 +3,12 @@ package com.github.nhirakawa.swarm.protocol.transport.mem;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 
 import java.net.UnknownHostException;
 import java.util.Optional;
 
+import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -23,13 +24,13 @@ class InMemoryTransportRegistryTest {
   void setUp() {
     NetworkSimulationConfig config = new PerfectNetworkSimulationConfig();
     registry = new InMemoryTransportRegistry();
-    address1 = new SwarmAddress("192.168.1.1", 8080, "node-1");
-    address2 = new SwarmAddress("192.168.1.2", 8080, "node-2");
+    address1 = new InMemorySwarmAddress("asdf");
+    address2 = new InMemorySwarmAddress("fdsa");
     // Create transports with a dummy registry and simulator to avoid auto-registration
     InMemoryTransportRegistry dummyRegistry = new InMemoryTransportRegistry();
     NetworkSimulator dummySimulator = new NetworkSimulator(dummyRegistry, config);
-    transport1 = new InMemoryTransport(address1, dummyRegistry, dummySimulator);
-    transport2 = new InMemoryTransport(address2, dummyRegistry, dummySimulator);
+    transport1 = new InMemoryTransport(address1, dummyRegistry, ObjectMapperWrapper.instance().writer(), ObjectMapperWrapper.instance().reader(), dummySimulator);
+    transport2 = new InMemoryTransport(address2, dummyRegistry, ObjectMapperWrapper.instance().writer(), ObjectMapperWrapper.instance().reader(), dummySimulator);
   }
 
   @Test
