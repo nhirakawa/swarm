@@ -38,7 +38,7 @@ class InMemoryMessageReceiverTest {
   }
 
   @Test
-  void testEnqueueAndReceive() throws InterruptedException {
+  void testEnqueueAndReceive() throws Exception {
     SwarmAddress from = new SwarmAddress("192.168.1.1", 8080, "node-1");
     SwarmAddress to = new SwarmAddress("192.168.1.2", 8080, "node-2");
     StateMachineMessage message = new PingRequest(
@@ -61,7 +61,7 @@ class InMemoryMessageReceiverTest {
   }
 
   @Test
-  void testEnqueueMultipleMessages() throws InterruptedException {
+  void testEnqueueMultipleMessages() throws Exception {
     SwarmAddress from = new SwarmAddress("192.168.1.1", 8080, "node-1");
     SwarmAddress to = new SwarmAddress("192.168.1.2", 8080, "node-2");
     StateMachineMessage message1 = new PingRequest(
@@ -91,13 +91,13 @@ class InMemoryMessageReceiverTest {
       Duration.ofMillis(100)
     );
 
-    assertThat(result1.get()).isEqualTo(message1);
-    assertThat(result2.get()).isEqualTo(message2);
+    assertThat(result1).contains(message1);
+    assertThat(result2).contains(message2);
     assertThat(receiver.queueSize()).isEqualTo(0);
   }
 
   @Test
-  void testEnqueueWhenQueueFull() throws InterruptedException {
+  void testEnqueueWhenQueueFull() throws Exception {
     SwarmAddress from = new SwarmAddress("192.168.1.1", 8080, "node-1");
     SwarmAddress to = new SwarmAddress("192.168.1.2", 8080, "node-2");
 
@@ -129,7 +129,7 @@ class InMemoryMessageReceiverTest {
   }
 
   @Test
-  void testQueueSize() throws InterruptedException {
+  void testQueueSize() throws Exception {
     assertThat(receiver.queueSize()).isEqualTo(0);
 
     SwarmAddress from = new SwarmAddress("192.168.1.1", 8080, "node-1");
@@ -153,31 +153,21 @@ class InMemoryMessageReceiverTest {
     SwarmAddress source,
     SwarmAddress target,
     StateMachineMessage payload
-  ) {
-    try {
-      ObjectMapper objectMapper = ObjectMapperWrapper.instance();
-      byte[] payloadBytes = objectMapper.writeValueAsBytes(payload);
+  ) throws Exception {
+    ObjectMapper objectMapper = ObjectMapperWrapper.instance();
+    byte[] payloadBytes = objectMapper.writeValueAsBytes(payload);
 
-      byte[] sourceIp = java.net.InetAddress.getByName(source.address()).getAddress();
-      byte[] targetIp = java.net.InetAddress.getByName(target.address()).getAddress();
+    MessageHeader header = new MessageHeader.Builder()
+        .messageVersion(MessageVersion.V0)
+        .type(SwarmMessageType.PING_REQUEST)
+        .compression(Compression.NONE)
+        .serialization(Serialization.JSON)
+        .payloadLength(payloadBytes.length)
+        .messageId(1L)
+        .timestamp(System.currentTimeMillis())
+        .checksum(0L)
+        .build();
 
-      MessageHeader header = new MessageHeader(
-        MessageVersion.V0,
-        SwarmMessageType.PING_REQUEST,
-        Compression.NONE,
-        Serialization.JSON,
-        payloadBytes.length,  // Actual payload length
-        1L,                   // message ID placeholder
-        System.currentTimeMillis(), // timestamp
-        sourceIp,
-        source.port(),
-        targetIp,
-        target.port(),
-        0L                    // checksum placeholder
-      );
-      return new WireMessage(source, target, header, payloadBytes);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    return new WireMessage(source, target, header, payloadBytes);
   }
 }

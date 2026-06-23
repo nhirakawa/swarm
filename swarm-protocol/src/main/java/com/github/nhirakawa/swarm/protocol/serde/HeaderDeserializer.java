@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 
 public class HeaderDeserializer {
 
-  private static final int HEADER_SIZE = 34;
+  private static final int HEADER_SIZE = 22;
 
   public HeaderDeserializer() {}
 
@@ -39,32 +39,18 @@ public class HeaderDeserializer {
     // Timestamp (8 bytes)
     long timestamp = buffer.getLong();
 
-    // Source address (4 bytes IP + 2 bytes port = 6 bytes)
-    byte[] sourceIp = new byte[4];
-    buffer.get(sourceIp);
-    int sourcePort = buffer.getShort() & 0xFFFF; // Convert to unsigned
-
-    // Target address (4 bytes IP + 2 bytes port = 6 bytes)
-    byte[] targetIp = new byte[4];
-    buffer.get(targetIp);
-    int targetPort = buffer.getShort() & 0xFFFF; // Convert to unsigned
-
     // Checksum (4 bytes)
     long checksum = buffer.getInt() & 0xFFFFFFFFL; // Convert to unsigned
 
-    return new MessageHeader(
-      messageVersion,
-      messageType,
-      compression,
-      serialization,
-      payloadLength,
-      messageId,
-      timestamp,
-      sourceIp,
-      sourcePort,
-      targetIp,
-      targetPort,
-      checksum
-    );
+    return new MessageHeader.Builder()
+        .messageVersion(messageVersion)
+        .type(messageType)
+        .compression(compression)
+        .serialization(serialization)
+        .payloadLength(payloadLength)
+        .messageId(messageId)
+        .timestamp(timestamp)
+        .checksum(checksum)
+        .build();
   }
 }

@@ -19,18 +19,12 @@ public class HeaderSerdeTest {
 
   private static final int PAYLOAD_LENGTH = 1234;
   private static final long MESSAGE_ID = 42L;
-  private static final long TIMESTAMP = 1609591668736L; // 0x176C323C000
-  private static final byte[] SOURCE_IP = new byte[] { (byte) 192, (byte) 168, 1, 1 };
-  private static final int SOURCE_PORT = 8080;
-  private static final byte[] TARGET_IP = new byte[] { (byte) 192, (byte) 168, 1, 2 };
-  private static final int TARGET_PORT = 9090;
+  private static final long TIMESTAMP = 0x176C323C000L;
   private static final long CHECKSUM = 0x12345678L;
 
   private static final byte[] PAYLOAD_LENGTH_BYTES = new byte[] { (byte) 0x04, (byte) 0xD2 };
   private static final byte[] MESSAGE_ID_BYTES     = new byte[] { 0, 0, 0, (byte) 0x2A };
   private static final byte[] TIMESTAMP_BYTES      = new byte[] { 0, 0, (byte) 0x01, (byte) 0x76, (byte) 0xC3, (byte) 0x23, (byte) 0xC0, 0 };
-  private static final byte[] SOURCE_PORT_BYTES    = new byte[] { (byte) 0x1F, (byte) 0x90 };
-  private static final byte[] TARGET_PORT_BYTES    = new byte[] { (byte) 0x23, (byte) 0x82 };
   private static final byte[] CHECKSUM_BYTES       = new byte[] { (byte) 0x12, (byte) 0x34, (byte) 0x56, (byte) 0x78 };
 
   @BeforeEach
@@ -41,24 +35,20 @@ public class HeaderSerdeTest {
 
   @Test
   public void testSerializeBasicHeader() {
-    MessageHeader header = new MessageHeader(
-      MessageVersion.V0,
-      SwarmMessageType.PING_REQUEST,
-      Compression.NONE,
-      Serialization.JSON,
-      PAYLOAD_LENGTH,
-      MESSAGE_ID,
-      TIMESTAMP,
-      SOURCE_IP,
-      SOURCE_PORT,
-      TARGET_IP,
-      TARGET_PORT,
-      CHECKSUM
-    );
+    MessageHeader header = new MessageHeader.Builder()
+        .messageVersion(MessageVersion.V0)
+        .type(SwarmMessageType.PING_REQUEST)
+        .compression(Compression.NONE)
+        .serialization(Serialization.JSON)
+        .payloadLength(PAYLOAD_LENGTH)
+        .messageId(MESSAGE_ID)
+        .timestamp(TIMESTAMP)
+        .checksum(CHECKSUM)
+        .build();
 
     byte[] bytes = serializer.serialize(header);
 
-    assertThat(bytes).hasSize(34);
+    assertThat(bytes).hasSize(22);
     // Metadata (4 bytes)
     assertThat(bytes[0]).isEqualTo((byte) 0); // MessageVersion.V0
     assertThat(bytes[1]).isEqualTo((byte) 1); // PING_REQUEST
@@ -81,49 +71,29 @@ public class HeaderSerdeTest {
     assertThat(bytes[15]).isEqualTo((byte) 0x23);
     assertThat(bytes[16]).isEqualTo((byte) 0xC0);
     assertThat(bytes[17]).isEqualTo((byte) 0x00);
-    // Source IP (4 bytes)
-    assertThat(bytes[18]).isEqualTo((byte) 192);
-    assertThat(bytes[19]).isEqualTo((byte) 168);
-    assertThat(bytes[20]).isEqualTo((byte) 1);
-    assertThat(bytes[21]).isEqualTo((byte) 1);
-    // Source port (2 bytes: 8080 = 0x1F90)
-    assertThat(bytes[22]).isEqualTo((byte) 0x1F);
-    assertThat(bytes[23]).isEqualTo((byte) 0x90);
-    // Target IP (4 bytes)
-    assertThat(bytes[24]).isEqualTo((byte) 192);
-    assertThat(bytes[25]).isEqualTo((byte) 168);
-    assertThat(bytes[26]).isEqualTo((byte) 1);
-    assertThat(bytes[27]).isEqualTo((byte) 2);
-    // Target port (2 bytes: 9090 = 0x2382)
-    assertThat(bytes[28]).isEqualTo((byte) 0x23);
-    assertThat(bytes[29]).isEqualTo((byte) 0x82);
     // Checksum (4 bytes: 0x12345678)
-    assertThat(bytes[30]).isEqualTo((byte) 0x12);
-    assertThat(bytes[31]).isEqualTo((byte) 0x34);
-    assertThat(bytes[32]).isEqualTo((byte) 0x56);
-    assertThat(bytes[33]).isEqualTo((byte) 0x78);
+    assertThat(bytes[18]).isEqualTo((byte) 0x12);
+    assertThat(bytes[19]).isEqualTo((byte) 0x34);
+    assertThat(bytes[20]).isEqualTo((byte) 0x56);
+    assertThat(bytes[21]).isEqualTo((byte) 0x78);
   }
 
   @Test
   public void testSerializeWithCompression() {
-    MessageHeader header = new MessageHeader(
-      MessageVersion.V0,
-      SwarmMessageType.PING_ACK,
-      Compression.GZIP,
-      Serialization.CBOR,
-      PAYLOAD_LENGTH,
-      MESSAGE_ID,
-      TIMESTAMP,
-      SOURCE_IP,
-      SOURCE_PORT,
-      TARGET_IP,
-      TARGET_PORT,
-      CHECKSUM
-    );
+    MessageHeader header = new MessageHeader.Builder()
+        .messageVersion(MessageVersion.V0)
+        .type(SwarmMessageType.PING_ACK)
+        .compression(Compression.GZIP)
+        .serialization(Serialization.CBOR)
+        .payloadLength(PAYLOAD_LENGTH)
+        .messageId(MESSAGE_ID)
+        .timestamp(TIMESTAMP)
+        .checksum(CHECKSUM)
+        .build();
 
     byte[] bytes = serializer.serialize(header);
 
-    assertThat(bytes).hasSize(34);
+    assertThat(bytes).hasSize(22);
     assertThat(bytes[0]).isEqualTo((byte) 0); // MessageVersion.V0
     assertThat(bytes[1]).isEqualTo((byte) 0); // PING_ACK
     assertThat(bytes[2]).isEqualTo((byte) 1); // GZIP
@@ -137,10 +107,6 @@ public class HeaderSerdeTest {
       PAYLOAD_LENGTH_BYTES,
       MESSAGE_ID_BYTES,
       TIMESTAMP_BYTES,
-      SOURCE_IP,
-      SOURCE_PORT_BYTES,
-      TARGET_IP,
-      TARGET_PORT_BYTES,
       CHECKSUM_BYTES
     );
 
@@ -153,10 +119,6 @@ public class HeaderSerdeTest {
     assertThat(header.payloadLength()).isEqualTo(PAYLOAD_LENGTH);
     assertThat(header.messageId()).isEqualTo(MESSAGE_ID);
     assertThat(header.timestamp()).isEqualTo(TIMESTAMP);
-    assertThat(header.sourceIp()).isEqualTo(SOURCE_IP);
-    assertThat(header.sourcePort()).isEqualTo(SOURCE_PORT);
-    assertThat(header.targetIp()).isEqualTo(TARGET_IP);
-    assertThat(header.targetPort()).isEqualTo(TARGET_PORT);
     assertThat(header.checksum()).isEqualTo(CHECKSUM);
   }
 
@@ -167,10 +129,6 @@ public class HeaderSerdeTest {
       PAYLOAD_LENGTH_BYTES,
       MESSAGE_ID_BYTES,
       TIMESTAMP_BYTES,
-      SOURCE_IP,
-      SOURCE_PORT_BYTES,
-      TARGET_IP,
-      TARGET_PORT_BYTES,
       CHECKSUM_BYTES
     );
 
@@ -183,10 +141,6 @@ public class HeaderSerdeTest {
     assertThat(header.payloadLength()).isEqualTo(PAYLOAD_LENGTH);
     assertThat(header.messageId()).isEqualTo(MESSAGE_ID);
     assertThat(header.timestamp()).isEqualTo(TIMESTAMP);
-    assertThat(header.sourceIp()).isEqualTo(SOURCE_IP);
-    assertThat(header.sourcePort()).isEqualTo(SOURCE_PORT);
-    assertThat(header.targetIp()).isEqualTo(TARGET_IP);
-    assertThat(header.targetPort()).isEqualTo(TARGET_PORT);
     assertThat(header.checksum()).isEqualTo(CHECKSUM);
   }
 
@@ -198,21 +152,17 @@ public class HeaderSerdeTest {
       PAYLOAD_LENGTH_BYTES,
       MESSAGE_ID_BYTES,
       TIMESTAMP_BYTES,
-      SOURCE_IP,
-      SOURCE_PORT_BYTES,
-      TARGET_IP,
-      TARGET_PORT_BYTES,
       CHECKSUM_BYTES,
       new byte[] { 0 }               // extra byte → 35 total
     );
 
     assertThatThrownBy(() -> deserializer.deserialize(tooShort))
       .isInstanceOf(IllegalArgumentException.class)
-      .hasMessageContaining("Expected 34 bytes, got 3");
+      .hasMessageContaining("Expected 22 bytes, got 3");
 
     assertThatThrownBy(() -> deserializer.deserialize(tooLong))
       .isInstanceOf(IllegalArgumentException.class)
-      .hasMessageContaining("Expected 34 bytes, got 35");
+      .hasMessageContaining("Expected 22 bytes, got 23");
   }
 
   @Test
@@ -222,10 +172,6 @@ public class HeaderSerdeTest {
       PAYLOAD_LENGTH_BYTES,
       MESSAGE_ID_BYTES,
       TIMESTAMP_BYTES,
-      SOURCE_IP,
-      SOURCE_PORT_BYTES,
-      TARGET_IP,
-      TARGET_PORT_BYTES,
       CHECKSUM_BYTES
     );
 
@@ -241,10 +187,6 @@ public class HeaderSerdeTest {
       PAYLOAD_LENGTH_BYTES,
       MESSAGE_ID_BYTES,
       TIMESTAMP_BYTES,
-      SOURCE_IP,
-      SOURCE_PORT_BYTES,
-      TARGET_IP,
-      TARGET_PORT_BYTES,
       CHECKSUM_BYTES
     );
 
@@ -260,10 +202,6 @@ public class HeaderSerdeTest {
       PAYLOAD_LENGTH_BYTES,
       MESSAGE_ID_BYTES,
       TIMESTAMP_BYTES,
-      SOURCE_IP,
-      SOURCE_PORT_BYTES,
-      TARGET_IP,
-      TARGET_PORT_BYTES,
       CHECKSUM_BYTES
     );
 
@@ -279,10 +217,6 @@ public class HeaderSerdeTest {
       PAYLOAD_LENGTH_BYTES,
       MESSAGE_ID_BYTES,
       TIMESTAMP_BYTES,
-      SOURCE_IP,
-      SOURCE_PORT_BYTES,
-      TARGET_IP,
-      TARGET_PORT_BYTES,
       CHECKSUM_BYTES
     );
 
@@ -293,20 +227,16 @@ public class HeaderSerdeTest {
 
   @Test
   public void testRoundtripPingRequestWithJsonAndNoCompression() {
-    MessageHeader original = new MessageHeader(
-      MessageVersion.V0,
-      SwarmMessageType.PING_REQUEST,
-      Compression.NONE,
-      Serialization.JSON,
-      PAYLOAD_LENGTH,
-      MESSAGE_ID,
-      TIMESTAMP,
-      SOURCE_IP,
-      SOURCE_PORT,
-      TARGET_IP,
-      TARGET_PORT,
-      CHECKSUM
-    );
+    MessageHeader original = new MessageHeader.Builder()
+        .messageVersion(MessageVersion.V0)
+        .type(SwarmMessageType.PING_REQUEST)
+        .compression(Compression.NONE)
+        .serialization(Serialization.JSON)
+        .payloadLength(PAYLOAD_LENGTH)
+        .messageId(MESSAGE_ID)
+        .timestamp(TIMESTAMP)
+        .checksum(CHECKSUM)
+        .build();
 
     byte[] serialized = serializer.serialize(original);
     MessageHeader deserialized = deserializer.deserialize(serialized);
@@ -316,20 +246,16 @@ public class HeaderSerdeTest {
 
   @Test
   public void testRoundtripPingAckWithCborAndGzip() {
-    MessageHeader original = new MessageHeader(
-      MessageVersion.V0,
-      SwarmMessageType.PING_ACK,
-      Compression.GZIP,
-      Serialization.CBOR,
-      PAYLOAD_LENGTH,
-      MESSAGE_ID,
-      TIMESTAMP,
-      SOURCE_IP,
-      SOURCE_PORT,
-      TARGET_IP,
-      TARGET_PORT,
-      CHECKSUM
-    );
+    MessageHeader original = new MessageHeader.Builder()
+        .messageVersion(MessageVersion.V0)
+        .type(SwarmMessageType.PING_ACK)
+        .compression(Compression.GZIP)
+        .serialization(Serialization.CBOR)
+        .payloadLength(PAYLOAD_LENGTH)
+        .messageId(MESSAGE_ID)
+        .timestamp(TIMESTAMP)
+        .checksum(CHECKSUM)
+        .build();
 
     byte[] serialized = serializer.serialize(original);
     MessageHeader deserialized = deserializer.deserialize(serialized);
@@ -343,20 +269,16 @@ public class HeaderSerdeTest {
       for (SwarmMessageType type : SwarmMessageType.values()) {
         for (Compression compression : Compression.values()) {
           for (Serialization serialization : Serialization.values()) {
-            MessageHeader original = new MessageHeader(
-              version,
-              type,
-              compression,
-              serialization,
-              PAYLOAD_LENGTH,
-              MESSAGE_ID,
-              TIMESTAMP,
-              SOURCE_IP,
-              SOURCE_PORT,
-              TARGET_IP,
-              TARGET_PORT,
-              CHECKSUM
-            );
+            MessageHeader original = new MessageHeader.Builder()
+                .messageVersion(version)
+                .type(type)
+                .compression(compression)
+                .serialization(serialization)
+                .payloadLength(PAYLOAD_LENGTH)
+                .messageId(MESSAGE_ID)
+                .timestamp(TIMESTAMP)
+                .checksum(CHECKSUM)
+                .build();
 
             byte[] serialized = serializer.serialize(original);
             MessageHeader deserialized = deserializer.deserialize(serialized);

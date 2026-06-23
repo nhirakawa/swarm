@@ -10,8 +10,6 @@ import com.github.nhirakawa.swarm.protocol.model.header.Serialization;
 import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.concurrent.ThreadSafe;
@@ -65,7 +63,7 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     // Serialize message to bytes (once for all targets)
     byte[] payloadBytes = objectMapper.writeValueAsBytes(message);
 
-    MessageHeader header = createHeader(message, localAddress, SwarmAddress.createMulticastAddress(), payloadBytes.length);
+    MessageHeader header = createHeader(message, payloadBytes.length);
     WireMessage wireMessage = new WireMessage(localAddress, SwarmAddress.createMulticastAddress(), header, payloadBytes);
     networkSimulator.enqueue(wireMessage, timeout);
 
@@ -79,8 +77,6 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     // Create header with actual payload length
     MessageHeader header = createHeader(
       message,
-      localAddress,
-      message.target(),
       payloadBytes.length
     );
 
@@ -108,13 +104,8 @@ public class InMemoryMessageSender implements SwarmMessageSender {
 
   private MessageHeader createHeader(
     StateMachineMessage message,
-    SwarmAddress source,
-    SwarmAddress target,
     int payloadLength
   ) {
-    byte[] sourceIp = extractIpBytes(source.address());
-    byte[] targetIp = extractIpBytes(target.address());
-
     // Generate unique message ID
     long messageId = messageIdCounter.incrementAndGet();
 
@@ -125,30 +116,15 @@ public class InMemoryMessageSender implements SwarmMessageSender {
     // Real transports will compute CRC32 over header + payload
     long checksum = 0;
 
-    return new MessageHeader(
-      MessageVersion.V0,
-      message.type(),
-      Compression.NONE,
-      Serialization.JSON,
-      payloadLength,
-      messageId,
-      timestamp,
-      sourceIp,
-      source.port(),
-      targetIp,
-      target.port(),
-      checksum
-    );
-  }
-
-  private byte[] extractIpBytes(String address) {
-    try {
-			return InetAddress.getByName(address).getAddress();
-    } catch (UnknownHostException e) {
-      throw new IllegalArgumentException(
-        "Invalid IP address: " + address,
-        e
-      );
-    }
+    return new MessageHeader.Builder()
+        .messageVersion(MessageVersion.V0)
+        .type(message.type())
+        .compression(Compression.NONE)
+        .serialization(Serialization.JSON)
+        .payloadLength(payloadLength)
+        .messageId(messageId)
+        .timestamp(timestamp)
+        .checksum(checksum)
+        .build();
   }
 }

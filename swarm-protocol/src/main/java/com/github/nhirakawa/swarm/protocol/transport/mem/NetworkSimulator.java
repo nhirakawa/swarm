@@ -1,7 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import com.github.nhirakawa.swarm.protocol.model.SwarmAddress;
-import com.github.nhirakawa.swarm.protocol.model.header.MessageHeader;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 
@@ -86,22 +85,7 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
         continue;
       }
 
-      MessageHeader messageHeader = new MessageHeader(
-          wireMessage.header().messageVersion(),
-          wireMessage.header().type(),
-          wireMessage.header().compression(),
-          wireMessage.header().serialization(),
-          wireMessage.header().payloadLength(),
-          wireMessage.header().messageId(),
-          wireMessage.header().timestamp(),
-          wireMessage.header().sourceIp(),
-          wireMessage.header().sourcePort(),
-          targetIp.get(),
-          wireMessage.header().targetPort(),
-          0L
-      );
-
-      WireMessage unicastWireMessage = new WireMessage(wireMessage.source(), target, messageHeader, wireMessage.payload());
+      WireMessage unicastWireMessage = new WireMessage(wireMessage.source(), target, wireMessage.header(), wireMessage.payload());
 
       boolean unicastWasSuccessful = unicast(unicastWireMessage, timeout);
 
@@ -180,7 +164,7 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
         );
 
 			if (enqueued) {
-					LOG.trace("Delivered {} message to {}:{}", wireMessage.header().type(), wireMessage.header().targetIp(), wireMessage.header().targetPort());
+					LOG.trace("Delivered {} message to {}:{}", wireMessage.header().type(), formatAddress(wireMessage.source()), formatAddress(wireMessage.target()));
 			} else {
 				LOG.warn(
 						"Failed to enqueue message to receiver at {} after timeout",

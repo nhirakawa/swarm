@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 
 public class HeaderSerializer {
 
-  private static final int HEADER_SIZE = 34;
+  private static final int HEADER_SIZE = 22;
 
   public HeaderSerializer() {}
 
@@ -27,14 +27,6 @@ public class HeaderSerializer {
 
     // Timestamp (8 bytes)
     buffer.putLong(header.timestamp());
-
-    // Source address (4 bytes IP + 2 bytes port = 6 bytes)
-    buffer.put(header.sourceIp());
-    buffer.putShort((short) header.sourcePort());
-
-    // Target address (4 bytes IP + 2 bytes port = 6 bytes)
-    buffer.put(header.targetIp());
-    buffer.putShort((short) header.targetPort());
 
     // Checksum (4 bytes)
     buffer.putInt((int) header.checksum());
