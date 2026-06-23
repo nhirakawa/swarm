@@ -59,7 +59,7 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
       return false;
     }
 
-    if (isMulticast(target)) {
+    if (target.isMulticastAddress()) {
       return multicast(wireMessage, timeout);
     } else {
       return unicast(wireMessage, timeout);
@@ -130,7 +130,7 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
   private void deliverToReceiver(WireMessage wireMessage) throws InterruptedException {
     SwarmAddress target = wireMessage.target();
 
-    if (isMulticast(target)) {
+    if (target.isMulticastAddress()) {
       for (SwarmAddress unicastTarget : registry.keys()) {
         InMemoryTransport inMemoryTransport = registry.lookup(unicastTarget).orElseThrow();
         inMemoryTransport.enqueue(wireMessage, RECEIVER_ENQUEUE_TIMEOUT);
@@ -149,23 +149,19 @@ public class NetworkSimulator extends AbstractExecutionThreadService {
       InMemoryTransport transport = maybeTransport.get();
       InMemoryMessageReceiver receiver = transport.receiver();
 
-        boolean enqueued = receiver.enqueue(
-            wireMessage,
-            RECEIVER_ENQUEUE_TIMEOUT
-        );
+      boolean enqueued = receiver.enqueue(
+          wireMessage,
+          RECEIVER_ENQUEUE_TIMEOUT
+      );
 
 			if (enqueued) {
-					LOG.trace("Delivered {} message to {}:{}", wireMessage.header().type(), wireMessage.source().asString(), wireMessage.target().asString());
+        LOG.trace("Delivered {} message to {}:{}", wireMessage.header().type(), wireMessage.source().asString(), wireMessage.target().asString());
 			} else {
 				LOG.warn(
-						"Failed to enqueue message to receiver at {} after timeout",
+            "Failed to enqueue message to receiver at {} after timeout",
 						target
 				);
 			}
 		}
-  }
-
-  private boolean isMulticast(SwarmAddress address) {
-    return address.isMulticastAddress();
   }
 }
