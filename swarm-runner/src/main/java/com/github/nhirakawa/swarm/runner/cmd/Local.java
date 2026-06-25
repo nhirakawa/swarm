@@ -13,6 +13,7 @@ import com.github.nhirakawa.swarm.runner.json.Json;
 import com.github.nhirakawa.swarm.runner.model.LocalSwarmConfig;
 import com.github.nhirakawa.swarm.runner.service.ServiceObserver;
 import com.google.common.base.Preconditions;
+import com.google.common.io.Resources;
 import com.hubspot.jinjava.Jinjava;
 import jakarta.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -22,7 +23,7 @@ import picocli.CommandLine;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ public class Local implements Callable<Integer> {
 	private static final Logger LOG = LogManager.getLogger(Local.class);
 
 	@CommandLine.Option(names = {"--config"}, paramLabel = "CONFIG", description = "The path to the config file", required = true)
-	private Path configFilePath;
+	private String configFilePath;
 
 	private final NetworkSimulator networkSimulator;
 	private final SwarmServiceFactory swarmServiceFactory;
@@ -82,7 +83,23 @@ public class Local implements Callable<Integer> {
 
 	private LocalSwarmConfig readConfigFile() throws IOException {
 		Preconditions.checkNotNull(configFilePath);
-		try (InputStream inputStream = Files.newInputStream(configFilePath, StandardOpenOption.READ)) {
+		if (configFilePath.startsWith("classpath:")) {
+			return readConfigFileFromClasspath(configFilePath.substring(10));
+		} else if (configFilePath.startsWith("file:")) {
+			return readConfigFileFromFileSystem(configFilePath.substring(5));
+		} else {
+			return readConfigFileFromFileSystem(configFilePath);
+		}
+	}
+
+	private LocalSwarmConfig readConfigFileFromClasspath(String resourcesPath) throws IOException {
+		try (InputStream inputStream = Resources.getResource(resourcesPath).openStream()) {
+			return Json.reader().readValue(inputStream, LocalSwarmConfig.class);
+		}
+	}
+
+	private LocalSwarmConfig readConfigFileFromFileSystem(String configFilePath)  throws IOException {
+		try (InputStream inputStream = Files.newInputStream(Paths.get(configFilePath), StandardOpenOption.READ)) {
 			return Json.reader().readValue(inputStream, LocalSwarmConfig.class);
 		}
 	}
