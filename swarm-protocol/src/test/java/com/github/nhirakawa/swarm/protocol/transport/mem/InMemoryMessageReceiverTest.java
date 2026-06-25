@@ -10,7 +10,7 @@ import com.github.nhirakawa.swarm.protocol.model.header.Compression;
 import com.github.nhirakawa.swarm.protocol.model.header.MessageHeader;
 import com.github.nhirakawa.swarm.protocol.model.header.MessageVersion;
 import com.github.nhirakawa.swarm.protocol.model.header.Serialization;
-import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
+import com.github.nhirakawa.swarm.protocol.ObjectMapperWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.util.Optional;

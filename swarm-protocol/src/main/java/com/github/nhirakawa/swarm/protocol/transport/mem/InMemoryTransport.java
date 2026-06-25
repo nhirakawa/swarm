@@ -40,7 +40,7 @@ public class InMemoryTransport
   ) {
     this.localAddress = localAddress;
     this.registry = registry;
-    this.sender = new InMemoryMessageSender(localAddress, networkSimulator);
+    this.sender = new InMemoryMessageSender(localAddress, networkSimulator, objectWriter);
     this.receiver = new InMemoryMessageReceiver(RECEIVER_QUEUE_CAPACITY, objectReader);
   }
 

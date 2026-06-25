@@ -23,6 +23,7 @@ public class WaitingForNextProtocolPeriodStateTest {
   private static final SwarmConfig SWARM_CONFIG = SwarmConfig
     .builder()
       .setLocalAddress(LOCAL)
+      .setMulticastAddress(new InMemorySwarmAddress("MULTICAST"))
     .setProtocolPeriod(Duration.ofSeconds(1))
     .setProtocolTick(Duration.ofMillis(100))
     .setMessageTimeout(Duration.ofMillis(200))

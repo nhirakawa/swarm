@@ -25,6 +25,7 @@ public class WaitingForPingProxyProtocolStateTest {
   private static final SwarmConfig SWARM_CONFIG = SwarmConfig
     .builder()
       .setLocalAddress(LOCAL)
+      .setMulticastAddress(new InMemorySwarmAddress("MULTICAST"))
     .setFailureSubGroup(1)
     .setProtocolTick(Duration.ofMillis(100))
     .setMessageTimeout(Duration.ofMillis(20))

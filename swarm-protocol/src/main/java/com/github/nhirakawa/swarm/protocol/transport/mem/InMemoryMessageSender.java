@@ -1,5 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.transport.mem;
 
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
@@ -7,8 +8,6 @@ import com.github.nhirakawa.swarm.protocol.model.header.Compression;
 import com.github.nhirakawa.swarm.protocol.model.header.MessageHeader;
 import com.github.nhirakawa.swarm.protocol.model.header.MessageVersion;
 import com.github.nhirakawa.swarm.protocol.model.header.Serialization;
-import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,17 +30,18 @@ public class InMemoryMessageSender implements SwarmMessageSender {
 
   private final SwarmAddress localAddress;
   private final NetworkSimulator networkSimulator;
+  private final ObjectWriter objectWriter;
   private final AtomicLong messageIdCounter;
-  private final ObjectMapper objectMapper;
 
   public InMemoryMessageSender(
     SwarmAddress localAddress,
-    NetworkSimulator networkSimulator
+    NetworkSimulator networkSimulator,
+    ObjectWriter objectWriter
   ) {
     this.localAddress = localAddress;
     this.networkSimulator = networkSimulator;
+    this.objectWriter = objectWriter;
     this.messageIdCounter = new AtomicLong(0);
-    this.objectMapper = ObjectMapperWrapper.instance();
   }
 
   @Override
@@ -61,7 +61,7 @@ public class InMemoryMessageSender implements SwarmMessageSender {
   private void sendBroadcast(DiscoveryRequest message, Duration timeout)
     throws IOException {
     // Serialize message to bytes (once for all targets)
-    byte[] payloadBytes = objectMapper.writeValueAsBytes(message);
+    byte[] payloadBytes = objectWriter.writeValueAsBytes(message);
 
     MessageHeader header = createHeader(message, payloadBytes.length);
     WireMessage wireMessage = new WireMessage(localAddress, new InMemorySwarmAddress("MULTICAST"), header, payloadBytes);
@@ -72,7 +72,7 @@ public class InMemoryMessageSender implements SwarmMessageSender {
 
   private void sendUnicast(StateMachineMessage message, Duration timeout) throws IOException {
     // Serialize message to bytes
-    byte[] payloadBytes = objectMapper.writeValueAsBytes(message);
+    byte[] payloadBytes = objectWriter.writeValueAsBytes(message);
 
     // Create header with actual payload length
     MessageHeader header = createHeader(

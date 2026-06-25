@@ -11,7 +11,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
-import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
+import com.github.nhirakawa.swarm.protocol.ObjectMapperWrapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ class InMemoryMessageSenderTest {
     receiverAddress = new InMemorySwarmAddress("receiver");
     receiverTransport = new InMemoryTransport(receiverAddress, registry, ObjectMapperWrapper.instance().writer(), ObjectMapperWrapper.instance().reader(), networkSimulator);
     registry.register(receiverAddress, receiverTransport);
-    sender = new InMemoryMessageSender(senderAddress, networkSimulator);
+    sender = new InMemoryMessageSender(senderAddress, networkSimulator, ObjectMapperWrapper.instance().writer());
   }
 
   @AfterEach

@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.transport.mem.InMemorySwarmAddress;
-import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
+import com.github.nhirakawa.swarm.protocol.ObjectMapperWrapper;
 import org.junit.jupiter.api.Test;
 
 class MemberStatusSerializationTest {
@@ -54,11 +54,7 @@ class MemberStatusSerializationTest {
     String json = """
       {
         "type": "ALIVE",
-        "address": {
-          "address": "192.168.1.1",
-          "port": 8080,
-          "uid": "host1-8080"
-        },
+        "address": "asdf",
         "incarnation": 5
       }
       """;
@@ -75,11 +71,7 @@ class MemberStatusSerializationTest {
     String json = """
       {
         "type": "SUSPECTED",
-        "address": {
-          "address": "192.168.1.1",
-          "port": 8080,
-          "uid": "host1-8080"
-        },
+        "address": "asdf",
         "incarnation": 10
       }
       """;
@@ -96,11 +88,7 @@ class MemberStatusSerializationTest {
     String json = """
       {
         "type": "CONFIRMED",
-        "address": {
-          "address": "192.168.1.1",
-          "port": 8080,
-          "uid": "host1-8080"
-        },
+        "address": "asdf",
         "incarnation": 3
       }
       """;

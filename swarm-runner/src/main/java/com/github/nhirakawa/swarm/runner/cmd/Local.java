@@ -5,11 +5,11 @@ import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.state.StateSnapshot;
 import com.github.nhirakawa.swarm.protocol.transport.mem.InMemorySwarmAddress;
 import com.github.nhirakawa.swarm.protocol.transport.mem.NetworkSimulator;
-import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
 import com.github.nhirakawa.swarm.runner.Banner;
 import com.github.nhirakawa.swarm.runner.admin.AdminConfig;
 import com.github.nhirakawa.swarm.runner.admin.AdminService;
 import com.github.nhirakawa.swarm.runner.factory.SwarmServiceFactory;
+import com.github.nhirakawa.swarm.runner.json.Json;
 import com.github.nhirakawa.swarm.runner.model.LocalSwarmConfig;
 import com.github.nhirakawa.swarm.runner.service.ServiceObserver;
 import com.google.common.base.Preconditions;
@@ -83,7 +83,7 @@ public class Local implements Callable<Integer> {
 	private LocalSwarmConfig readConfigFile() throws IOException {
 		Preconditions.checkNotNull(configFilePath);
 		try (InputStream inputStream = Files.newInputStream(configFilePath, StandardOpenOption.READ)) {
-			return ObjectMapperWrapper.instance().reader().readValue(inputStream, LocalSwarmConfig.class);
+			return Json.reader().readValue(inputStream, LocalSwarmConfig.class);
 		}
 	}
 

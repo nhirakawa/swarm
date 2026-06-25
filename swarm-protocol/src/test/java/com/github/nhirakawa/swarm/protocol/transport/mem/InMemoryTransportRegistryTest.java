@@ -8,7 +8,7 @@ import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
 
-import com.github.nhirakawa.swarm.protocol.util.ObjectMapperWrapper;
+import com.github.nhirakawa.swarm.protocol.ObjectMapperWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
