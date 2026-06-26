@@ -73,6 +73,8 @@ public abstract class SwarmProtocolState {
   abstract Optional<Transition> applyTick();
 
   Optional<Transition> applyPing(PingRequest pingRequest) {
+    registry.put(pingRequest.source(), MemberStatus.alive(pingRequest.source(), 0));
+
     return Optional.of(
         Transition
             .builder()

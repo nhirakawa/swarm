@@ -11,8 +11,13 @@
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
+<nav id="menubar">
+    <span id="menubar-title">swarm</span>
+    <div id="menubar-actions">
+        <button class="add-node-btn" hx-post="/app/nodes" hx-swap="none">Add Node</button>
+    </div>
+</nav>
 <div id="main">
-    <h1>swarm</h1>
     <div hx-get="/app/container" hx-trigger="every 2s">Loading...</div>
 </div>
 </body>

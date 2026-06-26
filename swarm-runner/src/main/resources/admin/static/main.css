@@ -16,7 +16,46 @@ body {
 #main {
     max-width: 1560px;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem;
+}
+
+#menubar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    height: 3rem;
+    background: #1a1a1a;
+    color: #fff;
+}
+
+#menubar-title {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+#menubar-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.add-node-btn {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #fff;
+    color: #1a1a1a;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.add-node-btn:hover {
+    background: #e0e0e0;
 }
 
 #snapshots {

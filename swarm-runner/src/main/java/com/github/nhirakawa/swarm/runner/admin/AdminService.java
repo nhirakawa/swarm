@@ -1,7 +1,11 @@
 package com.github.nhirakawa.swarm.runner.admin;
 
 import com.github.nhirakawa.swarm.protocol.state.StateSnapshot;
+import com.github.nhirakawa.swarm.runner.admin.http.AddNodeHandler;
 import com.github.nhirakawa.swarm.runner.admin.http.ContainerHandler;
+import com.github.nhirakawa.swarm.runner.factory.SwarmServiceFactory;
+import com.github.nhirakawa.swarm.runner.model.LocalSwarmConfig;
+import com.github.nhirakawa.swarm.runner.service.SwarmServiceRegistry;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.hubspot.jinjava.Jinjava;
 import io.javalin.Javalin;
@@ -16,12 +20,19 @@ public class AdminService extends AbstractIdleService {
 	private final AdminConfig config;
 	private final Jinjava jinjava;
 	private final Supplier<List<StateSnapshot>> snapshotListSupplier;
+	private final SwarmServiceFactory swarmServiceFactory;
+	private final SwarmServiceRegistry registry;
+	private final LocalSwarmConfig localSwarmConfig;
 	private final Javalin app;
 
-	public AdminService(AdminConfig config, Jinjava jinjava, Supplier<List<StateSnapshot>> snapshotListSupplier) {
+	public AdminService(AdminConfig config, Jinjava jinjava, Supplier<List<StateSnapshot>> snapshotListSupplier,
+						SwarmServiceFactory swarmServiceFactory, SwarmServiceRegistry registry, LocalSwarmConfig localSwarmConfig) {
 		this.config = config;
 		this.jinjava = jinjava;
 		this.snapshotListSupplier = snapshotListSupplier;
+		this.swarmServiceFactory = swarmServiceFactory;
+		this.registry = registry;
+		this.localSwarmConfig = localSwarmConfig;
 		this.app = createApp();
 	}
 
@@ -37,21 +48,19 @@ public class AdminService extends AbstractIdleService {
 
 	private Javalin createApp() {
 		return Javalin.create(AdminService::customize)
-				.get("/app/container", new ContainerHandler(jinjava, snapshotListSupplier));
+				.get("/app/container", new ContainerHandler(jinjava, snapshotListSupplier))
+				.post("/app/nodes", new AddNodeHandler(swarmServiceFactory, registry, localSwarmConfig));
 	}
 
 	private static void customize(JavalinConfig config) {
-		// Configure static file handling
 		config.staticFiles.add(staticFileConfig ->
 													 {staticFileConfig.hostedPath = "/";
 														 staticFileConfig.directory = "/admin";
 														 staticFileConfig.location = Location.CLASSPATH;
 													 });
 
-		// Configure HTTP
 		config.http.gzipOnlyCompression();
 
-		// Configure router
 		config.router.ignoreTrailingSlashes = true;
 		config.router.treatMultipleSlashesAsSingleSlash = true;
 		config.router.caseInsensitiveRoutes = true;
