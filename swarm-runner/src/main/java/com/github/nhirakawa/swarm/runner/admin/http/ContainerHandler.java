@@ -4,6 +4,7 @@ import com.github.nhirakawa.swarm.protocol.state.MemberStatus;
 import com.github.nhirakawa.swarm.protocol.state.StateSnapshot;
 import com.google.common.base.Suppliers;
 import com.google.common.io.Resources;
+import com.google.common.primitives.Longs;
 import com.hubspot.jinjava.Jinjava;
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
@@ -11,6 +12,7 @@ import io.javalin.http.Handler;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -26,6 +28,8 @@ public class ContainerHandler implements Handler {
 				}
 			}
 	);
+
+	private static final HexFormat HEX = HexFormat.of().withUpperCase();
 
 	private final Jinjava jinjava;
 	private final Supplier<List<StateSnapshot>> snapshotListSupplier;
@@ -50,7 +54,7 @@ public class ContainerHandler implements Handler {
 
 		return Map.of(
 				"localAddress", snapshot.getLocalAddress().asString(),
-				"protocolPeriodId", snapshot.getProtocolPeriodId(),
+				"protocolPeriodId", HEX.formatHex(Longs.toByteArray(snapshot.getProtocolPeriodId())),
 				"incarnation", snapshot.getIncarnation(),
 				"memberStatuses", memberStatuses
 		);
