@@ -14,7 +14,6 @@ import com.google.common.util.concurrent.AbstractExecutionThreadService;
 
 import java.time.Duration;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
@@ -52,7 +51,7 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
   protected void startUp() {
     LOG.info("Starting state machine");
 
-    MemberRegistry memberRegistry = new MemberRegistry(Set.of());
+    MemberRegistry memberRegistry = new MemberRegistry();
 
     this.swarmProtocolState =
         SwarmProtocolState.initial(

@@ -1,18 +1,21 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
 import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ComparisonChain;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Queue;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -20,20 +23,28 @@ import java.util.stream.Collectors;
  * <p>
  * Combines group membership and gossip counting in a single structure
  * <p>
- * This class is **not** thread-safe. Thread safety must be handled by a higher abstraction (like {@link SwarmStateMachine}.
+ * This class is **not** thread-safe.
+ * Thread safety must be handled by a higher abstraction (like {@link SwarmStateMachine}).
  */
 @NotThreadSafe
 class MemberRegistry {
 
   private final Map<SwarmAddress, Counted> registry = new HashMap<>();
-  private final TreeSet<Counted> sortedByGossipCount = new TreeSet<>();
+  private final NavigableSet<Counted> sortedByGossipCount = new TreeSet<>();
+  private final Queue<SwarmAddress> pingSequence = new ArrayDeque<>();
 
-  MemberRegistry(Set<SwarmAddress> initialGroup) {
+  MemberRegistry() {
+    this(Set.of());
+  }
+
+  @VisibleForTesting
+  MemberRegistry(Set<? extends SwarmAddress> initialGroup) {
     for (SwarmAddress swarmAddress : initialGroup) {
       var memberStatus = MemberStatus.alive(swarmAddress, 0);
       var counted = Counted.initial(swarmAddress, memberStatus);
       registry.put(swarmAddress, counted);
       sortedByGossipCount.add(counted);
+      pingSequence.add(swarmAddress);
     }
   }
 
@@ -58,16 +69,28 @@ class MemberRegistry {
 
     registry.put(swarmAddress, newCounted);
     sortedByGossipCount.add(newCounted);
+
+    if (oldCounted == null && memberStatus.isEligibleForPing()) {
+      pingSequence.add(swarmAddress);
+    }
   }
 
   SwarmAddress getPingTarget() {
-    List<SwarmAddress> swarmAddressList = registry
-        .values()
-        .stream()
-        .filter(counted -> counted.memberStatus.isEligibleForPing())
-        .map(Counted::swarmAddress).toList();
-
-    return swarmAddressList.get(ThreadLocalRandom.current().nextInt(0, swarmAddressList.size()));
+    while (!pingSequence.isEmpty()) {
+      SwarmAddress candidate = pingSequence.poll();
+      Counted counted = registry.get(candidate);
+      if (counted != null && counted.memberStatus.isEligibleForPing()) {
+        return candidate;
+      }
+    }
+    // Sequence exhausted — build a new shuffled sequence from all eligible nodes
+    List<SwarmAddress> eligible = registry.entrySet().stream()
+        .filter(e -> e.getValue().memberStatus.isEligibleForPing())
+        .map(Map.Entry::getKey)
+        .collect(Collectors.toCollection(ArrayList::new));
+    Collections.shuffle(eligible);
+    pingSequence.addAll(eligible);
+    return pingSequence.poll();
   }
 
   /**
