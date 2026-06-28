@@ -1,13 +1,10 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
-import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryResponse;
-import com.google.common.base.Stopwatch;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,51 +17,27 @@ public class InitializingProtocolState extends SwarmProtocolState {
 
 	private final int attemptNumber;
 
-  InitializingProtocolState(
-    SwarmConfig swarmConfig,
-    long protocolPeriodId,
-    long incarnation,
-    Stopwatch stopwatch,
-    MemberRegistry memberRegistry
-  ) {
-    this(
-      swarmConfig,
-      protocolPeriodId,
-      incarnation,
-      stopwatch,
-      memberRegistry,
-      0
-    );
+  InitializingProtocolState(ProtocolStateContext context) {
+    this(context, 0);
   }
 
-  private InitializingProtocolState(
-    SwarmConfig swarmConfig,
-    long protocolPeriodId,
-    long incarnation,
-    Stopwatch stopwatch,
-    MemberRegistry memberRegistry,
-		int attemptNumber
-  ) {
-    super(swarmConfig, protocolPeriodId, incarnation, stopwatch, memberRegistry);
+  private InitializingProtocolState(ProtocolStateContext context, int attemptNumber) {
+    super(context);
 		this.attemptNumber = attemptNumber;
   }
 
   @Override
   public Optional<Transition> applyTick() {
-    if (stopwatch.elapsed().toNanos() < Duration.ofSeconds(5).toNanos()) {
+    if (context().elapsed().toNanos() < Duration.ofSeconds(5).toNanos()) {
       return Optional.empty(); // Not time to retry yet
     }
 
-    LOG.debug("Tick fired - registry size is {}", registry.size());
+    LOG.debug("Tick fired - registry size is {}", context().memberRegistry().size());
 
-    if (registry.size() > 0) {
+    if (context().memberRegistry().size() > 0) {
       // Transition to normal operation
       SwarmProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(
-          swarmConfig,
-          ThreadLocalRandom.current().nextLong(),
-          incarnation,
-          Stopwatch.createStarted(),
-          registry
+          context().next()
       );
 
       return Optional.of(
@@ -79,17 +52,13 @@ public class InitializingProtocolState extends SwarmProtocolState {
 
     // Create a new state for next retry (if needed)
     InitializingProtocolState nextRetryState = new InitializingProtocolState(
-      swarmConfig,
-      protocolPeriodId,
-      incarnation,
-      Stopwatch.createStarted(), // Reset stopwatch for next retry
-      registry,
+      context().next(),
       attemptNumber + 1
     );
 
     DiscoveryRequest discoveryRequest = new DiscoveryRequest(
-        swarmConfig.getLocalAddress(),
-        swarmConfig.getMulticastAddress()
+        context().swarmConfig().getLocalAddress(),
+        context().swarmConfig().getMulticastAddress()
     );
 
     return Optional.of(
@@ -111,10 +80,10 @@ public class InitializingProtocolState extends SwarmProtocolState {
 
     // Merge received member list into registry
     for (MemberStatus memberStatus : response.memberList()) {
-      registry.put(memberStatus.address(), memberStatus);
+      context().memberRegistry().put(memberStatus.address(), memberStatus);
     }
 
-    LOG.info("Registry size after merge: {}", registry.size());
+    LOG.info("Registry size after merge: {}", context().memberRegistry().size());
 
     return Optional.empty();
   }

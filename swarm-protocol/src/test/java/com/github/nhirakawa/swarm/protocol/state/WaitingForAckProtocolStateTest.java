@@ -9,6 +9,7 @@ import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.github.nhirakawa.swarm.protocol.transport.mem.InMemorySwarmAddress;
 import com.google.common.base.Stopwatch;
+
 import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
@@ -42,12 +43,14 @@ public class WaitingForAckProtocolStateTest {
 
     protocolState =
       new WaitingForAckProtocolState(
-        SWARM_CONFIG,
-        PING_TARGET,
-        4L,
-        1L,
-        Stopwatch.createStarted(ticker),
-        new MemberRegistry(Set.of(PING_TARGET, OTHER_NODE_1, OTHER_NODE_2))
+          new ProtocolStateContext(
+              SWARM_CONFIG,
+              4L,
+              1L,
+              Stopwatch.createStarted(ticker),
+              new MemberRegistry(Set.of(PING_TARGET, OTHER_NODE_1, OTHER_NODE_2))
+          ),
+        PING_TARGET
       );
   }
 
@@ -80,7 +83,7 @@ public class WaitingForAckProtocolStateTest {
         PING_TARGET,
         LOCAL,
         Optional.empty(),
-        protocolState.protocolPeriodId
+        protocolState.context().protocolPeriodId()
       )
     );
 

@@ -42,11 +42,13 @@ public class WaitingForPingProxyProtocolStateTest {
 
     protocolState =
       new WaitingForPingProxyProtocolState(
-        SWARM_CONFIG,
-        4L,
-        1L,
-        Stopwatch.createStarted(ticker),
-        new MemberRegistry(Set.of(TARGET, OTHER_1, OTHER_2)),
+          new ProtocolStateContext(
+              SWARM_CONFIG,
+              4L,
+              1L,
+              Stopwatch.createStarted(ticker),
+              new MemberRegistry(Set.of(TARGET, OTHER_1, OTHER_2))
+          ),
         TARGET,
         Set.of(OTHER_1)
       );
@@ -82,8 +84,8 @@ public class WaitingForPingProxyProtocolStateTest {
       .get()
       .getNextSwarmProtocolState();
 
-    assertThat(nextState.protocolPeriodId)
-      .isEqualTo(protocolState.protocolPeriodId);
+    assertThat(nextState.context().protocolPeriodId())
+      .isEqualTo(protocolState.context().protocolPeriodId());
   }
 
   @Test

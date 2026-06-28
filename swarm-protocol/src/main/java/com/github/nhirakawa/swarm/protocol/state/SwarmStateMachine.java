@@ -19,6 +19,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,7 +28,7 @@ import org.apache.logging.log4j.Logger;
 public class SwarmStateMachine extends AbstractExecutionThreadService {
 
   private static final Logger LOG = LogManager.getLogger(
-    SwarmStateMachine.class
+      SwarmStateMachine.class
   );
 
   private final SwarmConfig swarmConfig;
@@ -38,9 +39,9 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
   private SwarmProtocolState swarmProtocolState;
 
   public SwarmStateMachine(
-    SwarmConfig swarmConfig,
-    SwarmMessageReceiver swarmMessageReceiver,
-    SwarmMessageSender swarmMessageSender
+      SwarmConfig swarmConfig,
+      SwarmMessageReceiver swarmMessageReceiver,
+      SwarmMessageSender swarmMessageSender
   ) {
     this.swarmConfig = swarmConfig;
     this.swarmMessageReceiver = swarmMessageReceiver;
@@ -54,12 +55,15 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
     MemberRegistry memberRegistry = new MemberRegistry(Set.of());
 
     this.swarmProtocolState =
-      SwarmProtocolState.initial(
-        swarmConfig,
-        ThreadLocalRandom.current().nextLong(),
-        Stopwatch.createStarted(),
-        memberRegistry
-      );
+        SwarmProtocolState.initial(
+            new ProtocolStateContext(
+                swarmConfig,
+                ThreadLocalRandom.current().nextLong(),
+                0L,
+                Stopwatch.createStarted(),
+                memberRegistry
+            )
+        );
   }
 
   @Override
@@ -88,7 +92,10 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
   }
 
   private void handleTransition(Transition transition) {
-    if (!swarmProtocolState.getClass().getSimpleName().equals(transition.getNextSwarmProtocolState().getClass().getSimpleName())) {
+    if (!swarmProtocolState
+        .getClass()
+        .getSimpleName()
+        .equals(transition.getNextSwarmProtocolState().getClass().getSimpleName())) {
       LOG.info(
           "Transitioning from {} to {}",
           swarmProtocolState.getClass().getSimpleName(),
@@ -101,8 +108,8 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
         StateSnapshot
             .builder()
             .setLocalAddress(swarmConfig.getLocalAddress())
-            .setProtocolPeriodId(swarmProtocolState.protocolPeriodId)
-            .setIncarnation(swarmProtocolState.incarnation)
+            .setProtocolPeriodId(swarmProtocolState.context().protocolPeriodId())
+            .setIncarnation(swarmProtocolState.context().incarnation())
             .addAllMemberStatuses(swarmProtocolState.getMemberStatuses())
             .build()
     );
@@ -140,19 +147,19 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
   }
 
   private Optional<Transition> applyPingRequest(
-    PingRequest pingRequest
+      PingRequest pingRequest
   ) {
     return swarmProtocolState.applyPing(pingRequest);
   }
 
   private Optional<Transition> applyDiscoveryRequest(
-    DiscoveryRequest discoveryRequest
+      DiscoveryRequest discoveryRequest
   ) {
     return swarmProtocolState.applyDiscoveryRequest(discoveryRequest);
   }
 
   private Optional<Transition> applyDiscoveryResponse(
-    DiscoveryResponse discoveryResponse
+      DiscoveryResponse discoveryResponse
   ) {
     return swarmProtocolState.applyDiscoveryResponse(discoveryResponse);
   }

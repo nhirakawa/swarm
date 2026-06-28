@@ -40,11 +40,13 @@ public class WaitingForNextProtocolPeriodStateTest {
 
     protocolState =
       new WaitingForNextProtocolPeriodProtocolState(
-        SWARM_CONFIG,
-        4L,
-        1L,
-        Stopwatch.createStarted(ticker),
-        new MemberRegistry(Set.of(OTHER))
+          new ProtocolStateContext(
+              SWARM_CONFIG,
+              4L,
+              1L,
+              Stopwatch.createStarted(ticker),
+              new MemberRegistry(Set.of(OTHER))
+          )
       );
   }
 

@@ -1,12 +1,10 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
-import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryResponse;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
-import com.google.common.base.Stopwatch;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -21,65 +19,43 @@ public abstract class SwarmProtocolState {
     SwarmProtocolState.class
   );
 
-  protected final SwarmConfig swarmConfig;
-  protected final long protocolPeriodId;
-  protected final long incarnation;
-  final Stopwatch stopwatch;
-  final MemberRegistry registry;
+  private final ProtocolStateContext context;
 
-  SwarmProtocolState(
-    SwarmConfig swarmConfig,
-    long protocolPeriodId,
-    long incarnation,
-    Stopwatch stopwatch,
-    MemberRegistry registry
-  ) {
-    this.swarmConfig = swarmConfig;
-    this.protocolPeriodId = protocolPeriodId;
-    this.incarnation = incarnation;
-    this.stopwatch = stopwatch.reset().start();
-    this.registry = registry;
+  SwarmProtocolState(ProtocolStateContext context) {
+    this.context = context;
   }
 
-  static SwarmProtocolState initial(
-    SwarmConfig swarmConfig,
-    long protocolPeriodId,
-    Stopwatch stopwatch,
-    MemberRegistry memberRegistry
-  ) {
-    if (swarmConfig.isDiscoveryEnabled()) {
-      return new InitializingProtocolState(
-        swarmConfig,
-        protocolPeriodId,
-        0L,
-        stopwatch,
-        memberRegistry
-      );
+  static SwarmProtocolState initial(ProtocolStateContext context) {
+    if (context.swarmConfig().isDiscoveryEnabled()) {
+      return new InitializingProtocolState(context);
     } else {
-      return new WaitingForNextProtocolPeriodProtocolState(
-        swarmConfig,
-        protocolPeriodId,
-        0L,
-        stopwatch,
-        memberRegistry
-      );
+      return new WaitingForNextProtocolPeriodProtocolState(context);
     }
   }
 
+  final ProtocolStateContext context() {
+    return context;
+  }
+
   final List<MemberStatus> getMemberStatuses() {
-    return registry.getMemberStatuses();
+    return context.memberRegistry().getMemberStatuses();
   }
 
   abstract Optional<Transition> applyTick();
 
   Optional<Transition> applyPing(PingRequest pingRequest) {
-    registry.put(pingRequest.source(), MemberStatus.alive(pingRequest.source(), 0));
+    context
+        .memberRegistry()
+        .put(
+            pingRequest.source(),
+            MemberStatus.alive(pingRequest.source(), 0)
+        );
 
     return Optional.of(
         Transition
             .builder()
             .setNextSwarmProtocolState(this)
-            .addResponsesToSend(new PingAck(swarmConfig.getLocalAddress(), pingRequest.source(), Optional.empty(), ThreadLocalRandom.current().nextLong()))
+            .addResponsesToSend(new PingAck(context.swarmConfig().getLocalAddress(), pingRequest.source(), Optional.empty(), ThreadLocalRandom.current().nextLong()))
             .build()
     );
   }
@@ -99,21 +75,21 @@ public abstract class SwarmProtocolState {
 
     // Always include our own status so that bootstrapping source nothing works -
     // even if the registry is empty, the requester learns about us.
-    MemberStatus self = MemberStatus.alive(swarmConfig.getLocalAddress(), incarnation);
-    List<MemberStatus> gossip = registry.getGossipPayload(10);
+    MemberStatus self = MemberStatus.alive(context.swarmConfig().getLocalAddress(), context.incarnation());
+    List<MemberStatus> gossip = context.memberRegistry().getGossipPayload(10);
 
     List<MemberStatus> memberList = new ArrayList<>(gossip.size() + 1);
     memberList.add(self);
     for (MemberStatus m : gossip) {
-      if (!m.address().equals(swarmConfig.getLocalAddress())) {
+      if (!m.address().equals(context.swarmConfig().getLocalAddress())) {
         memberList.add(m);
       }
     }
 
     DiscoveryResponse response = new DiscoveryResponse(
-        swarmConfig.getLocalAddress(),
-      request.source(),
-      memberList
+        context.swarmConfig().getLocalAddress(),
+        request.source(),
+        memberList
     );
 
     LOG.debug("Sending discovery response to {} with {} members", request.source(), memberList.size());

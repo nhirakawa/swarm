@@ -1,14 +1,11 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
-import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,15 +20,11 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
   private final Set<SwarmAddress> proxyTargets;
 
   WaitingForPingProxyProtocolState(
-    SwarmConfig swarmConfig,
-    long protocolPeriodId,
-    long incarnation,
-    Stopwatch stopwatch,
-    MemberRegistry memberRegistry,
+    ProtocolStateContext context,
     SwarmAddress pingTarget,
     Set<SwarmAddress> proxyTargets
   ) {
-    super(swarmConfig, protocolPeriodId, incarnation, stopwatch, memberRegistry);
+    super(context);
     this.pingTarget = pingTarget;
     this.proxyTargets = ImmutableSet.copyOf(proxyTargets);
   }
@@ -39,18 +32,14 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
   @Override
   public Optional<Transition> applyTick() {
     if (
-      stopwatch.elapsed(TimeUnit.NANOSECONDS) <
-      swarmConfig.getProtocolPeriod().toNanos()
+      context().elapsed().toNanos() <
+      context().swarmConfig().getProtocolPeriod().toNanos()
     ) {
       return Optional.empty();
     }
 
     SwarmProtocolState nextSwarmProtocolState = new WaitingForNextProtocolPeriodProtocolState(
-      swarmConfig,
-      protocolPeriodId,
-      incarnation,
-      stopwatch,
-      registry
+      context()
     );
 
     Transition transition = Transition
@@ -100,11 +89,7 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
     }
 
     SwarmProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(
-      swarmConfig,
-      protocolPeriodId,
-      incarnation,
-      stopwatch,
-      registry
+      context()
     );
 
     return Optional.of(

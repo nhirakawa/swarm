@@ -1,13 +1,11 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
-import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import com.github.nhirakawa.swarm.protocol.util.Jitter;
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,7 +14,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 
 // todo(nhirakawa) document this
 public class WaitingForAckProtocolState extends SwarmProtocolState {
@@ -27,29 +24,25 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
   private final Duration jitteredMessageTimeout;
 
   WaitingForAckProtocolState(
-    SwarmConfig swarmConfig,
-    SwarmAddress pingTarget,
-    long protocolPeriodId,
-    long incarnation,
-    Stopwatch stopwatch,
-    MemberRegistry memberRegistry
+      ProtocolStateContext context,
+    SwarmAddress pingTarget
   ) {
-    super(swarmConfig, protocolPeriodId, incarnation, stopwatch, memberRegistry);
+    super(context);
     this.pingTarget = pingTarget;
     this.jitteredMessageTimeout = Jitter.apply(
-      swarmConfig.getMessageTimeout(),
-      swarmConfig.getMessageTimeoutJitter()
+      context.swarmConfig().getMessageTimeout(),
+      context.swarmConfig().getMessageTimeoutJitter()
     );
   }
 
   @Override
   public Optional<Transition> applyTick() {
-    if (stopwatch.elapsed().toNanos() < jitteredMessageTimeout.toNanos()) {
+    if (context().elapsed().toNanos() < jitteredMessageTimeout.toNanos()) {
       return Optional.empty();
     }
 
-    Set<SwarmAddress> failureSubGroup = registry.getFailureSubGroup(
-      swarmConfig.getFailureSubGroup(),
+    Set<SwarmAddress> failureSubGroup = context().memberRegistry().getFailureSubGroup(
+      context().swarmConfig().getFailureSubGroup(),
       pingTarget
     );
 
@@ -57,20 +50,16 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
       .stream()
       .map(swarmNode ->
         new PingRequest(
-            swarmConfig.getLocalAddress(),
-          swarmNode,
-          Optional.of(pingTarget),
-          protocolPeriodId
+            context().swarmConfig().getLocalAddress(),
+            swarmNode,
+            Optional.of(pingTarget),
+            context().protocolPeriodId()
         )
       )
       .collect(ImmutableList.toImmutableList());
 
     SwarmProtocolState nextState = new WaitingForPingProxyProtocolState(
-      swarmConfig,
-      protocolPeriodId,
-      incarnation,
-      stopwatch,
-      registry,
+      context(),
       pingTarget,
       failureSubGroup
     );
@@ -91,13 +80,7 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
       return Optional.empty();
     }
 
-    WaitingForNextProtocolPeriodProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(
-      swarmConfig,
-      ThreadLocalRandom.current().nextLong(),
-      incarnation,
-      stopwatch,
-      registry
-    );
+    WaitingForNextProtocolPeriodProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(context().next());
 
     Transition transition = Transition
       .builder()
