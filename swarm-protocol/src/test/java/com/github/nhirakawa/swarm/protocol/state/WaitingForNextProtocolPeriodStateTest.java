@@ -78,7 +78,8 @@ public class WaitingForNextProtocolPeriodStateTest {
           LOCAL,
         OTHER,
         Optional.empty(),
-        4L
+        4L,
+        0L
       )
     );
 

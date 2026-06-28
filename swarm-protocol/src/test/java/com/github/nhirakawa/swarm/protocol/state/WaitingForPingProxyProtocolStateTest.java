@@ -58,7 +58,7 @@ public class WaitingForPingProxyProtocolStateTest {
   public void itTransitionsToWaitingForNextProtocolPeriodAfterProxyAck() {
     // TODO @nhirakawa - make this test more robust
     Optional<Transition> transition = protocolState.applyPingAck(
-      new PingAck(OTHER_1, LOCAL, Optional.of(TARGET), 4L)
+      new PingAck(OTHER_1, LOCAL, Optional.of(TARGET), 4L, 0L)
     );
 
     assertThat(transition).isPresent();
@@ -91,7 +91,7 @@ public class WaitingForPingProxyProtocolStateTest {
   @Test
   public void itDoesNothingIfAckIsNotFromProxy() {
     Optional<Transition> transition = protocolState.applyPingAck(
-      new PingAck(OTHER_2, LOCAL, Optional.of(TARGET), 4L)
+      new PingAck(OTHER_2, LOCAL, Optional.of(TARGET), 4L, 0L)
     );
 
     assertThat(transition).isEmpty();
@@ -100,7 +100,7 @@ public class WaitingForPingProxyProtocolStateTest {
   @Test
   public void itDoesNothingIfAckIsNotForTarget() {
     Optional<Transition> transition = protocolState.applyPingAck(
-      new PingAck(OTHER_1, LOCAL, Optional.of(OTHER_2), 4L)
+      new PingAck(OTHER_1, LOCAL, Optional.of(OTHER_2), 4L, 0L)
     );
 
     assertThat(transition).isEmpty();

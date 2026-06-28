@@ -101,7 +101,8 @@ class InMemoryMessageSenderTest {
         senderAddress,
       receiverAddress,
       Optional.empty(),
-      4L
+      4L,
+      0L
     );
 
     sender.send(response, Duration.ofMillis(10));
@@ -127,7 +128,8 @@ class InMemoryMessageSenderTest {
         senderAddress,
       receiverAddress,
       Optional.of(proxyAddress),
-      4L
+      4L,
+      0L
     );
 
     sender.send(response, Duration.ofMillis(10));

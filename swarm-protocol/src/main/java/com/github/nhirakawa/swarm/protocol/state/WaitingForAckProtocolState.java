@@ -80,6 +80,11 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
       return Optional.empty();
     }
 
+    context().memberRegistry().put(
+        pingAck.source(),
+        MemberStatus.alive(pingAck.source(), pingAck.incarnation())
+    );
+
     WaitingForNextProtocolPeriodProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(context().next());
 
     Transition transition = Transition

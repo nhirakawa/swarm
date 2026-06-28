@@ -9,7 +9,8 @@ public record PingAck(
   SwarmAddress source,
 	SwarmAddress target,
   Optional<SwarmAddress> proxyFor,
-  long protocolPeriodId
+  long protocolPeriodId,
+  long incarnation
 )
   implements StateMachineMessage {
 	@Override

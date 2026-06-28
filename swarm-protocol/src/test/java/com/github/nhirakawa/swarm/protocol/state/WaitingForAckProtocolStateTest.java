@@ -83,7 +83,8 @@ public class WaitingForAckProtocolStateTest {
         PING_TARGET,
         LOCAL,
         Optional.empty(),
-        protocolState.context().protocolPeriodId()
+        protocolState.context().protocolPeriodId(),
+        0L
       )
     );
 

@@ -6,6 +6,7 @@ import com.google.common.collect.ComparisonChain;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.util.ArrayDeque;
+import java.util.Optional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -50,6 +51,10 @@ class MemberRegistry {
 
   List<MemberStatus> getMemberStatuses() {
     return registry.values().stream().map(Counted::memberStatus).toList();
+  }
+
+  Optional<MemberStatus> get(SwarmAddress swarmAddress) {
+    return Optional.ofNullable(registry.get(swarmAddress)).map(Counted::memberStatus);
   }
 
   int size() {

@@ -55,7 +55,7 @@ public abstract class SwarmProtocolState {
         Transition
             .builder()
             .setNextSwarmProtocolState(this)
-            .addResponsesToSend(new PingAck(context.swarmConfig().getLocalAddress(), pingRequest.source(), Optional.empty(), ThreadLocalRandom.current().nextLong()))
+            .addResponsesToSend(new PingAck(context.swarmConfig().getLocalAddress(), pingRequest.source(), Optional.empty(), ThreadLocalRandom.current().nextLong(), context.incarnation()))
             .build()
     );
   }

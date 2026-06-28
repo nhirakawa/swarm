@@ -38,6 +38,16 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
       return Optional.empty();
     }
 
+    long knownIncarnation = context().memberRegistry()
+        .get(pingTarget)
+        .map(MemberStatus::incarnation)
+        .orElse(0L);
+
+    context().memberRegistry().put(
+        pingTarget,
+        new MemberStatus.Suspected(pingTarget, knownIncarnation)
+    );
+
     SwarmProtocolState nextSwarmProtocolState = new WaitingForNextProtocolPeriodProtocolState(
       context()
     );
@@ -87,6 +97,11 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
 
       return Optional.empty();
     }
+
+    context().memberRegistry().put(
+        pingTarget,
+        MemberStatus.alive(pingTarget, pingAckMessage.incarnation())
+    );
 
     SwarmProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(
       context()
