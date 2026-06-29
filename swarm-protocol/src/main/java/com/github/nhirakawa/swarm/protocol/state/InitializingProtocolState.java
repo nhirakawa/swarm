@@ -3,6 +3,7 @@ package com.github.nhirakawa.swarm.protocol.state;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryResponse;
+
 import java.time.Duration;
 import java.util.Optional;
 
@@ -12,7 +13,7 @@ import org.apache.logging.log4j.Logger;
 public class InitializingProtocolState extends SwarmProtocolState {
 
   private static final Logger LOG = LogManager.getLogger(
-    InitializingProtocolState.class
+      InitializingProtocolState.class
   );
 
 	private final int attemptNumber;
@@ -46,14 +47,14 @@ public class InitializingProtocolState extends SwarmProtocolState {
     }
 
     LOG.debug(
-      "Broadcasting discovery request (attempt {})",
-      attemptNumber + 1
+        "Broadcasting discovery request (attempt {})",
+        attemptNumber + 1
     );
 
     // Create a new state for next retry (if needed)
     InitializingProtocolState nextRetryState = new InitializingProtocolState(
-      context().next(),
-      attemptNumber + 1
+        context().next(),
+        attemptNumber + 1
     );
 
     DiscoveryRequest discoveryRequest = new DiscoveryRequest(
@@ -62,20 +63,20 @@ public class InitializingProtocolState extends SwarmProtocolState {
     );
 
     return Optional.of(
-      Transition.builder()
-        .setNextSwarmProtocolState(nextRetryState)
-        .addResponsesToSend(discoveryRequest)
-        .build()
+        Transition.builder()
+            .setNextSwarmProtocolState(nextRetryState)
+            .addResponsesToSend(discoveryRequest)
+            .build()
     );
   }
 
   @Override
   Optional<Transition> applyDiscoveryResponse(DiscoveryResponse response) {
     LOG.info(
-      "Received discovery response source {} with {} members after {} attempts",
-      response.source(),
-      response.memberList().size(),
-      attemptNumber + 1
+        "Received discovery response source {} with {} members after {} attempts",
+        response.source(),
+        response.memberList().size(),
+        attemptNumber + 1
     );
 
     // Merge received member list into registry
@@ -92,8 +93,8 @@ public class InitializingProtocolState extends SwarmProtocolState {
   Optional<Transition> applyDiscoveryRequest(DiscoveryRequest request) {
     // During initialization, respond to discovery requests source other nodes
     LOG.debug(
-      "Received discovery request source {} during initialization",
-      request.source()
+        "Received discovery request source {} during initialization",
+        request.source()
     );
 
     // Use parent implementation to respond with member list

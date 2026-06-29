@@ -13,6 +13,7 @@ import com.github.nhirakawa.swarm.protocol.model.header.Serialization;
 import com.github.nhirakawa.swarm.protocol.ObjectMapperWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +49,8 @@ class InMemoryMessageReceiverTest {
       from,
       to,
       Optional.empty(),
-      4L
+      4L,
+      List.of()
     );
 
     WireMessage wireMessage = createWireMessage(from, to, message);
@@ -71,13 +73,15 @@ class InMemoryMessageReceiverTest {
       from,
       to,
       Optional.empty(),
-      4L
+      4L,
+      List.of()
     );
     StateMachineMessage message2 = new PingRequest(
       from,
       to,
       Optional.empty(),
-      4L
+      4L,
+      List.of()
     );
 
     WireMessage wireMessage1 = createWireMessage(from, to, message1);
@@ -110,7 +114,8 @@ class InMemoryMessageReceiverTest {
         from,
         to,
         Optional.empty(),
-        4 + i
+        4 + i,
+        List.of()
       );
       WireMessage wireMessage = createWireMessage(from, to, message);
       boolean enqueued = receiver.enqueue(wireMessage, Duration.ofMillis(100));
@@ -122,7 +127,8 @@ class InMemoryMessageReceiverTest {
       from,
       to,
       Optional.empty(),
-      4L
+      4L,
+      List.of()
     );
     WireMessage extraWireMessage = createWireMessage(from, to, extraMessage);
     boolean enqueued = receiver.enqueue(extraWireMessage, Duration.ofMillis(10));
@@ -141,7 +147,8 @@ class InMemoryMessageReceiverTest {
       from,
       to,
       Optional.empty(),
-      4L
+      4L,
+      List.of()
     );
 
     WireMessage wireMessage = createWireMessage(from, to, message);

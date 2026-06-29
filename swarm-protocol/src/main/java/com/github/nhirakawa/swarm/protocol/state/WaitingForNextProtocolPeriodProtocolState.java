@@ -7,12 +7,13 @@ import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import com.github.nhirakawa.swarm.protocol.util.Jitter;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// todo(nhirakawa) document this
+// TODO - Document this
 public class WaitingForNextProtocolPeriodProtocolState
   extends SwarmProtocolState {
 
@@ -42,6 +43,8 @@ public class WaitingForNextProtocolPeriodProtocolState
 
     SwarmAddress pingTarget = context().memberRegistry().getPingTarget();
 
+    List<MemberStatus> gossip = context().memberRegistry().getGossipPayload(3);
+
     SwarmProtocolState newState = new WaitingForAckProtocolState(
         context().next(),
       pingTarget
@@ -51,7 +54,8 @@ public class WaitingForNextProtocolPeriodProtocolState
         context().swarmConfig().getLocalAddress(),
       pingTarget,
       Optional.empty(),
-      context().protocolPeriodId()
+      context().protocolPeriodId(),
+      gossip
     );
 
     Transition transition = Transition

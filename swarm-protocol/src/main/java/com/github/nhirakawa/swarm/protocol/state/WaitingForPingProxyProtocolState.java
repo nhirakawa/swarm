@@ -9,7 +9,7 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// todo(nhirakawa) document this
+// TODO - Document this
 public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
 
   private static final Logger LOG = LogManager.getLogger(
@@ -52,47 +52,41 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
       context()
     );
 
+    // TODO - Mark `pingTarget` as suspected
+
     Transition transition = Transition
       .builder()
       .setNextSwarmProtocolState(nextSwarmProtocolState)
-      //      .setMemberStatusUpdate(
-      //        MemberStatusUpdate
-      //          .builder()
-      //          .setIncarnationNumber(-1)
-      //          .setNewMemberStatus(MemberStatus.SUSPECTED)
-      //          .setSwarmNode(pingTarget)
-      //          .build()
-      //      )
       .build();
 
     return Optional.of(transition);
   }
 
   @Override
-  public Optional<Transition> applyPingAck(PingAck pingAckMessage) {
-    if (pingAckMessage.proxyFor().isEmpty()) {
-      LOG.warn("Expected proxy-for but did not find one - {}", pingAckMessage);
+  public Optional<Transition> applyPingAck(PingAck pingAck) {
+    if (pingAck.proxyFor().isEmpty()) {
+      LOG.warn("Expected proxy-for but did not find one - {}", pingAck);
 
       return Optional.empty();
     }
 
-    if (!pingAckMessage.proxyFor().get().equals(pingTarget)) {
+    if (!pingAck.proxyFor().get().equals(pingTarget)) {
       LOG.warn(
         "Expected proxy-for to be {} but was {} - {}",
-        pingAckMessage.proxyFor().get(),
+        pingAck.proxyFor().get(),
         pingTarget,
-        pingAckMessage
+        pingAck
       );
 
       return Optional.empty();
     }
 
-    if (!proxyTargets.contains(pingAckMessage.source())) {
+    if (!proxyTargets.contains(pingAck.source())) {
       LOG.warn(
         "{} was not one of the expected proxy targets ({}) - {}",
-        pingAckMessage.source(),
+        pingAck.source(),
         proxyTargets,
-        pingAckMessage
+        pingAck
       );
 
       return Optional.empty();
@@ -100,8 +94,12 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
 
     context().memberRegistry().put(
         pingTarget,
-        MemberStatus.alive(pingTarget, pingAckMessage.incarnation())
+        MemberStatus.alive(pingTarget, pingAck.incarnation())
     );
+
+    for (MemberStatus memberStatus : pingAck.gossip()) {
+      context().memberRegistry().put(memberStatus.address(), memberStatus);
+    }
 
     SwarmProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(
       context()
@@ -111,14 +109,6 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
       Transition
         .builder()
         .setNextSwarmProtocolState(nextState)
-        //        .setMemberStatusUpdate(
-        //          MemberStatusUpdate
-        //            .builder()
-        //            .setNewMemberStatus(MemberStatus.ALIVE)
-        //            .setSwarmNode(pingTarget)
-        //            .setIncarnationNumber(1L)
-        //            .build()
-        //        )
         .build()
     );
   }

@@ -51,11 +51,17 @@ public abstract class SwarmProtocolState {
             MemberStatus.alive(pingRequest.source(), 0)
         );
 
+    for (MemberStatus memberStatus : pingRequest.gossip()) {
+      context.memberRegistry().put(memberStatus.address(), memberStatus);
+    }
+
+    List<MemberStatus> gossip = context.memberRegistry().getGossipPayload(3);
+
     return Optional.of(
         Transition
             .builder()
             .setNextSwarmProtocolState(this)
-            .addResponsesToSend(new PingAck(context.swarmConfig().getLocalAddress(), pingRequest.source(), Optional.empty(), ThreadLocalRandom.current().nextLong(), context.incarnation()))
+            .addResponsesToSend(new PingAck(context.swarmConfig().getLocalAddress(), pingRequest.source(), Optional.empty(), ThreadLocalRandom.current().nextLong(), context.incarnation(), gossip))
             .build()
     );
   }

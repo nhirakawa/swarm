@@ -6,6 +6,7 @@ import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
@@ -82,7 +83,8 @@ class InMemoryTransportTest {
         address1,
       address2,
       Optional.empty(),
-      4L
+      4L,
+      List.of()
     );
 
     transport1.sender().send(response, Duration.ofMillis(10));
@@ -107,13 +109,13 @@ class InMemoryTransportTest {
 
     // Node 1 -> Node 2
     transport1.sender().send(
-        new PingRequest(address1, address2, Optional.empty(), 4L),
+        new PingRequest(address1, address2, Optional.empty(), 4L, List.of()),
         Duration.ofMillis(10)
       );
 
     // Node 2 -> Node 1
     transport2.sender().send(
-        new PingRequest(address2, address1, Optional.empty(), 4L),
+        new PingRequest(address2, address1, Optional.empty(), 4L, List.of()),
         Duration.ofMillis(10)
       );
 

@@ -11,6 +11,7 @@ import com.github.nhirakawa.swarm.protocol.transport.mem.InMemorySwarmAddress;
 import com.google.common.base.Stopwatch;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,7 +85,8 @@ public class WaitingForAckProtocolStateTest {
         LOCAL,
         Optional.empty(),
         protocolState.context().protocolPeriodId(),
-        0L
+        0L,
+        List.of()
       )
     );
 

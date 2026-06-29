@@ -22,7 +22,7 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// todo(nhirakawa) - document this
+// TODO - Document this
 @ThreadSafe
 public class SwarmStateMachine extends AbstractExecutionThreadService {
 

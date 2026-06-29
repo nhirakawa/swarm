@@ -8,6 +8,7 @@ import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
@@ -50,7 +51,8 @@ class InMemoryMessageSenderTest {
         senderAddress,
       receiverAddress,
       Optional.empty(),
-      4L
+      4L,
+      List.of()
     );
 
     sender.send(response, Duration.ofMillis(10));
@@ -77,7 +79,8 @@ class InMemoryMessageSenderTest {
         senderAddress,
       receiverAddress,
       Optional.of(proxyAddress),
-      4L
+      4L,
+      List.of()
     );
 
     sender.send(response, Duration.ofMillis(10));
@@ -102,7 +105,8 @@ class InMemoryMessageSenderTest {
       receiverAddress,
       Optional.empty(),
       4L,
-      0L
+      0L,
+      List.of()
     );
 
     sender.send(response, Duration.ofMillis(10));
@@ -129,7 +133,8 @@ class InMemoryMessageSenderTest {
       receiverAddress,
       Optional.of(proxyAddress),
       4L,
-      0L
+      0L,
+      List.of()
     );
 
     sender.send(response, Duration.ofMillis(10));
@@ -154,7 +159,8 @@ class InMemoryMessageSenderTest {
         senderAddress,
       nonExistentAddress,
       Optional.empty(),
-      4L
+      4L,
+      List.of()
     );
 
     // Should not throw, just log warning

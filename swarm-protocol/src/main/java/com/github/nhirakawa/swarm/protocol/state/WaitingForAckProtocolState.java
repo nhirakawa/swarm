@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-// todo(nhirakawa) document this
+// TODO - Document this
 public class WaitingForAckProtocolState extends SwarmProtocolState {
 
   private static final Logger LOG = LogManager.getLogger(WaitingForAckProtocolState.class);
@@ -46,6 +46,8 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
       pingTarget
     );
 
+    List<MemberStatus> gossip = context().memberRegistry().getGossipPayload(3);
+
     List<StateMachineMessage> responses = failureSubGroup
       .stream()
       .map(swarmNode ->
@@ -53,7 +55,8 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
             context().swarmConfig().getLocalAddress(),
             swarmNode,
             Optional.of(pingTarget),
-            context().protocolPeriodId()
+            context().protocolPeriodId(),
+            gossip
         )
       )
       .collect(ImmutableList.toImmutableList());
@@ -84,6 +87,10 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
         pingAck.source(),
         MemberStatus.alive(pingAck.source(), pingAck.incarnation())
     );
+
+    for (MemberStatus memberStatus : pingAck.gossip()) {
+      context().memberRegistry().put(memberStatus.address(), memberStatus);
+    }
 
     WaitingForNextProtocolPeriodProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(context().next());
 
