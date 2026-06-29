@@ -2,6 +2,7 @@ package com.github.nhirakawa.swarm.protocol.transport.mem;
 
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.github.nhirakawa.swarm.protocol.model.SwarmMessageType;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryResponse;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
@@ -9,7 +10,11 @@ import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -30,12 +35,25 @@ public class InMemoryMessageReceiver implements SwarmMessageReceiver {
     InMemoryMessageReceiver.class
   );
 
+  private static final int MAX_SEEN_MESSAGES = 10_000;
+
   private final BlockingQueue<StateMachineMessage> inboundQueue;
   private final ObjectReader objectReader;
+  private final Set<MessageKey> seenMessages;
 
   public InMemoryMessageReceiver(int queueCapacity, ObjectReader objectReader) {
     this.inboundQueue = new LinkedBlockingQueue<>(queueCapacity);
     this.objectReader = objectReader;
+    this.seenMessages = Collections.newSetFromMap(
+      Collections.synchronizedMap(
+        new LinkedHashMap<>(MAX_SEEN_MESSAGES, 0.75f, false) {
+          @Override
+          protected boolean removeEldestEntry(Map.Entry<MessageKey, Boolean> eldest) {
+            return size() > MAX_SEEN_MESSAGES;
+          }
+        }
+      )
+    );
   }
 
   @Override
@@ -72,6 +90,16 @@ public class InMemoryMessageReceiver implements SwarmMessageReceiver {
    */
   boolean enqueue(WireMessage wireMessage, Duration timeout)
     throws InterruptedException {
+    MessageKey key = new MessageKey(wireMessage.source(), wireMessage.header().messageId());
+    if (!seenMessages.add(key)) {
+      LOG.debug(
+        "Dropping duplicate message {} from {}",
+        wireMessage.header().messageId(),
+        wireMessage.source().asString()
+      );
+      return false;
+    }
+
     try {
       // Deserialize payload based on message type in header
       StateMachineMessage message = deserializePayload(
@@ -130,4 +158,6 @@ public class InMemoryMessageReceiver implements SwarmMessageReceiver {
   int queueSize() {
     return inboundQueue.size();
   }
+
+  private record MessageKey(SwarmAddress source, long messageId) {}
 }

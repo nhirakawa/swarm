@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ class InMemoryMessageReceiverTest {
 
   private InMemoryMessageReceiver receiver;
   private static final int QUEUE_CAPACITY = 10;
+  private final AtomicLong messageIdCounter = new AtomicLong(0);
 
   @BeforeEach
   void setUp() {
@@ -173,7 +175,7 @@ class InMemoryMessageReceiverTest {
         .compression(Compression.NONE)
         .serialization(Serialization.JSON)
         .payloadLength(payloadBytes.length)
-        .messageId(1L)
+        .messageId(messageIdCounter.incrementAndGet())
         .timestamp(System.currentTimeMillis())
         .checksum(0L)
         .build();
