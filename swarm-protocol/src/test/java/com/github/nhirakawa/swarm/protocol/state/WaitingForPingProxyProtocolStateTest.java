@@ -7,6 +7,7 @@ import com.github.nhirakawa.swarm.protocol.fake.FakeTicker;
 import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.transport.mem.InMemorySwarmAddress;
 import com.google.common.base.Stopwatch;
 import java.time.Duration;
@@ -105,5 +106,19 @@ public class WaitingForPingProxyProtocolStateTest {
     );
 
     assertThat(transition).isEmpty();
+  }
+
+  @Test
+  public void itSendsRefutationPingsWhenSelfIsSuspectedInProxyAck() {
+    Optional<Transition> transition = protocolState.applyPingAck(
+      new PingAck(OTHER_1, LOCAL, Optional.of(TARGET), 4L, 0L,
+          List.of(MemberStatus.suspected(LOCAL, 1L)))
+    );
+
+    assertThat(transition).isPresent();
+    assertThat(transition.get().getResponsesToSend())
+      .hasSize(SWARM_CONFIG.getFailureSubGroup())
+      .allMatch(m -> m instanceof PingRequest);
+    assertThat(protocolState.context().incarnation()).isEqualTo(2L);
   }
 }

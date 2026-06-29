@@ -3,7 +3,9 @@ package com.github.nhirakawa.swarm.protocol.state;
 import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import com.google.common.collect.ImmutableSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -101,6 +103,7 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
       context().memberRegistry().put(memberStatus.address(), memberStatus);
     }
 
+    List<StateMachineMessage> refutations = buildRefutationPings(pingAck.gossip());
     SwarmProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(
       context()
     );
@@ -109,6 +112,7 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
       Transition
         .builder()
         .setNextSwarmProtocolState(nextState)
+        .addAllResponsesToSend(refutations)
         .build()
     );
   }

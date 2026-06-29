@@ -7,6 +7,7 @@ import com.github.nhirakawa.swarm.protocol.fake.FakeTicker;
 import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.transport.mem.InMemorySwarmAddress;
 import com.google.common.base.Stopwatch;
 
@@ -95,5 +96,65 @@ public class WaitingForAckProtocolStateTest {
     assertThat(transition.get().getNextSwarmProtocolState())
       .isInstanceOf(WaitingForNextProtocolPeriodProtocolState.class);
     assertThat(transition.get().getResponsesToSend()).isEmpty();
+  }
+
+  @Test
+  public void itSendsRefutationPingsWhenSelfIsSuspectedInAck() {
+    Optional<Transition> transition = protocolState.applyPingAck(
+      new PingAck(
+        PING_TARGET,
+        LOCAL,
+        Optional.empty(),
+        protocolState.context().protocolPeriodId(),
+        0L,
+        List.of(MemberStatus.suspected(LOCAL, 1L))
+      )
+    );
+
+    assertThat(transition).isPresent();
+    assertThat(transition.get().getResponsesToSend())
+      .hasSize(SWARM_CONFIG.getFailureSubGroup())
+      .allMatch(m -> m instanceof PingRequest);
+    assertThat(protocolState.context().incarnation()).isEqualTo(2L);
+  }
+
+  @Test
+  public void itDoesNotSendRefutationPingsWhenAnotherNodeIsSuspectedInAck() {
+    Optional<Transition> transition = protocolState.applyPingAck(
+      new PingAck(
+        PING_TARGET,
+        LOCAL,
+        Optional.empty(),
+        protocolState.context().protocolPeriodId(),
+        0L,
+        List.of(MemberStatus.suspected(OTHER_NODE_1, 1L))
+      )
+    );
+
+    assertThat(transition).isPresent();
+    assertThat(transition.get().getResponsesToSend()).isEmpty();
+    assertThat(protocolState.context().incarnation()).isEqualTo(1L);
+  }
+
+  @Test
+  public void itSendsRefutationPingsWhenSelfIsSuspectedInPing() {
+    Optional<Transition> transition = protocolState.applyPing(
+      new PingRequest(
+        PING_TARGET,
+        LOCAL,
+        Optional.empty(),
+        4L,
+        List.of(MemberStatus.suspected(LOCAL, 1L))
+      )
+    );
+
+    assertThat(transition).isPresent();
+    // responses: 1 PingAck + failureSubGroup refutation PingRequests
+    assertThat(transition.get().getResponsesToSend())
+      .hasSize(1 + SWARM_CONFIG.getFailureSubGroup());
+    assertThat(transition.get().getResponsesToSend())
+      .anyMatch(m -> m instanceof PingAck)
+      .anyMatch(m -> m instanceof PingRequest);
+    assertThat(protocolState.context().incarnation()).isEqualTo(2L);
   }
 }

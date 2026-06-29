@@ -1,13 +1,16 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
 import com.github.nhirakawa.swarm.protocol.model.Transition;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryResponse;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
+import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.logging.log4j.LogManager;
@@ -55,6 +58,7 @@ public abstract class SwarmProtocolState {
       context.memberRegistry().put(memberStatus.address(), memberStatus);
     }
 
+    List<StateMachineMessage> refutations = buildRefutationPings(pingRequest.gossip());
     List<MemberStatus> gossip = context.memberRegistry().getGossipPayload(3);
 
     return Optional.of(
@@ -62,8 +66,38 @@ public abstract class SwarmProtocolState {
             .builder()
             .setNextSwarmProtocolState(this)
             .addResponsesToSend(new PingAck(context.swarmConfig().getLocalAddress(), pingRequest.source(), Optional.empty(), ThreadLocalRandom.current().nextLong(), context.incarnation(), gossip))
+            .addAllResponsesToSend(refutations)
             .build()
     );
+  }
+
+  final List<StateMachineMessage> buildRefutationPings(List<MemberStatus> gossip) {
+    var self = context.swarmConfig().getLocalAddress();
+    boolean suspected = gossip.stream().anyMatch(s ->
+        s instanceof MemberStatus.Suspected && s.address().equals(self)
+            && s.incarnation() >= context.incarnation()
+    );
+    if (!suspected) {
+      return List.of();
+    }
+
+    context.incrementIncarnation();
+    long newIncarnation = context.incarnation();
+
+    List<MemberStatus> refuteGossip = new ArrayList<>();
+    refuteGossip.add(MemberStatus.alive(self, newIncarnation));
+    refuteGossip.addAll(context.memberRegistry().getGossipPayload(2));
+
+    Set<SwarmAddress> targets = context.memberRegistry().getFailureSubGroup(
+        context.swarmConfig().getFailureSubGroup(), self
+    );
+
+    return targets.stream()
+        .map(target -> (StateMachineMessage) new PingRequest(
+            self, target, Optional.empty(),
+            context.protocolPeriodId(), refuteGossip
+        ))
+        .toList();
   }
 
   Optional<Transition> applyPingAck(PingAck pingAck) {

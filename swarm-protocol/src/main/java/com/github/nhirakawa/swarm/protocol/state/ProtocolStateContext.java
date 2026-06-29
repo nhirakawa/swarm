@@ -5,12 +5,17 @@ import com.google.common.base.Stopwatch;
 
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 
 final class ProtocolStateContext {
 
 	private final SwarmConfig swarmConfig;
 	private final long protocolPeriodId;
-	private final long incarnation;
+	// AtomicLong is used here (interior mutability) so that a node can refute its
+	// own suspicion by bumping its incarnation mid-period without needing to
+	// reconstruct every state in the chain — all contexts derived via next() share
+	// the same AtomicLong instance.
+	private final AtomicLong incarnation;
 	private final Stopwatch stopwatch;
 	private final MemberRegistry memberRegistry;
 
@@ -18,6 +23,16 @@ final class ProtocolStateContext {
 			SwarmConfig swarmConfig,
 			long protocolPeriodId,
 			long incarnation,
+			Stopwatch stopwatch,
+			MemberRegistry memberRegistry
+	) {
+		this(swarmConfig, protocolPeriodId, new AtomicLong(incarnation), stopwatch, memberRegistry);
+	}
+
+	private ProtocolStateContext(
+			SwarmConfig swarmConfig,
+			long protocolPeriodId,
+			AtomicLong incarnation,
 			Stopwatch stopwatch,
 			MemberRegistry memberRegistry
 	) {
@@ -47,7 +62,11 @@ final class ProtocolStateContext {
 	}
 
 	long incarnation() {
-		return incarnation;
+		return incarnation.get();
+	}
+
+	void incrementIncarnation() {
+		incarnation.incrementAndGet();
 	}
 
 	Duration elapsed() {

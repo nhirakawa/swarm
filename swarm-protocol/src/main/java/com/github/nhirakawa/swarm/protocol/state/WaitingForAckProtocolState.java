@@ -92,11 +92,13 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
       context().memberRegistry().put(memberStatus.address(), memberStatus);
     }
 
+    List<StateMachineMessage> refutations = buildRefutationPings(pingAck.gossip());
     WaitingForNextProtocolPeriodProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(context().next());
 
     Transition transition = Transition
       .builder()
       .setNextSwarmProtocolState(nextState)
+      .addAllResponsesToSend(refutations)
       .build();
 
     return Optional.of(transition);
