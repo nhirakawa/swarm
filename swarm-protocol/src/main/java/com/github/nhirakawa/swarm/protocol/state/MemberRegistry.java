@@ -2,9 +2,12 @@ package com.github.nhirakawa.swarm.protocol.state;
 
 import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Stopwatch;
+import com.google.common.base.Ticker;
 import com.google.common.collect.ComparisonChain;
 
 import javax.annotation.concurrent.NotThreadSafe;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Optional;
 import java.util.ArrayList;
@@ -30,16 +33,24 @@ import java.util.stream.Collectors;
 @NotThreadSafe
 class MemberRegistry {
 
+  private final Ticker ticker;
   private final Map<SwarmAddress, Counted> registry = new HashMap<>();
   private final NavigableSet<Counted> sortedByGossipCount = new TreeSet<>();
   private final Queue<SwarmAddress> pingSequence = new ArrayDeque<>();
+  private final Map<SwarmAddress, Stopwatch> suspicionStopwatches = new HashMap<>();
 
   MemberRegistry() {
-    this(Set.of());
+    this(Set.of(), Ticker.systemTicker());
   }
 
   @VisibleForTesting
   MemberRegistry(Set<? extends SwarmAddress> initialGroup) {
+    this(initialGroup, Ticker.systemTicker());
+  }
+
+  @VisibleForTesting
+  MemberRegistry(Set<? extends SwarmAddress> initialGroup, Ticker ticker) {
+    this.ticker = ticker;
     for (SwarmAddress swarmAddress : initialGroup) {
       var memberStatus = MemberStatus.alive(swarmAddress, 0);
       var counted = Counted.initial(swarmAddress, memberStatus);
@@ -77,6 +88,27 @@ class MemberRegistry {
 
     if (oldCounted == null && memberStatus.isEligibleForPing()) {
       pingSequence.add(swarmAddress);
+    }
+
+    boolean wasAlreadySuspected = oldCounted != null && oldCounted.memberStatus() instanceof MemberStatus.Suspected;
+    boolean isNowSuspected = newCounted.memberStatus() instanceof MemberStatus.Suspected;
+
+    if (!wasAlreadySuspected && isNowSuspected) {
+      suspicionStopwatches.put(swarmAddress, Stopwatch.createStarted(ticker));
+    } else if (wasAlreadySuspected && !isNowSuspected) {
+      suspicionStopwatches.remove(swarmAddress);
+    }
+  }
+
+  void promoteExpiredSuspicions(Duration timeout) {
+    List<SwarmAddress> expired = suspicionStopwatches.entrySet().stream()
+        .filter(e -> e.getValue().elapsed().toNanos() >= timeout.toNanos())
+        .map(Map.Entry::getKey)
+        .toList();
+
+    for (SwarmAddress address : expired) {
+      long incarnation = get(address).map(MemberStatus::incarnation).orElse(0L);
+      put(address, MemberStatus.confirmed(address, incarnation));
     }
   }
 

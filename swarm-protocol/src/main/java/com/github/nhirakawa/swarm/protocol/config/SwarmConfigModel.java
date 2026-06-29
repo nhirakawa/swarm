@@ -26,6 +26,11 @@ public abstract class SwarmConfigModel {
   public abstract int getFailureSubGroup();
 
   @Value.Default
+  public Duration getSuspicionTimeout() {
+    return Duration.ofMillis(getProtocolPeriod().toMillis() * 3);
+  }
+
+  @Value.Default
   public Duration getProtocolPeriodJitter() {
     return Duration.ofMillis(getProtocolPeriod().toMillis() / 10);
   }

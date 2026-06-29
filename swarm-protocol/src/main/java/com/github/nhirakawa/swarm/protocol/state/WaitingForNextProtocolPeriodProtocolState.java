@@ -41,6 +41,10 @@ public class WaitingForNextProtocolPeriodProtocolState
 
     LOG.debug("Current protocol period has ended");
 
+    context().memberRegistry().promoteExpiredSuspicions(
+        context().swarmConfig().getSuspicionTimeout()
+    );
+
     SwarmAddress pingTarget = context().memberRegistry().getPingTarget();
 
     List<MemberStatus> gossip = context().memberRegistry().getGossipPayload(3);

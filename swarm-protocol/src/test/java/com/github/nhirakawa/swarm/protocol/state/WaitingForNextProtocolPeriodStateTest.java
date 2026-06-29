@@ -87,4 +87,42 @@ public class WaitingForNextProtocolPeriodStateTest {
 
     assertThat(transition).isEmpty();
   }
+
+  @Test
+  public void itPromotesSuspectedNodeToConfirmedAfterTimeout() {
+    SwarmConfig shortConfig = SwarmConfig
+        .builder()
+        .setLocalAddress(LOCAL)
+        .setMulticastAddress(new InMemorySwarmAddress("MULTICAST"))
+        .setProtocolPeriod(Duration.ofMillis(50))
+        .setProtocolTick(Duration.ofMillis(10))
+        .setMessageTimeout(Duration.ofMillis(20))
+        .setFailureSubGroup(1)
+        .setSuspicionTimeout(Duration.ofMillis(100))
+        .build();
+
+    FakeTicker shortTicker = new FakeTicker();
+    MemberRegistry registry = new MemberRegistry(Set.of(OTHER), shortTicker);
+    registry.put(OTHER, MemberStatus.suspected(OTHER, 0L));
+
+    WaitingForNextProtocolPeriodProtocolState state = new WaitingForNextProtocolPeriodProtocolState(
+        new ProtocolStateContext(
+            shortConfig,
+            4L,
+            1L,
+            Stopwatch.createStarted(shortTicker),
+            registry
+        )
+    );
+
+    // Advance past both the suspicion timeout and the protocol period
+    shortTicker.write(shortConfig.getSuspicionTimeout().toNanos() + 1);
+
+    state.applyTick();
+
+    assertThat(registry.get(OTHER))
+        .isPresent()
+        .get()
+        .isInstanceOf(MemberStatus.Confirmed.class);
+  }
 }
