@@ -8,6 +8,7 @@ import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryResponse;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
+import com.github.nhirakawa.swarm.protocol.transport.SwarmMessageReceiver;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
@@ -19,8 +20,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.concurrent.ThreadSafe;
-
-import com.github.nhirakawa.swarm.protocol.transport.SwarmMessageReceiver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,133 +30,135 @@ import org.apache.logging.log4j.Logger;
 @ThreadSafe
 public class InMemoryMessageReceiver implements SwarmMessageReceiver {
 
-  private static final Logger LOG = LogManager.getLogger(
-    InMemoryMessageReceiver.class
-  );
+	private static final Logger LOG = LogManager.getLogger(
+		InMemoryMessageReceiver.class
+	);
 
-  private static final int MAX_SEEN_MESSAGES = 10_000;
+	private static final int MAX_SEEN_MESSAGES = 10_000;
 
-  private final BlockingQueue<StateMachineMessage> inboundQueue;
-  private final ObjectReader objectReader;
-  private final Set<MessageKey> seenMessages;
+	private final BlockingQueue<StateMachineMessage> inboundQueue;
+	private final ObjectReader objectReader;
+	private final Set<MessageKey> seenMessages;
 
-  public InMemoryMessageReceiver(int queueCapacity, ObjectReader objectReader) {
-    this.inboundQueue = new LinkedBlockingQueue<>(queueCapacity);
-    this.objectReader = objectReader;
-    this.seenMessages = Collections.newSetFromMap(
-      Collections.synchronizedMap(
-        new LinkedHashMap<>(MAX_SEEN_MESSAGES, 0.75f, false) {
-          @Override
-          protected boolean removeEldestEntry(Map.Entry<MessageKey, Boolean> eldest) {
-            return size() > MAX_SEEN_MESSAGES;
-          }
-        }
-      )
-    );
-  }
+	public InMemoryMessageReceiver(int queueCapacity, ObjectReader objectReader) {
+		this.inboundQueue = new LinkedBlockingQueue<>(queueCapacity);
+		this.objectReader = objectReader;
+		this.seenMessages = Collections.newSetFromMap(
+			Collections.synchronizedMap(
+				new LinkedHashMap<>(MAX_SEEN_MESSAGES, 0.75f, false) {
+					@Override
+					protected boolean removeEldestEntry(
+						Map.Entry<MessageKey, Boolean> eldest
+					) {
+						return size() > MAX_SEEN_MESSAGES;
+					}
+				}
+			)
+		);
+	}
 
-  @Override
-  public Optional<StateMachineMessage> receive(Duration timeout) {
-    try {
-      StateMachineMessage message = inboundQueue.poll(
-        timeout.toNanos(),
-        TimeUnit.NANOSECONDS
-      );
-      if (message != null) {
-        LOG.trace(
-          "Received {} source {}",
-          message.getClass().getSimpleName(),
-          message.source().asString()
-        );
-      }
-      return Optional.ofNullable(message);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      LOG.warn("Interrupted while waiting for message", e);
-      return Optional.empty();
-    }
-  }
+	@Override
+	public Optional<StateMachineMessage> receive(Duration timeout) {
+		try {
+			StateMachineMessage message = inboundQueue.poll(
+				timeout.toNanos(),
+				TimeUnit.NANOSECONDS
+			);
+			if (message != null) {
+				LOG.trace(
+					"Received {} source {}",
+					message.getClass().getSimpleName(),
+					message.source().asString()
+				);
+			}
+			return Optional.ofNullable(message);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			LOG.warn("Interrupted while waiting for message", e);
+			return Optional.empty();
+		}
+	}
 
-  /**
-   * Enqueue an inbound wire message with a timeout.
-   * Called by NetworkSimulator when delivering messages.
-   * Deserializes the wire message payload and enqueues it.
-   *
-   * @param wireMessage the wire message to enqueue
-   * @param timeout how long to wait if the queue is full
-   * @return true if the message was enqueued, false if timeout expired
-   * @throws InterruptedException if interrupted while waiting
-   */
-  boolean enqueue(WireMessage wireMessage, Duration timeout)
-    throws InterruptedException {
-    MessageKey key = new MessageKey(wireMessage.source(), wireMessage.header().messageId());
-    if (!seenMessages.add(key)) {
-      LOG.debug(
-        "Dropping duplicate message {} from {}",
-        wireMessage.header().messageId(),
-        wireMessage.source().asString()
-      );
-      return false;
-    }
+	/**
+	 * Enqueue an inbound wire message with a timeout.
+	 * Called by NetworkSimulator when delivering messages.
+	 * Deserializes the wire message payload and enqueues it.
+	 *
+	 * @param wireMessage the wire message to enqueue
+	 * @param timeout how long to wait if the queue is full
+	 * @return true if the message was enqueued, false if timeout expired
+	 * @throws InterruptedException if interrupted while waiting
+	 */
+	boolean enqueue(WireMessage wireMessage, Duration timeout)
+		throws InterruptedException {
+		MessageKey key = new MessageKey(
+			wireMessage.source(),
+			wireMessage.header().messageId()
+		);
+		if (!seenMessages.add(key)) {
+			LOG.debug(
+				"Dropping duplicate message {} from {}",
+				wireMessage.header().messageId(),
+				wireMessage.source().asString()
+			);
+			return false;
+		}
 
-    try {
-      // Deserialize payload based on message type in header
-      StateMachineMessage message = deserializePayload(
-        wireMessage.payload(),
-        wireMessage.header().type()
-      );
+		try {
+			// Deserialize payload based on message type in header
+			StateMachineMessage message = deserializePayload(
+				wireMessage.payload(),
+				wireMessage.header().type()
+			);
 
-      boolean offered = inboundQueue.offer(
-        message,
-        timeout.toNanos(),
-        TimeUnit.NANOSECONDS
-      );
-      if (!offered) {
-        LOG.error(
-          "Failed to enqueue message after timeout, queue is full. Message: {}",
-          message
-        );
-      }
-      return offered;
-    } catch (IOException e) {
-      LOG.error("Failed to deserialize message", e);
-      throw new RuntimeException("Failed to deserialize message", e);
-    }
-  }
+			boolean offered = inboundQueue.offer(
+				message,
+				timeout.toNanos(),
+				TimeUnit.NANOSECONDS
+			);
+			if (!offered) {
+				LOG.error(
+					"Failed to enqueue message after timeout, queue is full. Message: {}",
+					message
+				);
+			}
+			return offered;
+		} catch (IOException e) {
+			LOG.error("Failed to deserialize message", e);
+			throw new RuntimeException("Failed to deserialize message", e);
+		}
+	}
 
-  private StateMachineMessage deserializePayload(
-    byte[] payloadBytes,
-    SwarmMessageType messageType
-  ) throws IOException {
-    return switch (messageType) {
-      case PING_REQUEST -> objectReader.readValue(
-        payloadBytes,
-        PingRequest.class
-      );
-      case PING_ACK -> objectReader.readValue(
-        payloadBytes,
-        PingAck.class
-      );
-      case DISCOVERY_REQUEST -> objectReader.readValue(
-        payloadBytes,
-        DiscoveryRequest.class
-      );
-      case DISCOVERY_RESPONSE -> objectReader.readValue(
-        payloadBytes,
-        DiscoveryResponse.class
-      );
-    };
-  }
+	private StateMachineMessage deserializePayload(
+		byte[] payloadBytes,
+		SwarmMessageType messageType
+	) throws IOException {
+		return switch (messageType) {
+			case PING_REQUEST -> objectReader.readValue(
+				payloadBytes,
+				PingRequest.class
+			);
+			case PING_ACK -> objectReader.readValue(payloadBytes, PingAck.class);
+			case DISCOVERY_REQUEST -> objectReader.readValue(
+				payloadBytes,
+				DiscoveryRequest.class
+			);
+			case DISCOVERY_RESPONSE -> objectReader.readValue(
+				payloadBytes,
+				DiscoveryResponse.class
+			);
+		};
+	}
 
-  /**
-   * Get the current queue size.
-   * Primarily useful for testing and monitoring.
-   *
-   * @return the number of messages in the queue
-   */
-  int queueSize() {
-    return inboundQueue.size();
-  }
+	/**
+	 * Get the current queue size.
+	 * Primarily useful for testing and monitoring.
+	 *
+	 * @return the number of messages in the queue
+	 */
+	int queueSize() {
+		return inboundQueue.size();
+	}
 
-  private record MessageKey(SwarmAddress source, long messageId) {}
+	private record MessageKey(SwarmAddress source, long messageId) {}
 }

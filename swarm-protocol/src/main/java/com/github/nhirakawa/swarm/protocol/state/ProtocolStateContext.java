@@ -3,7 +3,6 @@ package com.github.nhirakawa.swarm.protocol.state;
 import com.github.nhirakawa.swarm.protocol.SwarmTerminationCallback;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.google.common.base.Stopwatch;
-
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
@@ -22,23 +21,30 @@ final class ProtocolStateContext {
 	private final SwarmTerminationCallback terminationCallback;
 
 	ProtocolStateContext(
-			SwarmConfig swarmConfig,
-			long protocolPeriodId,
-			long incarnation,
-			Stopwatch stopwatch,
-			MemberRegistry memberRegistry,
-			SwarmTerminationCallback terminationCallback
+		SwarmConfig swarmConfig,
+		long protocolPeriodId,
+		long incarnation,
+		Stopwatch stopwatch,
+		MemberRegistry memberRegistry,
+		SwarmTerminationCallback terminationCallback
 	) {
-		this(swarmConfig, protocolPeriodId, new AtomicLong(incarnation), stopwatch, memberRegistry, terminationCallback);
+		this(
+			swarmConfig,
+			protocolPeriodId,
+			new AtomicLong(incarnation),
+			stopwatch,
+			memberRegistry,
+			terminationCallback
+		);
 	}
 
 	private ProtocolStateContext(
-			SwarmConfig swarmConfig,
-			long protocolPeriodId,
-			AtomicLong incarnation,
-			Stopwatch stopwatch,
-			MemberRegistry memberRegistry,
-			SwarmTerminationCallback terminationCallback
+		SwarmConfig swarmConfig,
+		long protocolPeriodId,
+		AtomicLong incarnation,
+		Stopwatch stopwatch,
+		MemberRegistry memberRegistry,
+		SwarmTerminationCallback terminationCallback
 	) {
 		this.swarmConfig = swarmConfig;
 		this.protocolPeriodId = protocolPeriodId;
@@ -50,12 +56,12 @@ final class ProtocolStateContext {
 
 	ProtocolStateContext next() {
 		return new ProtocolStateContext(
-				swarmConfig,
-				ThreadLocalRandom.current().nextLong(),
-				incarnation,
-				stopwatch.reset().start(),
-				memberRegistry,
-				terminationCallback
+			swarmConfig,
+			ThreadLocalRandom.current().nextLong(),
+			incarnation,
+			stopwatch.reset().start(),
+			memberRegistry,
+			terminationCallback
 		);
 	}
 

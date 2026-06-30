@@ -33,7 +33,10 @@ public class LocalSwarmModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	NetworkSimulator provideNetworkSimulator(InMemoryTransportRegistry registry, NetworkSimulationConfig networkSimulationConfig) {
+	NetworkSimulator provideNetworkSimulator(
+		InMemoryTransportRegistry registry,
+		NetworkSimulationConfig networkSimulationConfig
+	) {
 		return new NetworkSimulator(registry, networkSimulationConfig);
 	}
 
@@ -54,5 +57,4 @@ public class LocalSwarmModule extends AbstractModule {
 	ObjectWriter provideObjectWriter() {
 		return Json.writer();
 	}
-
 }

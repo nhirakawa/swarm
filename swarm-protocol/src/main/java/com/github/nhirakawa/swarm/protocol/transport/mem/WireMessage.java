@@ -8,8 +8,8 @@ import com.github.nhirakawa.swarm.protocol.model.header.MessageHeader;
  * Payload is serialized bytes ready for transmission.
  */
 record WireMessage(
-  SwarmAddress source,
-  SwarmAddress target,
-  MessageHeader header,
-  byte[] payload
+	SwarmAddress source,
+	SwarmAddress target,
+	MessageHeader header,
+	byte[] payload
 ) {}

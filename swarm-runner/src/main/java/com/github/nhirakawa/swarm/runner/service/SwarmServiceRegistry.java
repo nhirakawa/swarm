@@ -2,7 +2,6 @@ package com.github.nhirakawa.swarm.runner.service;
 
 import com.github.nhirakawa.swarm.protocol.SwarmService;
 import com.github.nhirakawa.swarm.protocol.state.StateSnapshot;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;

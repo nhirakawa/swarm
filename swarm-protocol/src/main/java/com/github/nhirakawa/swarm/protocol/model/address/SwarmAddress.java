@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 
 public interface SwarmAddress {
 	boolean isMulticastAddress();
+
 	@NonNull
 	String asString();
 }

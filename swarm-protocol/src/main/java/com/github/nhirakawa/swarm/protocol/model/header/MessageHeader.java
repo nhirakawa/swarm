@@ -17,22 +17,31 @@ import org.immutables.value.Value;
  */
 @Value.Builder
 public record MessageHeader(
-  MessageVersion messageVersion,
-  SwarmMessageType type,
-  Compression compression,
-  Serialization serialization,
-  int payloadLength,
-  long messageId,
-  long timestamp,
-  long checksum
+	MessageVersion messageVersion,
+	SwarmMessageType type,
+	Compression compression,
+	Serialization serialization,
+	int payloadLength,
+	long messageId,
+	long timestamp,
+	long checksum
 ) {
-  public static class Builder extends MessageHeaderBuilder {
-    @Override
-    public MessageHeader build() {
-      MessageHeader messageHeader = super.build();
-      Preconditions.checkState(messageHeader.payloadLength() >= 0, "payloadLength (%s) must be >= 0", messageHeader.payloadLength());
-      Preconditions.checkState(messageHeader.payloadLength() < 65535, "payloadLength (%s) must be < 65535", messageHeader.payloadLength());
-      return messageHeader;
-    }
-  }
+	public static class Builder extends MessageHeaderBuilder {
+
+		@Override
+		public MessageHeader build() {
+			MessageHeader messageHeader = super.build();
+			Preconditions.checkState(
+				messageHeader.payloadLength() >= 0,
+				"payloadLength (%s) must be >= 0",
+				messageHeader.payloadLength()
+			);
+			Preconditions.checkState(
+				messageHeader.payloadLength() < 65535,
+				"payloadLength (%s) must be < 65535",
+				messageHeader.payloadLength()
+			);
+			return messageHeader;
+		}
+	}
 }

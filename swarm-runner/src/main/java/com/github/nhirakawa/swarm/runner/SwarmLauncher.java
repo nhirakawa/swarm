@@ -7,18 +7,19 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import picocli.CommandLine;
 
-@CommandLine.Command (
-    subcommands = Local.class
-)
+@CommandLine.Command(subcommands = Local.class)
 public class SwarmLauncher {
 
-  SwarmLauncher() {}
+	SwarmLauncher() {}
 
-  static void main(String[] args) {
+	static void main(String[] args) {
 		//noinspection InstantiationOfUtilityClass
-		CommandLine commandLine = new CommandLine(new SwarmLauncher(), new GuiceFactory(buildInjector()));
-    System.exit(commandLine.execute(args));
-  }
+		CommandLine commandLine = new CommandLine(
+			new SwarmLauncher(),
+			new GuiceFactory(buildInjector())
+		);
+		System.exit(commandLine.execute(args));
+	}
 
 	private static Injector buildInjector() {
 		return Guice.createInjector(new LocalSwarmModule());

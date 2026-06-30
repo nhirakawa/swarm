@@ -14,9 +14,22 @@ public class SwarmStateMachineFactory {
 	@Inject
 	public SwarmStateMachineFactory() {}
 
-	public SwarmStateMachine create(SwarmConfig config, SwarmMessageReceiver receiver, SwarmMessageSender sender, SwarmTerminationCallback callback) {
-		SwarmStateMachine stateMachine = new SwarmStateMachine(config, receiver, sender, callback);
-		stateMachine.addListener(new LifecycleLogger(stateMachine), MoreExecutors.directExecutor());
+	public SwarmStateMachine create(
+		SwarmConfig config,
+		SwarmMessageReceiver receiver,
+		SwarmMessageSender sender,
+		SwarmTerminationCallback callback
+	) {
+		SwarmStateMachine stateMachine = new SwarmStateMachine(
+			config,
+			receiver,
+			sender,
+			callback
+		);
+		stateMachine.addListener(
+			new LifecycleLogger(stateMachine),
+			MoreExecutors.directExecutor()
+		);
 		return stateMachine;
 	}
 }

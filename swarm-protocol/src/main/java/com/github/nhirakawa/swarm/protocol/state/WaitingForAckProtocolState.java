@@ -1,106 +1,116 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
-import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import com.github.nhirakawa.swarm.protocol.util.Jitter;
 import com.google.common.collect.ImmutableList;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 // TODO - Document this
 public class WaitingForAckProtocolState extends SwarmProtocolState {
 
-  private static final Logger LOG = LogManager.getLogger(WaitingForAckProtocolState.class);
+	private static final Logger LOG = LogManager.getLogger(
+		WaitingForAckProtocolState.class
+	);
 
-  private final SwarmAddress pingTarget;
-  private final Duration jitteredMessageTimeout;
+	private final SwarmAddress pingTarget;
+	private final Duration jitteredMessageTimeout;
 
-  WaitingForAckProtocolState(
-      ProtocolStateContext context,
-    SwarmAddress pingTarget
-  ) {
-    super(context);
-    this.pingTarget = pingTarget;
-    this.jitteredMessageTimeout = Jitter.apply(
-      context.swarmConfig().getMessageTimeout(),
-      context.swarmConfig().getMessageTimeoutJitter()
-    );
-  }
+	WaitingForAckProtocolState(
+		ProtocolStateContext context,
+		SwarmAddress pingTarget
+	) {
+		super(context);
+		this.pingTarget = pingTarget;
+		this.jitteredMessageTimeout = Jitter.apply(
+			context.swarmConfig().getMessageTimeout(),
+			context.swarmConfig().getMessageTimeoutJitter()
+		);
+	}
 
-  @Override
-  public Optional<Transition> applyTick() {
-    if (context().elapsed().toNanos() < jitteredMessageTimeout.toNanos()) {
-      return Optional.empty();
-    }
+	@Override
+	public Optional<Transition> applyTick() {
+		if (context().elapsed().toNanos() < jitteredMessageTimeout.toNanos()) {
+			return Optional.empty();
+		}
 
-    Set<SwarmAddress> failureSubGroup = context().memberRegistry().getFailureSubGroup(
-      context().swarmConfig().getFailureSubGroup(),
-      pingTarget
-    );
+		Set<SwarmAddress> failureSubGroup = context()
+			.memberRegistry()
+			.getFailureSubGroup(
+				context().swarmConfig().getFailureSubGroup(),
+				pingTarget
+			);
 
-    List<MemberStatus> gossip = context().memberRegistry().getGossipPayload(3);
+		List<MemberStatus> gossip = context().memberRegistry().getGossipPayload(3);
 
-    List<StateMachineMessage> responses = failureSubGroup
-      .stream()
-      .map(swarmNode ->
-        new PingRequest(
-            context().swarmConfig().getLocalAddress(),
-            swarmNode,
-            Optional.of(pingTarget),
-            context().protocolPeriodId(),
-            gossip
-        )
-      )
-      .collect(ImmutableList.toImmutableList());
+		List<StateMachineMessage> responses = failureSubGroup
+			.stream()
+			.map(swarmNode ->
+				new PingRequest(
+					context().swarmConfig().getLocalAddress(),
+					swarmNode,
+					Optional.of(pingTarget),
+					context().protocolPeriodId(),
+					gossip
+				)
+			)
+			.collect(ImmutableList.toImmutableList());
 
-    SwarmProtocolState nextState = new WaitingForPingProxyProtocolState(
-      context(),
-      pingTarget,
-      failureSubGroup
-    );
+		SwarmProtocolState nextState = new WaitingForPingProxyProtocolState(
+			context(),
+			pingTarget,
+			failureSubGroup
+		);
 
-    return Optional.of(
-      Transition
-        .builder()
-        .setNextSwarmProtocolState(nextState)
-        .addAllResponsesToSend(responses)
-        .build()
-    );
-  }
+		return Optional.of(
+			Transition.builder()
+				.setNextSwarmProtocolState(nextState)
+				.addAllResponsesToSend(responses)
+				.build()
+		);
+	}
 
-  @Override
-  public Optional<Transition> applyPingAck(PingAck pingAck) {
-    if (!pingAck.source().equals(pingTarget)) {
-      LOG.debug("Received ACK source {}, expecting ACK source {}", pingAck.source(), pingTarget);
-      return Optional.empty();
-    }
+	@Override
+	public Optional<Transition> applyPingAck(PingAck pingAck) {
+		if (!pingAck.source().equals(pingTarget)) {
+			LOG.debug(
+				"Received ACK source {}, expecting ACK source {}",
+				pingAck.source(),
+				pingTarget
+			);
+			return Optional.empty();
+		}
 
-    context().memberRegistry().put(
-        pingAck.source(),
-        MemberStatus.alive(pingAck.source(), pingAck.incarnation())
-    );
+		context()
+			.memberRegistry()
+			.put(
+				pingAck.source(),
+				MemberStatus.alive(pingAck.source(), pingAck.incarnation())
+			);
 
-    for (MemberStatus memberStatus : pingAck.gossip()) {
-      context().memberRegistry().put(memberStatus.address(), memberStatus);
-    }
+		for (MemberStatus memberStatus : pingAck.gossip()) {
+			context().memberRegistry().put(memberStatus.address(), memberStatus);
+		}
 
-    List<StateMachineMessage> refutations = buildRefutationPings(pingAck.gossip());
-    WaitingForNextProtocolPeriodProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(context().next());
+		List<StateMachineMessage> refutations = buildRefutationPings(
+			pingAck.gossip()
+		);
+		WaitingForNextProtocolPeriodProtocolState nextState =
+			new WaitingForNextProtocolPeriodProtocolState(context().next());
 
-    Transition transition = Transition
-      .builder()
-      .setNextSwarmProtocolState(nextState)
-      .addAllResponsesToSend(refutations)
-      .build();
+		Transition transition = Transition.builder()
+			.setNextSwarmProtocolState(nextState)
+			.addAllResponsesToSend(refutations)
+			.build();
 
-    return Optional.of(transition);
-  }
+		return Optional.of(transition);
+	}
 }

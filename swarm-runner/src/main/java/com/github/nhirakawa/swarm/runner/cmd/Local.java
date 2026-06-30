@@ -16,10 +16,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.io.Resources;
 import com.hubspot.jinjava.Jinjava;
 import jakarta.inject.Inject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import picocli.CommandLine;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -31,13 +27,21 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import picocli.CommandLine;
 
 @CommandLine.Command(name = "local")
 public class Local implements Callable<Integer> {
 
 	private static final Logger LOG = LogManager.getLogger(Local.class);
 
-	@CommandLine.Option(names = {"--config"}, paramLabel = "CONFIG", description = "The path to the config file", required = true)
+	@CommandLine.Option(
+		names = { "--config" },
+		paramLabel = "CONFIG",
+		description = "The path to the config file",
+		required = true
+	)
 	private String configFilePath;
 
 	private final NetworkSimulator networkSimulator;
@@ -45,7 +49,11 @@ public class Local implements Callable<Integer> {
 	private final Jinjava jinjava;
 
 	@Inject
-	Local(NetworkSimulator networkSimulator, SwarmServiceFactory swarmServiceFactory, Jinjava jinjava) {
+	Local(
+		NetworkSimulator networkSimulator,
+		SwarmServiceFactory swarmServiceFactory,
+		Jinjava jinjava
+	) {
 		this.networkSimulator = networkSimulator;
 		this.swarmServiceFactory = swarmServiceFactory;
 		this.jinjava = jinjava;
@@ -66,13 +74,22 @@ public class Local implements Callable<Integer> {
 			swarmService.startAsync();
 		}
 
-		Optional<AdminService> adminService = createAndStartAdminService(config.getAdminConfig(), registry, config);
+		Optional<AdminService> adminService = createAndStartAdminService(
+			config.getAdminConfig(),
+			registry,
+			config
+		);
 
-		ServiceObserver serviceObserver = new ServiceObserver(registry.toList(), adminService);
+		ServiceObserver serviceObserver = new ServiceObserver(
+			registry.toList(),
+			adminService
+		);
 
 		serviceObserver.startAsync().awaitRunning(Duration.ofSeconds(5));
 
-		Runtime.getRuntime().addShutdownHook(new Thread(serviceObserver::stopAsync));
+		Runtime.getRuntime().addShutdownHook(
+			new Thread(serviceObserver::stopAsync)
+		);
 
 		serviceObserver.awaitTerminated();
 
@@ -90,14 +107,25 @@ public class Local implements Callable<Integer> {
 		}
 	}
 
-	private LocalSwarmConfig readConfigFileFromClasspath(String resourcesPath) throws IOException {
-		try (InputStream inputStream = Resources.getResource(resourcesPath).openStream()) {
+	private LocalSwarmConfig readConfigFileFromClasspath(String resourcesPath)
+		throws IOException {
+		try (
+			InputStream inputStream = Resources.getResource(
+				resourcesPath
+			).openStream()
+		) {
 			return Json.reader().readValue(inputStream, LocalSwarmConfig.class);
 		}
 	}
 
-	private LocalSwarmConfig readConfigFileFromFileSystem(String configFilePath)  throws IOException {
-		try (InputStream inputStream = Files.newInputStream(Paths.get(configFilePath), StandardOpenOption.READ)) {
+	private LocalSwarmConfig readConfigFileFromFileSystem(String configFilePath)
+		throws IOException {
+		try (
+			InputStream inputStream = Files.newInputStream(
+				Paths.get(configFilePath),
+				StandardOpenOption.READ
+			)
+		) {
 			return Json.reader().readValue(inputStream, LocalSwarmConfig.class);
 		}
 	}
@@ -106,19 +134,31 @@ public class Local implements Callable<Integer> {
 		networkSimulator.startAsync().awaitRunning();
 
 		SwarmServiceRegistry registry = new SwarmServiceRegistry();
-		generateSwarmAddresses(config.getNumberOfNodes()).stream()
-				.map(address -> swarmServiceFactory.create(address, config))
-				.forEach(registry::add);
+		generateSwarmAddresses(config.getNumberOfNodes())
+			.stream()
+			.map(address -> swarmServiceFactory.create(address, config))
+			.forEach(registry::add);
 		return registry;
 	}
 
 	@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-	private Optional<AdminService> createAndStartAdminService(Optional<AdminConfig> config, SwarmServiceRegistry registry, LocalSwarmConfig localSwarmConfig) throws TimeoutException {
+	private Optional<AdminService> createAndStartAdminService(
+		Optional<AdminConfig> config,
+		SwarmServiceRegistry registry,
+		LocalSwarmConfig localSwarmConfig
+	) throws TimeoutException {
 		if (config.isEmpty()) {
 			return Optional.empty();
 		}
 
-		AdminService adminService = new AdminService(config.get(), jinjava, registry::getSnapshots, swarmServiceFactory, registry, localSwarmConfig);
+		AdminService adminService = new AdminService(
+			config.get(),
+			jinjava,
+			registry::getSnapshots,
+			swarmServiceFactory,
+			registry,
+			localSwarmConfig
+		);
 		adminService.startAsync().awaitRunning(Duration.ofSeconds(10));
 		return Optional.of(adminService);
 	}
@@ -129,7 +169,9 @@ public class Local implements Callable<Integer> {
 		for (int i = 0; i < count; i++) {
 			String host = "127.0.0.1";
 			int port = 1000 * (i + 1);
-			SwarmAddress swarmAddress = new InMemorySwarmAddress("%s-%d".formatted(host, port));
+			SwarmAddress swarmAddress = new InMemorySwarmAddress(
+				"%s-%d".formatted(host, port)
+			);
 			swarmAddresses.add(swarmAddress);
 		}
 

@@ -39,7 +39,10 @@ public final class Json {
 
 	private static Module getInMemoryAddressModule() {
 		SimpleModule module = new SimpleModule();
-		module.addAbstractTypeMapping(SwarmAddress.class, InMemorySwarmAddress.class);
+		module.addAbstractTypeMapping(
+			SwarmAddress.class,
+			InMemorySwarmAddress.class
+		);
 		return module;
 	}
 }

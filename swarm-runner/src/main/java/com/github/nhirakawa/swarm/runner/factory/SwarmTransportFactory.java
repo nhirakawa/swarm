@@ -18,10 +18,10 @@ public class SwarmTransportFactory {
 
 	@Inject
 	public SwarmTransportFactory(
-			InMemoryTransportRegistry registry,
-			NetworkSimulator networkSimulator,
-			ObjectWriter objectWriter,
-			ObjectReader objectReader
+		InMemoryTransportRegistry registry,
+		NetworkSimulator networkSimulator,
+		ObjectWriter objectWriter,
+		ObjectReader objectReader
 	) {
 		this.registry = registry;
 		this.objectWriter = objectWriter;
@@ -31,11 +31,11 @@ public class SwarmTransportFactory {
 
 	public SwarmTransport create(SwarmAddress address) {
 		return new InMemoryTransport(
-				address,
-				registry,
-				objectWriter,
-				objectReader,
-				networkSimulator
+			address,
+			registry,
+			objectWriter,
+			objectReader,
+			networkSimulator
 		);
 	}
 }

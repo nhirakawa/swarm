@@ -5,5 +5,5 @@ import java.time.Duration;
 import java.util.Optional;
 
 public interface SwarmMessageReceiver {
-  Optional<StateMachineMessage> receive(Duration timeout);
+	Optional<StateMachineMessage> receive(Duration timeout);
 }

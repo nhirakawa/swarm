@@ -18,24 +18,30 @@ public class SwarmServiceFactory {
 	private final SwarmStateMachineFactory stateMachineFactory;
 
 	@Inject
-	public SwarmServiceFactory(SwarmTransportFactory transportFactory, SwarmStateMachineFactory stateMachineFactory) {
+	public SwarmServiceFactory(
+		SwarmTransportFactory transportFactory,
+		SwarmStateMachineFactory stateMachineFactory
+	) {
 		this.transportFactory = transportFactory;
 		this.stateMachineFactory = stateMachineFactory;
 	}
 
-	public SwarmService create(SwarmAddress address, LocalSwarmConfig localSwarmConfig) {
+	public SwarmService create(
+		SwarmAddress address,
+		LocalSwarmConfig localSwarmConfig
+	) {
 		SwarmTransport transport = transportFactory.create(address);
 
 		SwarmConfig swarmConfig = SwarmConfig.builder()
-				.setLocalAddress(address)
-				.setMulticastAddress(transport.getMulticastAddress())
-				.setProtocolPeriod(localSwarmConfig.getProtocolPeriod())
-				.setMessageTimeout(localSwarmConfig.getMessageTimeout())
-				.setProtocolTick(localSwarmConfig.getProtocolTick())
-				.setFailureSubGroup(localSwarmConfig.getFailureSubGroup())
-				.setProtocolPeriodJitter(localSwarmConfig.getProtocolPeriodJitter())
-				.setMessageTimeoutJitter(localSwarmConfig.getMessageTimeoutJitter())
-				.build();
+			.setLocalAddress(address)
+			.setMulticastAddress(transport.getMulticastAddress())
+			.setProtocolPeriod(localSwarmConfig.getProtocolPeriod())
+			.setMessageTimeout(localSwarmConfig.getMessageTimeout())
+			.setProtocolTick(localSwarmConfig.getProtocolTick())
+			.setFailureSubGroup(localSwarmConfig.getFailureSubGroup())
+			.setProtocolPeriodJitter(localSwarmConfig.getProtocolPeriodJitter())
+			.setMessageTimeoutJitter(localSwarmConfig.getMessageTimeoutJitter())
+			.build();
 
 		AtomicReference<SwarmService> serviceRef = new AtomicReference<>();
 		SwarmTerminationCallback callback = () -> {
@@ -45,11 +51,19 @@ public class SwarmServiceFactory {
 			}
 		};
 
-		SwarmStateMachine stateMachine = stateMachineFactory.create(swarmConfig, transport.receiver(), transport.sender(), callback);
+		SwarmStateMachine stateMachine = stateMachineFactory.create(
+			swarmConfig,
+			transport.receiver(),
+			transport.sender(),
+			callback
+		);
 
 		SwarmService swarmService = new SwarmService(stateMachine, transport);
 		serviceRef.set(swarmService);
-		swarmService.addListener(new LifecycleLogger(swarmService), MoreExecutors.directExecutor());
+		swarmService.addListener(
+			new LifecycleLogger(swarmService),
+			MoreExecutors.directExecutor()
+		);
 		return swarmService;
 	}
 }

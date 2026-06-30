@@ -9,6 +9,6 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableStyle
 public interface TransitionModel {
-  List<StateMachineMessage> getResponsesToSend();
-  SwarmProtocolState getNextSwarmProtocolState();
+	List<StateMachineMessage> getResponsesToSend();
+	SwarmProtocolState getNextSwarmProtocolState();
 }

@@ -33,6 +33,7 @@
     <plugin.maven.dependency.version>3.9.0</plugin.maven.dependency.version>
     <plugin.prettier.maven.fail>false</plugin.prettier.maven.fail>
     <plugin.prettier.maven.skip>true</plugin.prettier.maven.skip>
+    <plugin.spotless.version>2.44.5</plugin.spotless.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -173,6 +174,50 @@
             </path>
           </annotationProcessorPaths>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>${plugin.spotless.version}</version>
+        <configuration>
+          <formats>
+            <format>
+              <includes>
+                <include>.gitattributes</include>
+                <include>.gitignore</include>
+              </includes>
+              <trimTrailingWhitespace/>
+              <endWithNewline/>
+              <indent>
+                <tabs>true</tabs>
+                <spacesPerTab>2</spacesPerTab>
+              </indent>
+            </format>
+            <format>
+              <includes>
+                <include>src/main/java/**/*.java</include>
+                <include>src/test/java/**/*.java</include>
+              </includes>
+              <prettier>
+                <devDependencies>
+                  <prettier>3.9.4</prettier>
+                  <prettier-plugin-java>2.10.2</prettier-plugin-java>
+                </devDependencies>
+                <config>
+                  <useTabs>true</useTabs>
+                  <plugins>prettier-plugin-java</plugins>
+                </config>
+              </prettier>
+            </format>
+          </formats>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

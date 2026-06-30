@@ -11,7 +11,6 @@ import com.hubspot.jinjava.Jinjava;
 import io.javalin.Javalin;
 import io.javalin.config.JavalinConfig;
 import io.javalin.http.staticfiles.Location;
-
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -25,8 +24,14 @@ public class AdminService extends AbstractIdleService {
 	private final LocalSwarmConfig localSwarmConfig;
 	private final Javalin app;
 
-	public AdminService(AdminConfig config, Jinjava jinjava, Supplier<List<StateSnapshot>> snapshotListSupplier,
-						SwarmServiceFactory swarmServiceFactory, SwarmServiceRegistry registry, LocalSwarmConfig localSwarmConfig) {
+	public AdminService(
+		AdminConfig config,
+		Jinjava jinjava,
+		Supplier<List<StateSnapshot>> snapshotListSupplier,
+		SwarmServiceFactory swarmServiceFactory,
+		SwarmServiceRegistry registry,
+		LocalSwarmConfig localSwarmConfig
+	) {
 		this.config = config;
 		this.jinjava = jinjava;
 		this.snapshotListSupplier = snapshotListSupplier;
@@ -48,16 +53,22 @@ public class AdminService extends AbstractIdleService {
 
 	private Javalin createApp() {
 		return Javalin.create(AdminService::customize)
-				.get("/app/container", new ContainerHandler(jinjava, snapshotListSupplier))
-				.post("/app/nodes", new AddNodeHandler(swarmServiceFactory, registry, localSwarmConfig));
+			.get(
+				"/app/container",
+				new ContainerHandler(jinjava, snapshotListSupplier)
+			)
+			.post(
+				"/app/nodes",
+				new AddNodeHandler(swarmServiceFactory, registry, localSwarmConfig)
+			);
 	}
 
 	private static void customize(JavalinConfig config) {
-		config.staticFiles.add(staticFileConfig ->
-													 {staticFileConfig.hostedPath = "/";
-														 staticFileConfig.directory = "/admin";
-														 staticFileConfig.location = Location.CLASSPATH;
-													 });
+		config.staticFiles.add(staticFileConfig -> {
+			staticFileConfig.hostedPath = "/";
+			staticFileConfig.directory = "/admin";
+			staticFileConfig.location = Location.CLASSPATH;
+		});
 
 		config.http.gzipOnlyCompression();
 

@@ -11,30 +11,33 @@ import com.github.nhirakawa.swarm.protocol.transport.mem.InMemorySwarmAddress;
 
 public final class ObjectMapperWrapper {
 
-  private static final ObjectMapper INSTANCE = buildObjectMapper();
+	private static final ObjectMapper INSTANCE = buildObjectMapper();
 
-  public static ObjectMapper instance() {
-    return INSTANCE;
-  }
+	public static ObjectMapper instance() {
+		return INSTANCE;
+	}
 
-  private static ObjectMapper buildObjectMapper() {
-    ObjectMapper objectMapper = new ObjectMapper();
+	private static ObjectMapper buildObjectMapper() {
+		ObjectMapper objectMapper = new ObjectMapper();
 
-    objectMapper.registerModule(new Jdk8Module());
-    objectMapper.registerModule(new JavaTimeModule());
-    objectMapper.registerModule(new GuavaModule());
-    objectMapper.registerModule(getInMemoryAddressModule());
+		objectMapper.registerModule(new Jdk8Module());
+		objectMapper.registerModule(new JavaTimeModule());
+		objectMapper.registerModule(new GuavaModule());
+		objectMapper.registerModule(getInMemoryAddressModule());
 
-    return objectMapper;
-  }
+		return objectMapper;
+	}
 
-  private static Module getInMemoryAddressModule() {
-    SimpleModule module = new SimpleModule();
-    module.addAbstractTypeMapping(SwarmAddress.class, InMemorySwarmAddress.class);
-    return module;
-  }
+	private static Module getInMemoryAddressModule() {
+		SimpleModule module = new SimpleModule();
+		module.addAbstractTypeMapping(
+			SwarmAddress.class,
+			InMemorySwarmAddress.class
+		);
+		return module;
+	}
 
-  private ObjectMapperWrapper() {
-    throw new UnsupportedOperationException();
-  }
+	private ObjectMapperWrapper() {
+		throw new UnsupportedOperationException();
+	}
 }

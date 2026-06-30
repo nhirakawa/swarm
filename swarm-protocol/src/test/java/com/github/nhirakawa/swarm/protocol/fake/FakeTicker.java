@@ -4,18 +4,18 @@ import com.google.common.base.Ticker;
 
 public class FakeTicker extends Ticker {
 
-  private long current;
+	private long current;
 
-  public FakeTicker() {
-    this.current = 0L;
-  }
+	public FakeTicker() {
+		this.current = 0L;
+	}
 
-  @Override
-  public long read() {
-    return current;
-  }
+	@Override
+	public long read() {
+		return current;
+	}
 
-  public void write(long current) {
-    this.current = current;
-  }
+	public void write(long current) {
+		this.current = current;
+	}
 }

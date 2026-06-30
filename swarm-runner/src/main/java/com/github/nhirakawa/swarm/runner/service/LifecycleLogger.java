@@ -9,7 +9,9 @@ public class LifecycleLogger extends Service.Listener {
 	private final Logger log;
 
 	public LifecycleLogger(Service service) {
-		log = LogManager.getLogger("%s-listener".formatted(service.getClass().getSimpleName()));
+		log = LogManager.getLogger(
+			"%s-listener".formatted(service.getClass().getSimpleName())
+		);
 	}
 
 	@Override
