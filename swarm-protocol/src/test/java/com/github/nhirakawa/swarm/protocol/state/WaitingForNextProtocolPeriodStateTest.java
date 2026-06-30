@@ -46,7 +46,8 @@ public class WaitingForNextProtocolPeriodStateTest {
               4L,
               1L,
               Stopwatch.createStarted(ticker),
-              new MemberRegistry(Set.of(OTHER))
+              new MemberRegistry(Set.of(OTHER)),
+              () -> {}
           )
       );
   }
@@ -111,7 +112,8 @@ public class WaitingForNextProtocolPeriodStateTest {
             4L,
             1L,
             Stopwatch.createStarted(shortTicker),
-            registry
+            registry,
+            () -> {}
         )
     );
 

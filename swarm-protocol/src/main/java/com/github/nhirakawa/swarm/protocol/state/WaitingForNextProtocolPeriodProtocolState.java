@@ -45,6 +45,13 @@ public class WaitingForNextProtocolPeriodProtocolState
         context().swarmConfig().getSuspicionTimeout()
     );
 
+    SwarmAddress self = context().swarmConfig().getLocalAddress();
+    if (context().memberRegistry().get(self).filter(s -> s instanceof MemberStatus.Confirmed).isPresent()) {
+      LOG.warn("Local node {} has been confirmed dead — self-terminating", self);
+      context().terminationCallback().onSelfConfirmedDead();
+      return Optional.empty();
+    }
+
     SwarmAddress pingTarget = context().memberRegistry().getPingTarget();
 
     List<MemberStatus> gossip = context().memberRegistry().getGossipPayload(3);

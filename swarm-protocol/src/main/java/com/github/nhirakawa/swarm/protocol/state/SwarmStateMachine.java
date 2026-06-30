@@ -1,5 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
+import com.github.nhirakawa.swarm.protocol.SwarmTerminationCallback;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
@@ -33,6 +34,7 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
   private final SwarmConfig swarmConfig;
   private final SwarmMessageReceiver swarmMessageReceiver;
   private final SwarmMessageSender swarmMessageSender;
+  private final SwarmTerminationCallback terminationCallback;
   private final AtomicReference<StateSnapshot> stateSnapshot = new AtomicReference<>(null);
 
   private SwarmProtocolState swarmProtocolState;
@@ -40,11 +42,13 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
   public SwarmStateMachine(
       SwarmConfig swarmConfig,
       SwarmMessageReceiver swarmMessageReceiver,
-      SwarmMessageSender swarmMessageSender
+      SwarmMessageSender swarmMessageSender,
+      SwarmTerminationCallback terminationCallback
   ) {
     this.swarmConfig = swarmConfig;
     this.swarmMessageReceiver = swarmMessageReceiver;
     this.swarmMessageSender = swarmMessageSender;
+    this.terminationCallback = terminationCallback;
   }
 
   @Override
@@ -60,7 +64,8 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
                 ThreadLocalRandom.current().nextLong(),
                 0L,
                 Stopwatch.createStarted(),
-                memberRegistry
+                memberRegistry,
+                terminationCallback
             )
         );
   }

@@ -49,7 +49,8 @@ public class WaitingForPingProxyProtocolStateTest {
               4L,
               1L,
               Stopwatch.createStarted(ticker),
-              new MemberRegistry(Set.of(TARGET, OTHER_1, OTHER_2))
+              new MemberRegistry(Set.of(TARGET, OTHER_1, OTHER_2)),
+              () -> {}
           ),
         TARGET,
         Set.of(OTHER_1)

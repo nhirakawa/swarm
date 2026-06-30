@@ -50,7 +50,8 @@ public class WaitingForAckProtocolStateTest {
               4L,
               1L,
               Stopwatch.createStarted(ticker),
-              new MemberRegistry(Set.of(PING_TARGET, OTHER_NODE_1, OTHER_NODE_2))
+              new MemberRegistry(Set.of(PING_TARGET, OTHER_NODE_1, OTHER_NODE_2)),
+              () -> {}
           ),
         PING_TARGET
       );

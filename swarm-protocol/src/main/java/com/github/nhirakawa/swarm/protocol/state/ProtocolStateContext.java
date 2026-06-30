@@ -1,5 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
+import com.github.nhirakawa.swarm.protocol.SwarmTerminationCallback;
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.google.common.base.Stopwatch;
 
@@ -18,15 +19,17 @@ final class ProtocolStateContext {
 	private final AtomicLong incarnation;
 	private final Stopwatch stopwatch;
 	private final MemberRegistry memberRegistry;
+	private final SwarmTerminationCallback terminationCallback;
 
 	ProtocolStateContext(
 			SwarmConfig swarmConfig,
 			long protocolPeriodId,
 			long incarnation,
 			Stopwatch stopwatch,
-			MemberRegistry memberRegistry
+			MemberRegistry memberRegistry,
+			SwarmTerminationCallback terminationCallback
 	) {
-		this(swarmConfig, protocolPeriodId, new AtomicLong(incarnation), stopwatch, memberRegistry);
+		this(swarmConfig, protocolPeriodId, new AtomicLong(incarnation), stopwatch, memberRegistry, terminationCallback);
 	}
 
 	private ProtocolStateContext(
@@ -34,13 +37,15 @@ final class ProtocolStateContext {
 			long protocolPeriodId,
 			AtomicLong incarnation,
 			Stopwatch stopwatch,
-			MemberRegistry memberRegistry
+			MemberRegistry memberRegistry,
+			SwarmTerminationCallback terminationCallback
 	) {
 		this.swarmConfig = swarmConfig;
 		this.protocolPeriodId = protocolPeriodId;
 		this.incarnation = incarnation;
 		this.stopwatch = stopwatch;
 		this.memberRegistry = memberRegistry;
+		this.terminationCallback = terminationCallback;
 	}
 
 	ProtocolStateContext next() {
@@ -49,7 +54,8 @@ final class ProtocolStateContext {
 				ThreadLocalRandom.current().nextLong(),
 				incarnation,
 				stopwatch.reset().start(),
-				memberRegistry
+				memberRegistry,
+				terminationCallback
 		);
 	}
 
@@ -75,5 +81,9 @@ final class ProtocolStateContext {
 
 	MemberRegistry memberRegistry() {
 		return memberRegistry;
+	}
+
+	SwarmTerminationCallback terminationCallback() {
+		return terminationCallback;
 	}
 }
