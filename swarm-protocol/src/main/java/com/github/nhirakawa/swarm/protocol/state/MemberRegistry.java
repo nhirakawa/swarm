@@ -169,6 +169,28 @@ class MemberRegistry {
 		return toGossip.stream().map(Counted::memberStatus).toList();
 	}
 
+	void evictConfirmedNodes() {
+		int threshold = Math.max(
+			(int) Math.ceil(Math.log(registry.size() + 1) / Math.log(2)),
+			3
+		);
+
+		List<SwarmAddress> toEvict = registry
+			.entrySet()
+			.stream()
+			.filter(e -> e.getValue().memberStatus() instanceof MemberStatus.Confirmed)
+			.filter(e -> e.getValue().gossipCount() >= threshold)
+			.map(Map.Entry::getKey)
+			.toList();
+
+		for (SwarmAddress address : toEvict) {
+			Counted counted = registry.remove(address);
+			sortedByGossipCount.remove(counted);
+			pingSequence.remove(address);
+			suspicionStopwatches.remove(address);
+		}
+	}
+
 	Set<SwarmAddress> getFailureSubGroup(int size, SwarmAddress proxyFor) {
 		List<SwarmAddress> potentialTargets = registry
 			.keySet()

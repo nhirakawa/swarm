@@ -43,6 +43,8 @@ public class WaitingForNextProtocolPeriodProtocolState
 			.memberRegistry()
 			.promoteExpiredSuspicions(context().swarmConfig().getSuspicionTimeout());
 
+		context().memberRegistry().evictConfirmedNodes();
+
 		SwarmAddress self = context().swarmConfig().getLocalAddress();
 		if (
 			context()
