@@ -47,4 +47,26 @@ public class SwarmServiceRegistry {
 			lock.readLock().unlock();
 		}
 	}
+
+	public void remove(String address) {
+		SwarmService toStop = null;
+		lock.writeLock().lock();
+		try {
+			var it = services.iterator();
+			while (it.hasNext()) {
+				SwarmService service = it.next();
+				StateSnapshot snapshot = service.getSnapshot();
+				if (snapshot != null && snapshot.getLocalAddress().asString().equals(address)) {
+					it.remove();
+					toStop = service;
+					break;
+				}
+			}
+		} finally {
+			lock.writeLock().unlock();
+		}
+		if (toStop != null) {
+			toStop.stopAsync();
+		}
+	}
 }

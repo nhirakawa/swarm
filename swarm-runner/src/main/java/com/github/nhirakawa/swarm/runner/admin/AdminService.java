@@ -3,6 +3,7 @@ package com.github.nhirakawa.swarm.runner.admin;
 import com.github.nhirakawa.swarm.protocol.state.StateSnapshot;
 import com.github.nhirakawa.swarm.runner.admin.http.AddNodeHandler;
 import com.github.nhirakawa.swarm.runner.admin.http.ContainerHandler;
+import com.github.nhirakawa.swarm.runner.admin.http.ShutdownNodeHandler;
 import com.github.nhirakawa.swarm.runner.factory.SwarmServiceFactory;
 import com.github.nhirakawa.swarm.runner.model.LocalSwarmConfig;
 import com.github.nhirakawa.swarm.runner.service.SwarmServiceRegistry;
@@ -60,6 +61,10 @@ public class AdminService extends AbstractIdleService {
 			.post(
 				"/app/nodes",
 				new AddNodeHandler(swarmServiceFactory, registry, localSwarmConfig)
+			)
+			.delete(
+				"/app/nodes/{address}",
+				new ShutdownNodeHandler(registry)
 			);
 	}
 

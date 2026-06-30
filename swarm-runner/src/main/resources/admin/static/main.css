@@ -150,13 +150,13 @@ pre, code {
 }
 
 .member-status .type.suspected {
-    background: #fff3e0;
-    color: #e65100;
+    background: #fef9c3;
+    color: #854d0e;
 }
 
 .member-status .type.confirmed {
-    background: #ffebee;
-    color: #c62828;
+    background: #fee2e2;
+    color: #b91c1c;
 }
 
 .member-status .incarnation {

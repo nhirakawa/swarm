@@ -4,9 +4,7 @@ import com.github.nhirakawa.swarm.protocol.SwarmService;
 import com.github.nhirakawa.swarm.runner.admin.AdminService;
 import com.google.common.util.concurrent.AbstractScheduledService;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -21,23 +19,23 @@ public class ServiceObserver extends AbstractScheduledService {
 		State.FAILED
 	);
 
-	private final List<SwarmService> swarmServices;
+	private final SwarmServiceRegistry registry;
 
 	@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 	private final Optional<AdminService> adminService;
 
 	@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 	public ServiceObserver(
-		List<SwarmService> swarmServices,
+		SwarmServiceRegistry registry,
 		Optional<AdminService> adminService
 	) {
-		this.swarmServices = new ArrayList<>(swarmServices);
+		this.registry = registry;
 		this.adminService = adminService;
 	}
 
 	@Override
 	protected void runOneIteration() throws Exception {
-		for (SwarmService service : swarmServices) {
+		for (SwarmService service : registry.toList()) {
 			if (TERMINAL_STATES.contains(service.state())) {
 				LOG.info("Service {} has state {}", service.getName(), service.state());
 				stopAsync();

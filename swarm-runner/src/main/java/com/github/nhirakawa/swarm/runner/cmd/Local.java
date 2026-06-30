@@ -81,7 +81,7 @@ public class Local implements Callable<Integer> {
 		);
 
 		ServiceObserver serviceObserver = new ServiceObserver(
-			registry.toList(),
+			registry,
 			adminService
 		);
 
