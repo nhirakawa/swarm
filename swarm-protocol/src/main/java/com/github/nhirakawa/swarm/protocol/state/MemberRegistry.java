@@ -178,7 +178,9 @@ class MemberRegistry {
 		List<SwarmAddress> toEvict = registry
 			.entrySet()
 			.stream()
-			.filter(e -> e.getValue().memberStatus() instanceof MemberStatus.Confirmed)
+			.filter(
+				e -> e.getValue().memberStatus() instanceof MemberStatus.Confirmed
+			)
 			.filter(e -> e.getValue().gossipCount() >= threshold)
 			.map(Map.Entry::getKey)
 			.toList();

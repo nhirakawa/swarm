@@ -55,7 +55,10 @@ class MemberRegistryTest {
 
 		registry.evictConfirmedNodes();
 
-		assertThat(registry.get(A)).isPresent().get().isInstanceOf(MemberStatus.Alive.class);
+		assertThat(registry.get(A))
+			.isPresent()
+			.get()
+			.isInstanceOf(MemberStatus.Alive.class);
 	}
 
 	@Test
@@ -71,7 +74,10 @@ class MemberRegistryTest {
 
 		registry.evictConfirmedNodes();
 
-		assertThat(registry.get(A)).isPresent().get().isInstanceOf(MemberStatus.Alive.class);
+		assertThat(registry.get(A))
+			.isPresent()
+			.get()
+			.isInstanceOf(MemberStatus.Alive.class);
 		assertThat(registry.get(B)).isEmpty();
 	}
 

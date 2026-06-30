@@ -56,7 +56,10 @@ public class SwarmServiceRegistry {
 			while (it.hasNext()) {
 				SwarmService service = it.next();
 				StateSnapshot snapshot = service.getSnapshot();
-				if (snapshot != null && snapshot.getLocalAddress().asString().equals(address)) {
+				if (
+					snapshot != null &&
+					snapshot.getLocalAddress().asString().equals(address)
+				) {
 					it.remove();
 					toStop = service;
 					break;

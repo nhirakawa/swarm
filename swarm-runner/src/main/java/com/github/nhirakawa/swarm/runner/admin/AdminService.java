@@ -62,10 +62,7 @@ public class AdminService extends AbstractIdleService {
 				"/app/nodes",
 				new AddNodeHandler(swarmServiceFactory, registry, localSwarmConfig)
 			)
-			.delete(
-				"/app/nodes/{address}",
-				new ShutdownNodeHandler(registry)
-			);
+			.delete("/app/nodes/{address}", new ShutdownNodeHandler(registry));
 	}
 
 	private static void customize(JavalinConfig config) {
