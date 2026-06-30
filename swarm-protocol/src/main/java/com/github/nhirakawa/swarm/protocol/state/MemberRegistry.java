@@ -223,7 +223,7 @@ class MemberRegistry {
 
 		Counted merge(Counted other) {
 			MemberStatus newMemberStatus = memberStatus.merge(other.memberStatus);
-			if (newMemberStatus == memberStatus) {
+			if (newMemberStatus.equals(memberStatus)) {
 				return this;
 			} else {
 				return initial(swarmAddress, newMemberStatus);
