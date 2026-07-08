@@ -1,0 +1,10 @@
+[package]
+name = "swarm"
+version = "0.1.0"
+authors = ["Nick Hirakawa <nickhirakawa@gmail.com>"]
+edition = "2024"
+description = "A Rust implementation of the SWIM protocol"
+repository = "https://github.com/nhirakawa/swarm.git"
+license = "MIT"
+
+[dependencies]
