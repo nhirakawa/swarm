@@ -1,160 +1,119 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
-import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
-import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.protocol.model.MemberStatusUpdate;
-import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
-import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
-import com.github.nhirakawa.swarm.protocol.protocol.MemberStatus;
-import com.google.common.base.MoreObjects;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import com.google.common.collect.ImmutableSet;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// todo(nhirakawa) document this
+// TODO - Document this
 public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
 
-  private static final Logger LOG = LogManager.getLogger(
-    WaitingForPingProxyProtocolState.class
-  );
+	private static final Logger LOG = LogManager.getLogger(
+		WaitingForPingProxyProtocolState.class
+	);
 
-  private final SwarmNode pingTarget;
-  private final Set<SwarmNode> proxyTargets;
+	private final SwarmAddress pingTarget;
+	private final Set<SwarmAddress> proxyTargets;
 
-  protected WaitingForPingProxyProtocolState(
-    Instant timestamp,
-    SwarmConfig swarmConfig,
-    String protocolPeriodId,
-    SwarmNode pingTarget,
-    Set<SwarmNode> proxyTargets
-  ) {
-    super(timestamp, swarmConfig, protocolPeriodId);
-    this.pingTarget = pingTarget;
-    this.proxyTargets = ImmutableSet.copyOf(proxyTargets);
-  }
+	WaitingForPingProxyProtocolState(
+		ProtocolStateContext context,
+		SwarmAddress pingTarget,
+		Set<SwarmAddress> proxyTargets
+	) {
+		super(context);
+		this.pingTarget = pingTarget;
+		this.proxyTargets = ImmutableSet.copyOf(proxyTargets);
+	}
 
-  @Override
-  public Optional<Transition> applyTick(
-    SwarmTimeoutMessage swarmTimeoutMessage
-  ) {
-    long millisSinceProtocolStarted = Duration
-      .between(protocolStartTimestamp, swarmTimeoutMessage.getTimestamp())
-      .toMillis();
+	@Override
+	public Optional<Transition> applyTick() {
+		if (
+			context().elapsed().toNanos() <
+			context().swarmConfig().getProtocolPeriod().toNanos()
+		) {
+			return Optional.empty();
+		}
 
-    if (
-      millisSinceProtocolStarted < swarmConfig.getProtocolPeriod().toMillis()
-    ) {
-      return Optional.empty();
-    }
+		long knownIncarnation = context()
+			.memberRegistry()
+			.get(pingTarget)
+			.map(MemberStatus::incarnation)
+			.orElse(0L);
 
-    Transition transition = Transition
-      .builder()
-      .setNextSwarmProtocolState(
-        new WaitingForNextProtocolPeriodProtocolState(
-          protocolStartTimestamp,
-          swarmConfig,
-          protocolPeriodId
-        )
-      )
-      .setMemberStatusUpdate(
-        MemberStatusUpdate
-          .builder()
-          .setIncarnationNumber(-1)
-          .setNewMemberStatus(MemberStatus.SUSPECTED)
-          .setSwarmNode(pingTarget)
-          .build()
-      )
-      .build();
+		context()
+			.memberRegistry()
+			.put(
+				pingTarget,
+				new MemberStatus.Suspected(pingTarget, knownIncarnation)
+			);
 
-    return Optional.of(transition);
-  }
+		SwarmProtocolState nextSwarmProtocolState =
+			new WaitingForNextProtocolPeriodProtocolState(context());
 
-  @Override
-  public Optional<Transition> applyPingAck(PingAckMessage pingAckMessage) {
-    if (pingAckMessage.getProxyFor().isEmpty()) {
-      LOG.warn("Expected proxy-for but did not find one - {}", pingAckMessage);
+		// TODO - Mark `pingTarget` as suspected
 
-      return Optional.empty();
-    }
+		Transition transition = Transition.builder()
+			.setNextSwarmProtocolState(nextSwarmProtocolState)
+			.build();
 
-    if (!pingAckMessage.getProxyFor().get().equals(pingTarget)) {
-      LOG.warn(
-        "Expected proxy-for to be {} but was {} - {}",
-        pingAckMessage.getProxyFor().get(),
-        pingTarget,
-        pingAckMessage
-      );
+		return Optional.of(transition);
+	}
 
-      return Optional.empty();
-    }
+	@Override
+	public Optional<Transition> applyPingAck(PingAck pingAck) {
+		if (pingAck.proxyFor().isEmpty()) {
+			LOG.warn("Expected proxy-for but did not find one - {}", pingAck);
 
-    if (!proxyTargets.contains(pingAckMessage.getFrom())) {
-      LOG.warn(
-        "{} was not one of the expected proxy targets ({}) - {}",
-        pingAckMessage.getFrom(),
-        proxyTargets,
-        pingAckMessage
-      );
+			return Optional.empty();
+		}
 
-      return Optional.empty();
-    }
+		if (!pingAck.proxyFor().get().equals(pingTarget)) {
+			LOG.warn(
+				"Expected proxy-for to be {} but was {} - {}",
+				pingAck.proxyFor().get(),
+				pingTarget,
+				pingAck
+			);
 
-    SwarmProtocolState nextState = new WaitingForNextProtocolPeriodProtocolState(
-      protocolStartTimestamp,
-      swarmConfig,
-      protocolPeriodId
-    );
+			return Optional.empty();
+		}
 
-    return Optional.of(
-      Transition
-        .builder()
-        .setNextSwarmProtocolState(nextState)
-        .setMemberStatusUpdate(
-          MemberStatusUpdate
-            .builder()
-            .setNewMemberStatus(MemberStatus.ALIVE)
-            .setSwarmNode(pingTarget)
-            .setIncarnationNumber(1L)
-            .build()
-        )
-        .build()
-    );
-  }
+		if (!proxyTargets.contains(pingAck.source())) {
+			LOG.warn(
+				"{} was not one of the expected proxy targets ({}) - {}",
+				pingAck.source(),
+				proxyTargets,
+				pingAck
+			);
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    WaitingForPingProxyProtocolState that = (WaitingForPingProxyProtocolState) o;
-    return (
-      pingTarget.equals(that.pingTarget) &&
-      proxyTargets.equals(that.proxyTargets)
-    );
-  }
+			return Optional.empty();
+		}
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(pingTarget, proxyTargets);
-  }
+		context()
+			.memberRegistry()
+			.put(pingTarget, MemberStatus.alive(pingTarget, pingAck.incarnation()));
 
-  @Override
-  public String toString() {
-    return MoreObjects
-      .toStringHelper(this)
-      .add("protocolStartTimestamp", protocolStartTimestamp)
-      .add("protocolPeriodId", protocolPeriodId)
-      .add("pingTarget", pingTarget)
-      .add("proxyTargets", proxyTargets)
-      .toString();
-  }
+		for (MemberStatus memberStatus : pingAck.gossip()) {
+			context().memberRegistry().put(memberStatus.address(), memberStatus);
+		}
+
+		List<StateMachineMessage> refutations = buildRefutationPings(
+			pingAck.gossip()
+		);
+		SwarmProtocolState nextState =
+			new WaitingForNextProtocolPeriodProtocolState(context());
+
+		return Optional.of(
+			Transition.builder()
+				.setNextSwarmProtocolState(nextState)
+				.addAllResponsesToSend(refutations)
+				.build()
+		);
+	}
 }

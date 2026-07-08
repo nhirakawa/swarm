@@ -3,98 +3,124 @@ package com.github.nhirakawa.swarm.protocol.state;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
-import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
-import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
+import com.github.nhirakawa.swarm.protocol.fake.FakeTicker;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
+import com.github.nhirakawa.swarm.protocol.transport.mem.InMemorySwarmAddress;
+import com.google.common.base.Stopwatch;
 import java.time.Duration;
-import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
-import org.junit.Before;
-import org.junit.Test;
+import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class WaitingForNextProtocolPeriodStateTest {
 
-  private static final Instant TIMESTAMP = Instant.ofEpochMilli(1000);
+	private static final SwarmAddress LOCAL = new InMemorySwarmAddress(
+		"host-1000"
+	);
+	private static final SwarmAddress OTHER = new InMemorySwarmAddress(
+		"host-2000"
+	);
 
-  private static final SwarmNode LOCAL_SWARM_NODE = SwarmNode
-    .builder()
-    .setHost("host")
-    .setPort(1000)
-    .build();
+	private static final SwarmConfig SWARM_CONFIG = SwarmConfig.builder()
+		.setLocalAddress(LOCAL)
+		.setMulticastAddress(new InMemorySwarmAddress("MULTICAST"))
+		.setProtocolPeriod(Duration.ofSeconds(1))
+		.setProtocolTick(Duration.ofMillis(100))
+		.setMessageTimeout(Duration.ofMillis(200))
+		.setFailureSubGroup(1)
+		.build();
 
-  private static final SwarmNode OTHER_NODE = SwarmNode
-    .builder()
-    .setHost("host")
-    .setPort(2000)
-    .build();
+	private WaitingForNextProtocolPeriodProtocolState protocolState;
 
-  private static final SwarmConfig SWARM_CONFIG = SwarmConfig
-    .builder()
-    .setProtocolPeriod(Duration.ofSeconds(1))
-    .setProtocolTick(Duration.ofMillis(100))
-    .setMessageTimeout(Duration.ofMillis(200))
-    .setSwarmStateBufferSize(1)
-    .setLocalNode(LOCAL_SWARM_NODE)
-    .addClusterNodes(OTHER_NODE)
-    .setFailureSubGroup(1)
-    .setDebugEnabled(false)
-    .setFailureInjectionPercent(0)
-    .build();
+	private FakeTicker ticker;
 
-  private WaitingForNextProtocolPeriodProtocolState protocolState;
+	@BeforeEach
+	public void setup() {
+		this.ticker = new FakeTicker();
 
-  @Before
-  public void setup() {
-    protocolState =
-      new WaitingForNextProtocolPeriodProtocolState(
-        TIMESTAMP,
-        SWARM_CONFIG,
-        "protocol period id"
-      );
-  }
+		protocolState = new WaitingForNextProtocolPeriodProtocolState(
+			new ProtocolStateContext(
+				SWARM_CONFIG,
+				4L,
+				1L,
+				Stopwatch.createStarted(ticker),
+				new MemberRegistry(Set.of(OTHER)),
+				() -> {}
+			)
+		);
+	}
 
-  @Test
-  public void itDoesNothingIfProtocolPeriodHasNotEnded() {
-    Optional<Transition> transition = protocolState.applyTick(
-      SwarmTimeoutMessage
-        .builder()
-        .setTimestamp(TIMESTAMP.plus(Duration.ofMillis(100)))
-        .build()
-    );
+	@Test
+	public void itDoesNothingIfProtocolPeriodHasNotEnded() {
+		Optional<Transition> transition = protocolState.applyTick();
 
-    assertThat(transition).isEmpty();
-  }
+		assertThat(transition).isEmpty();
+	}
 
-  @Test
-  public void itTransitionsToWaitingForAckAfterNewProtocolPeriodStarts() {
-    // TODO @nhirakawa - make this test more robust
-    Optional<Transition> transition = protocolState.applyTick(
-      SwarmTimeoutMessage
-        .builder()
-        .setTimestamp(TIMESTAMP.plus(Duration.ofSeconds(2)))
-        .build()
-    );
+	@Test
+	public void itTransitionsToWaitingForAckAfterNewProtocolPeriodStarts() {
+		// TODO @nhirakawa - make this test more robust
+		ticker.write(SWARM_CONFIG.getProtocolPeriod().toNanos() * 2);
 
-    assertThat(transition).isPresent();
+		Optional<Transition> transition = protocolState.applyTick();
 
-    assertThat(transition.get().getMessagesToSend()).hasSize(1);
-    assertThat(transition.get().getNextSwarmProtocolState())
-      .isInstanceOf(WaitingForAckProtocolState.class);
-  }
+		assertThat(transition).isPresent();
 
-  @Test
-  public void itIgnoresAck() {
-    Optional<Transition> transition = protocolState.applyPingAck(
-      PingAckMessage
-        .builder()
-        .setProtocolPeriodId(protocolState.protocolPeriodId)
-        .setUniqueMessageId("asdf")
-        .setFrom(OTHER_NODE)
-        .setTo(LOCAL_SWARM_NODE)
-        .build()
-    );
+		assertThat(transition.get().getResponsesToSend()).hasSize(1);
+		assertThat(transition.get().getNextSwarmProtocolState()).isInstanceOf(
+			WaitingForAckProtocolState.class
+		);
+	}
 
-    assertThat(transition).isEmpty();
-  }
+	@Test
+	public void itIgnoresAck() {
+		Optional<Transition> transition = protocolState.applyPingAck(
+			new PingAck(LOCAL, OTHER, Optional.empty(), 4L, 0L, List.of())
+		);
+
+		assertThat(transition).isEmpty();
+	}
+
+	@Test
+	public void itPromotesSuspectedNodeToConfirmedAfterTimeout() {
+		SwarmConfig shortConfig = SwarmConfig.builder()
+			.setLocalAddress(LOCAL)
+			.setMulticastAddress(new InMemorySwarmAddress("MULTICAST"))
+			.setProtocolPeriod(Duration.ofMillis(50))
+			.setProtocolTick(Duration.ofMillis(10))
+			.setMessageTimeout(Duration.ofMillis(20))
+			.setFailureSubGroup(1)
+			.setSuspicionTimeout(Duration.ofMillis(100))
+			.build();
+
+		FakeTicker shortTicker = new FakeTicker();
+		MemberRegistry registry = new MemberRegistry(Set.of(OTHER), shortTicker);
+		registry.put(OTHER, MemberStatus.suspected(OTHER, 0L));
+
+		WaitingForNextProtocolPeriodProtocolState state =
+			new WaitingForNextProtocolPeriodProtocolState(
+				new ProtocolStateContext(
+					shortConfig,
+					4L,
+					1L,
+					Stopwatch.createStarted(shortTicker),
+					registry,
+					() -> {}
+				)
+			);
+
+		// Advance past both the suspicion timeout and the protocol period
+		shortTicker.write(shortConfig.getSuspicionTimeout().toNanos() + 1);
+
+		state.applyTick();
+
+		assertThat(registry.get(OTHER))
+			.isPresent()
+			.get()
+			.isInstanceOf(MemberStatus.Confirmed.class);
+	}
 }

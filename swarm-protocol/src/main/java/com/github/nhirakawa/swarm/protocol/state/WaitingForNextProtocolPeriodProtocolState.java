@@ -1,89 +1,94 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
-import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
-import com.github.nhirakawa.swarm.protocol.config.SwarmNode;
-import com.github.nhirakawa.swarm.protocol.model.PingAckMessage;
-import com.github.nhirakawa.swarm.protocol.model.PingRequestMessage;
-import com.github.nhirakawa.swarm.protocol.model.SwarmTimeoutMessage;
 import com.github.nhirakawa.swarm.protocol.model.Transition;
-import com.google.common.base.MoreObjects;
-import com.google.common.collect.Iterables;
-import java.time.Instant;
+import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
+import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
+import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
+import com.github.nhirakawa.swarm.protocol.util.Jitter;
+import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// todo(nhirakawa) document this
+// TODO - Document this
 public class WaitingForNextProtocolPeriodProtocolState
-  extends SwarmProtocolState {
+	extends SwarmProtocolState
+{
 
-  private static final Logger LOG = LogManager.getLogger(
-    WaitingForNextProtocolPeriodProtocolState.class
-  );
+	private static final Logger LOG = LogManager.getLogger(
+		WaitingForNextProtocolPeriodProtocolState.class
+	);
 
-  protected WaitingForNextProtocolPeriodProtocolState(
-    Instant protocolStartTimestamp,
-    SwarmConfig swarmConfig,
-    String protocolPeriodId
-  ) {
-    super(protocolStartTimestamp, swarmConfig, protocolPeriodId);
-  }
+	private final Duration jitteredProtocolPeriod;
 
-  @Override
-  public Optional<Transition> applyTick(
-    SwarmTimeoutMessage swarmTimeoutMessage
-  ) {
-    Instant protocolEndTimestamp = protocolStartTimestamp.plus(
-      swarmConfig.getProtocolPeriod()
-    );
+	WaitingForNextProtocolPeriodProtocolState(ProtocolStateContext context) {
+		super(context);
+		this.jitteredProtocolPeriod = Jitter.apply(
+			context.swarmConfig().getProtocolPeriod(),
+			context.swarmConfig().getProtocolPeriodJitter()
+		);
+	}
 
-    if (swarmTimeoutMessage.getTimestamp().isBefore(protocolEndTimestamp)) {
-      return Optional.empty();
-    }
+	@Override
+	public Optional<Transition> applyTick() {
+		if (context().elapsed().toNanos() < jitteredProtocolPeriod.toNanos()) {
+			return Optional.empty();
+		}
 
-    LOG.debug("Current protocol period has ended");
+		LOG.debug("Current protocol period has ended");
 
-    SwarmNode pingTarget = Iterables.getOnlyElement(
-      getRandomNodes(1, Optional.empty())
-    );
+		context()
+			.memberRegistry()
+			.promoteExpiredSuspicions(context().swarmConfig().getSuspicionTimeout());
 
-    SwarmProtocolState newState = new WaitingForAckProtocolState(
-      swarmTimeoutMessage.getTimestamp(),
-      swarmConfig,
-      pingTarget,
-      UUID.randomUUID().toString()
-    );
+		context().memberRegistry().evictConfirmedNodes();
 
-    PingRequestMessage pingRequestMessage = PingRequestMessage
-      .builder()
-      .setProtocolPeriodId(protocolPeriodId)
-      .setUniqueMessageId(UUID.randomUUID().toString())
-      .setFrom(swarmConfig.getLocalNode())
-      .setTo(pingTarget)
-      .build();
+		SwarmAddress self = context().swarmConfig().getLocalAddress();
+		if (
+			context()
+				.memberRegistry()
+				.get(self)
+				.filter(s -> s instanceof MemberStatus.Confirmed)
+				.isPresent()
+		) {
+			LOG.warn(
+				"Local node {} has been confirmed dead — self-terminating",
+				self
+			);
+			context().terminationCallback().onSelfConfirmedDead();
+			return Optional.empty();
+		}
 
-    Transition transition = Transition
-      .builder()
-      .setNextSwarmProtocolState(newState)
-      .addMessagesToSend(pingRequestMessage)
-      .build();
+		SwarmAddress pingTarget = context().memberRegistry().getPingTarget();
 
-    return Optional.of(transition);
-  }
+		List<MemberStatus> gossip = context().memberRegistry().getGossipPayload(3);
 
-  @Override
-  public Optional<Transition> applyPingAck(PingAckMessage pingAckMessage) {
-    LOG.debug("Ignoring {}", pingAckMessage);
-    return Optional.empty();
-  }
+		SwarmProtocolState newState = new WaitingForAckProtocolState(
+			context().next(),
+			pingTarget
+		);
 
-  @Override
-  public String toString() {
-    return MoreObjects
-      .toStringHelper(this)
-      .add("protocolStartTimestamp", protocolStartTimestamp)
-      .add("protocolPeriodId", protocolPeriodId)
-      .toString();
-  }
+		StateMachineMessage pingRequest = new PingRequest(
+			context().swarmConfig().getLocalAddress(),
+			pingTarget,
+			Optional.empty(),
+			context().protocolPeriodId(),
+			gossip
+		);
+
+		Transition transition = Transition.builder()
+			.setNextSwarmProtocolState(newState)
+			.addResponsesToSend(pingRequest)
+			.build();
+
+		return Optional.of(transition);
+	}
+
+	@Override
+	public Optional<Transition> applyPingAck(PingAck pingAck) {
+		LOG.debug("Ignoring {}", pingAck);
+		return Optional.empty();
+	}
 }

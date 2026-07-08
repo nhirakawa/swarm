@@ -1,0 +1,17 @@
+<div id="snapshots">
+{% for snapshot in snapshots %}
+<div class="snapshot">
+    <h2 class="address">Address: {{ snapshot.localAddress }}</h2>
+    <button hx-delete="/app/nodes/{{ snapshot.localAddress }}" hx-swap="none">Shutdown</button>
+    <div><span class="protocol-period-id">Protocol Period ID: {{ snapshot.protocolPeriodId }}</span></div>
+    <div><span class="incarnation">Incarnation: {{ snapshot.incarnation }}</span></div>
+    {% for memberStatus in snapshot.memberStatuses %}
+    <div class="member-status">
+        <div><span class="address">Address: {{ memberStatus.address }}</span></div>
+        <div><span class="type {{ memberStatus.type | lower }}">{{ memberStatus.type | lower }}</span></div>
+        <div><span class="incarnation">Incarnation: {{ memberStatus.incarnation }}</span></div>
+    </div>
+    {% endfor %}
+</div>
+{% endfor %}
+</div>
