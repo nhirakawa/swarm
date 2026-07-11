@@ -1,3 +1,4 @@
+mod config;
 mod registry;
 
 use std::path::PathBuf;
@@ -25,7 +26,9 @@ async fn main() -> anyhow::Result<()> {
 
     match cli.command {
         Command::Router { config } => {
-            println!("Starting IPC router with config {:?}...", config);
+            let raw = std::fs::read_to_string(&config)?;
+            let config: config::Config = serde_json::from_str(&raw)?;
+            println!("{:?}", config);
         }
     }
 
