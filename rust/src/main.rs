@@ -1,3 +1,5 @@
+mod registry;
+
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
