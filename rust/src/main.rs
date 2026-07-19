@@ -35,37 +35,44 @@ async fn main() -> anyhow::Result<()> {
             let registry = registry::start();
 
             for node in &config.nodes {
-                let executable = config.implementations.get(&node.implementation).ok_or_else(
-                    || anyhow::anyhow!("Unknown implementation '{}' for node '{}'", node.implementation, node.id),
-                )?;
-
-                let mut child = tokio::process::Command::new(executable)
-                    .stdin(Stdio::piped())
-                    .stdout(Stdio::piped())
-                    .spawn()?;
-
-                let stdin = child.stdin.take().expect("stdin was piped");
-                let stdout = child.stdout.take().expect("stdout was piped");
-
-                registry.register(node.id.clone(), stdin).await?;
-
-                let registry = registry.clone();
-                tokio::spawn(async move {
-                    let mut lines = BufReader::new(stdout).lines();
-                    while let Ok(Some(line)) = lines.next_line().await {
-                        match serde_json::from_str::<message::Message>(&line) {
-                            Ok(msg) => {
-                                let _ = registry.route(msg).await;
-                            }
-                            Err(_) => {}
-                        }
-                    }
-                });
+                spawn_node(&config, node, &registry).await?;
             }
 
             tokio::signal::ctrl_c().await?;
         }
     }
+
+    Ok(())
+}
+
+async fn spawn_node(
+    config: &config::Config,
+    node: &config::NodeConfig,
+    registry: &registry::RegistryHandle,
+) -> anyhow::Result<()> {
+    let executable = config.implementations.get(&node.implementation).ok_or_else(
+        || anyhow::anyhow!("Unknown implementation '{}' for node '{}'", node.implementation, node.id),
+    )?;
+
+    let mut child = tokio::process::Command::new(executable)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()?;
+
+    let stdin = child.stdin.take().expect("stdin was piped");
+    let stdout = child.stdout.take().expect("stdout was piped");
+
+    registry.register(node.id.clone(), stdin).await?;
+
+    let registry = registry.clone();
+    tokio::spawn(async move {
+        let mut lines = BufReader::new(stdout).lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            if let Ok(msg) = serde_json::from_str::<message::Message>(&line) {
+                let _ = registry.route(msg).await;
+            }
+        }
+    });
 
     Ok(())
 }

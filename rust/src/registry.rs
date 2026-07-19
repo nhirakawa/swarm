@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use std::time::Duration;
+
 use tokio::io::AsyncWriteExt;
 use tokio::process::ChildStdin;
 use tokio::sync::{mpsc, oneshot};
@@ -14,6 +16,7 @@ enum RegistryRequest {
         stdin: ChildStdin,
         response: oneshot::Sender<()>,
     },
+    #[allow(dead_code)]
     Deregister {
         node_id: NodeId,
         response: oneshot::Sender<bool>,
@@ -39,6 +42,7 @@ impl RegistryHandle {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn deregister(&self, node_id: NodeId) -> anyhow::Result<bool> {
         let (tx, rx) = oneshot::channel();
         self.sender
@@ -79,7 +83,10 @@ async fn run(mut receiver: mpsc::Receiver<RegistryRequest>) {
                 if let Some(stdin) = nodes.get_mut(&message.target) {
                     let mut line = serde_json::to_string(&message).unwrap();
                     line.push('\n');
-                    let delivered = stdin.write_all(line.as_bytes()).await.is_ok();
+                    let write = stdin.write_all(line.as_bytes());
+                    let delivered = tokio::time::timeout(Duration::from_secs(5), write)
+                        .await
+                        .is_ok_and(|r| r.is_ok());
                     let _ = response.send(delivered);
                 } else {
                     let _ = response.send(false);
