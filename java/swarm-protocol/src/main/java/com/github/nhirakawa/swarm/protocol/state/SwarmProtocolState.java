@@ -46,12 +46,18 @@ public abstract class SwarmProtocolState {
 	abstract Optional<Transition> applyTick();
 
 	Optional<Transition> applyPing(PingRequest pingRequest) {
-		context
-			.memberRegistry()
-			.put(pingRequest.source(), MemberStatus.alive(pingRequest.source(), 0));
+		SwarmAddress self = context.swarmConfig().getLocalAddress();
+
+		if (!pingRequest.source().equals(self)) {
+			context
+				.memberRegistry()
+				.put(pingRequest.source(), MemberStatus.alive(pingRequest.source(), 0));
+		}
 
 		for (MemberStatus memberStatus : pingRequest.gossip()) {
-			context.memberRegistry().put(memberStatus.address(), memberStatus);
+			if (!memberStatus.address().equals(self)) {
+				context.memberRegistry().put(memberStatus.address(), memberStatus);
+			}
 		}
 
 		List<StateMachineMessage> refutations = buildRefutationPings(
