@@ -4,7 +4,7 @@ import com.github.nhirakawa.swarm.protocol.SwarmService;
 import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.transport.mem.InMemorySwarmAddress;
 import com.github.nhirakawa.swarm.runner.factory.SwarmServiceFactory;
-import com.github.nhirakawa.swarm.runner.model.LocalSwarmConfig;
+import com.github.nhirakawa.swarm.runner.model.NodeConfigModel;
 import com.github.nhirakawa.swarm.runner.service.SwarmServiceRegistry;
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
@@ -14,12 +14,12 @@ public class AddNodeHandler implements Handler {
 
 	private final SwarmServiceFactory swarmServiceFactory;
 	private final SwarmServiceRegistry registry;
-	private final LocalSwarmConfig localSwarmConfig;
+	private final NodeConfigModel localSwarmConfig;
 
 	public AddNodeHandler(
 		SwarmServiceFactory swarmServiceFactory,
 		SwarmServiceRegistry registry,
-		LocalSwarmConfig localSwarmConfig
+		NodeConfigModel localSwarmConfig
 	) {
 		this.swarmServiceFactory = swarmServiceFactory;
 		this.registry = registry;

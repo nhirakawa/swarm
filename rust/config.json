@@ -1,0 +1,30 @@
+{
+  "implementations": {
+    "java": {
+      "executable": "../java/run-local-node.sh",
+      "args": {
+        "protocol-period": "PT10S",
+        "message-timeout": "PT1S",
+        "protocol-tick": "PT0.05S",
+        "failure-sub-group": "3"
+      }
+    }
+  },
+  "nodes": [
+    {
+      "id": "node-1",
+      "implementation": "java",
+      "admin_port": 8081
+    },
+    {
+      "id": "node-2",
+      "implementation": "java",
+      "admin_port": 8082
+    },
+    {
+      "id": "node-3",
+      "implementation": "java",
+      "admin_port": 8083
+    }
+  ]
+}

@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use tokio::io::AsyncWriteExt;
@@ -24,6 +23,13 @@ enum RegistryRequest {
     Route {
         message: Message,
         response: oneshot::Sender<bool>,
+    },
+    UpdateActive {
+        node_id: NodeId,
+        active: bool,
+    },
+    ListActive {
+        response: oneshot::Sender<Vec<NodeId>>,
     },
 }
 
@@ -58,6 +64,21 @@ impl RegistryHandle {
             .await?;
         Ok(rx.await?)
     }
+
+    pub async fn update_active(&self, node_id: NodeId, active: bool) -> anyhow::Result<()> {
+        self.sender
+            .send(RegistryRequest::UpdateActive { node_id, active })
+            .await?;
+        Ok(())
+    }
+
+    pub async fn list_active(&self) -> anyhow::Result<Vec<NodeId>> {
+        let (tx, rx) = oneshot::channel();
+        self.sender
+            .send(RegistryRequest::ListActive { response: tx })
+            .await?;
+        Ok(rx.await?)
+    }
 }
 
 pub fn start() -> RegistryHandle {
@@ -68,6 +89,7 @@ pub fn start() -> RegistryHandle {
 
 async fn run(mut receiver: mpsc::Receiver<RegistryRequest>) {
     let mut nodes: HashMap<NodeId, ChildStdin> = HashMap::new();
+    let mut active: HashSet<NodeId> = HashSet::new();
 
     while let Some(request) = receiver.recv().await {
         match request {
@@ -77,6 +99,7 @@ async fn run(mut receiver: mpsc::Receiver<RegistryRequest>) {
             }
             RegistryRequest::Deregister { node_id, response } => {
                 let existed = nodes.remove(&node_id).is_some();
+                active.remove(&node_id);
                 let _ = response.send(existed);
             }
             RegistryRequest::Route { message, response } => {
@@ -91,6 +114,16 @@ async fn run(mut receiver: mpsc::Receiver<RegistryRequest>) {
                 } else {
                     let _ = response.send(false);
                 }
+            }
+            RegistryRequest::UpdateActive { node_id, active: is_active } => {
+                if is_active {
+                    active.insert(node_id);
+                } else {
+                    active.remove(&node_id);
+                }
+            }
+            RegistryRequest::ListActive { response } => {
+                let _ = response.send(active.iter().cloned().collect());
             }
         }
     }

@@ -4,6 +4,7 @@ import com.github.nhirakawa.immutable.style.guava.ImmutableStyle;
 import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.google.common.base.Preconditions;
 import java.time.Duration;
+import java.util.Set;
 import org.immutables.value.Value;
 import org.jspecify.annotations.NonNull;
 
@@ -38,6 +39,11 @@ public abstract class SwarmConfigModel {
 	@Value.Default
 	public Duration getMessageTimeoutJitter() {
 		return Duration.ofMillis(getMessageTimeout().toMillis() / 10);
+	}
+
+	@Value.Default
+	public Set<SwarmAddress> getInitialGroup() {
+		return Set.of();
 	}
 
 	@Value.Default

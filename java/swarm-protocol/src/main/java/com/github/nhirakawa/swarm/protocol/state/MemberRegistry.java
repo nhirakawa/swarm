@@ -43,7 +43,6 @@ class MemberRegistry {
 		this(Set.of(), Ticker.systemTicker());
 	}
 
-	@VisibleForTesting
 	MemberRegistry(Set<? extends SwarmAddress> initialGroup) {
 		this(initialGroup, Ticker.systemTicker());
 	}

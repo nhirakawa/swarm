@@ -6,7 +6,7 @@ import com.github.nhirakawa.swarm.protocol.config.SwarmConfig;
 import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.state.SwarmStateMachine;
 import com.github.nhirakawa.swarm.protocol.transport.SwarmTransport;
-import com.github.nhirakawa.swarm.runner.model.LocalSwarmConfig;
+import com.github.nhirakawa.swarm.runner.model.NodeConfigModel;
 import com.github.nhirakawa.swarm.runner.service.LifecycleLogger;
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.inject.Inject;
@@ -28,7 +28,7 @@ public class SwarmServiceFactory {
 
 	public SwarmService create(
 		SwarmAddress address,
-		LocalSwarmConfig localSwarmConfig
+		NodeConfigModel localSwarmConfig
 	) {
 		SwarmTransport transport = transportFactory.create(address);
 

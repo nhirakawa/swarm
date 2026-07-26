@@ -44,12 +44,12 @@ public class InMemoryMessageSender implements SwarmMessageSender {
 	}
 
 	@Override
-	public void send(StateMachineMessage message, Duration timeout) {
+	public boolean send(StateMachineMessage message, Duration timeout) {
 		try {
 			if (message instanceof DiscoveryRequest discoveryRequest) {
-				sendBroadcast(discoveryRequest, timeout);
+				return sendBroadcast(discoveryRequest, timeout);
 			} else {
-				sendUnicast(message, timeout);
+				return sendUnicast(message, timeout);
 			}
 		} catch (IOException e) {
 			LOG.error("Failed to serialize message", e);
@@ -57,7 +57,7 @@ public class InMemoryMessageSender implements SwarmMessageSender {
 		}
 	}
 
-	private void sendBroadcast(DiscoveryRequest message, Duration timeout)
+	private boolean sendBroadcast(DiscoveryRequest message, Duration timeout)
 		throws IOException {
 		// Serialize message to bytes (once for all targets)
 		byte[] payloadBytes = objectWriter.writeValueAsBytes(message);
@@ -69,12 +69,12 @@ public class InMemoryMessageSender implements SwarmMessageSender {
 			header,
 			payloadBytes
 		);
-		networkSimulator.enqueue(wireMessage, timeout);
-
+		boolean enqueued = networkSimulator.enqueue(wireMessage, timeout);
 		LOG.debug("Sent multicast discovery request");
+		return enqueued;
 	}
 
-	private void sendUnicast(StateMachineMessage message, Duration timeout)
+	private boolean sendUnicast(StateMachineMessage message, Duration timeout)
 		throws IOException {
 		// Serialize message to bytes
 		byte[] payloadBytes = objectWriter.writeValueAsBytes(message);
@@ -98,6 +98,7 @@ public class InMemoryMessageSender implements SwarmMessageSender {
 				message.target().asString()
 			);
 		}
+		return enqueued;
 	}
 
 	private MessageHeader createHeader(

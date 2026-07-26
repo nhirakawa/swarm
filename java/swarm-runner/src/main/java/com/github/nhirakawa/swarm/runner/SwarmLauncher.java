@@ -1,13 +1,14 @@
 package com.github.nhirakawa.swarm.runner;
 
 import com.github.nhirakawa.swarm.runner.cmd.Local;
+import com.github.nhirakawa.swarm.runner.cmd.Simulation;
 import com.github.nhirakawa.swarm.runner.guice.GuiceFactory;
 import com.github.nhirakawa.swarm.runner.guice.LocalSwarmModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import picocli.CommandLine;
 
-@CommandLine.Command(subcommands = Local.class)
+@CommandLine.Command(subcommands = { Local.class, Simulation.class })
 public class SwarmLauncher {
 
 	SwarmLauncher() {}

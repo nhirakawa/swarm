@@ -10,6 +10,9 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.transport.mem.InMemorySwarmAddress;
+import com.github.nhirakawa.swarm.protocol.transport.stdio.StdioAddress;
+import com.github.nhirakawa.swarm.protocol.transport.stdio.StdioSwarmAddressDeserializer;
+import com.github.nhirakawa.swarm.protocol.transport.stdio.StdioSwarmAddressSerializer;
 
 public final class Json {
 
@@ -37,11 +40,34 @@ public final class Json {
 		return objectMapper;
 	}
 
+	public static ObjectMapper buildForStdio() {
+		ObjectMapper objectMapper = new ObjectMapper();
+
+		objectMapper.registerModule(new Jdk8Module());
+		objectMapper.registerModule(new JavaTimeModule());
+		objectMapper.registerModule(new GuavaModule());
+
+		objectMapper.registerModule(getStdioAddressModule());
+
+		return objectMapper;
+	}
+
 	private static Module getInMemoryAddressModule() {
 		SimpleModule module = new SimpleModule();
 		module.addAbstractTypeMapping(
 			SwarmAddress.class,
 			InMemorySwarmAddress.class
+		);
+		return module;
+	}
+
+	private static Module getStdioAddressModule() {
+		SimpleModule module = new SimpleModule();
+		module.addAbstractTypeMapping(SwarmAddress.class, StdioAddress.class);
+		module.addSerializer(new StdioSwarmAddressSerializer());
+		module.addDeserializer(
+			StdioAddress.class,
+			new StdioSwarmAddressDeserializer()
 		);
 		return module;
 	}

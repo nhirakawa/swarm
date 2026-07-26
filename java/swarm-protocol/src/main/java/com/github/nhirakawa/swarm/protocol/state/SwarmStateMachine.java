@@ -15,6 +15,7 @@ import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
@@ -54,7 +55,9 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
 	protected void startUp() {
 		LOG.info("Starting state machine");
 
-		MemberRegistry memberRegistry = new MemberRegistry();
+		MemberRegistry memberRegistry = new MemberRegistry(
+			swarmConfig.getInitialGroup()
+		);
 
 		this.swarmProtocolState = SwarmProtocolState.initial(
 			new ProtocolStateContext(
@@ -128,7 +131,15 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
 		);
 
 		for (StateMachineMessage response : transition.getResponsesToSend()) {
-			swarmMessageSender.send(response, Duration.ofMillis(10));
+			try {
+				swarmMessageSender.send(response, Duration.ofMillis(10));
+			} catch (TimeoutException e) {
+				LOG.warn("Timed out sending {}", response.type(), e);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				LOG.warn("Interrupted while sending {}", response.type(), e);
+				break;
+			}
 		}
 	}
 
