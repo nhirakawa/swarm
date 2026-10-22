@@ -119,3 +119,124 @@ Response schema:
 | `memberStatuses[].address` | string | Peer node's address/ID |
 | `memberStatuses[].type` | string | SWIM membership status: `ALIVE`, `SUSPECTED`, or `CONFIRMED` (dead) |
 | `memberStatuses[].incarnation` | integer | Peer's incarnation number as last observed |
+
+## Line Protocol
+
+The router and each node exchange protocol messages over the node's standard streams:
+
+| Stream | Direction | Contents |
+|---|---|---|
+| stdin | router → node | Messages addressed to this node |
+| stdout | node → router | Messages this node is sending |
+| stderr | node → (inherited) | Logs and diagnostics; never parsed by the router |
+
+Nodes MUST NOT write anything other than protocol messages to stdout. Send all logging to stderr.
+
+### Envelope
+
+Each message is a single line of UTF-8 JSON terminated by `\n`:
+
+```json
+{"source": "node-1", "target": "node-2", "payload": "<base64>"}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `source` | string | Node ID of the sender |
+| `target` | string | Node ID of the recipient, or `MULTICAST` (see below) |
+| `payload` | string | Standard (RFC 4648, padded) base64 encoding of a framed message |
+
+The router reads only `source` and `target`. It forwards the envelope unchanged to the target's stdin and never decodes `payload`. Lines that are not valid envelopes are dropped silently. So are messages whose `target` is not a registered node. A write to a node's stdin that does not finish within 5 seconds is abandoned.
+
+### Multicast
+
+When `target` is `MULTICAST`, the router does not forward the message. Instead it replies to the sender with:
+
+```json
+{"source": "__router__", "target": "<sender>", "payload": "[\"node-1\",\"node-3\"]"}
+```
+
+Here `payload` is a JSON-encoded array of the node IDs the router currently considers active, based on its admin-port polling. It is **not** base64 and has no frame header.
+
+> **Note:** The Java `StdioReceiver` expects every `payload` to be a base64 frame, so it currently fails to decode this reply and logs an error. Java nodes discover peers through `--peer` instead.
+
+### Payload Frame
+
+The decoded `payload` is a fixed 22-byte header followed by the message body. All multi-byte integers are big-endian.
+
+| Offset | Size | Field | Description |
+|---|---|---|---|
+| 0 | 1 | `version` | Message format version. Must be `0` |
+| 1 | 1 | `type` | `0` = `PING_ACK`, `1` = `PING_REQUEST`, `2` = `DISCOVERY_REQUEST`, `3` = `DISCOVERY_RESPONSE` |
+| 2 | 1 | `compression` | `0` = none, `1` = gzip. Nodes currently send `0` |
+| 3 | 1 | `serialization` | `0` = JSON, `1` = CBOR. Nodes currently send `0` |
+| 4 | 2 | `payloadLength` | Unsigned length of the body in bytes. Must equal the decoded length minus 22, and be less than 65535 |
+| 6 | 4 | `messageId` | Unsigned per-sender counter, starting at 1 |
+| 10 | 8 | `timestamp` | Send time in Unix epoch milliseconds |
+| 18 | 4 | `checksum` | Reserved for CRC32. Currently always `0` and not verified |
+
+Receivers reject a frame that is shorter than 22 bytes, or whose `payloadLength` does not match the body length.
+
+### Message Bodies
+
+Bodies are JSON objects. The message type is carried only in the header, not in the body. Addresses are node IDs encoded as JSON strings.
+
+**`PING_REQUEST`**
+
+| Field | Type | Description |
+|---|---|---|
+| `source` | string | Sender |
+| `target` | string | Recipient |
+| `proxyFor` | string \| null | For an indirect ping, the node on whose behalf this ping is sent |
+| `protocolPeriodId` | integer | Sender's current protocol period |
+| `gossip` | array of member status | Piggybacked membership updates |
+
+**`PING_ACK`**
+
+| Field | Type | Description |
+|---|---|---|
+| `source` | string | Sender |
+| `target` | string | Recipient |
+| `proxyFor` | string \| null | Echoes `proxyFor` from the request being acknowledged |
+| `protocolPeriodId` | integer | Protocol period of the request being acknowledged |
+| `incarnation` | integer | Sender's incarnation number |
+| `gossip` | array of member status | Piggybacked membership updates |
+
+**`DISCOVERY_REQUEST`**
+
+| Field | Type | Description |
+|---|---|---|
+| `source` | string | Sender |
+| `target` | string | Recipient |
+
+**`DISCOVERY_RESPONSE`**
+
+| Field | Type | Description |
+|---|---|---|
+| `source` | string | Sender |
+| `target` | string | Recipient |
+| `memberList` | array of member status | Sender's view of cluster membership |
+
+A **member status** has the same shape as `memberStatuses[]` in `GET /status`:
+
+```json
+{"address": "node-3", "incarnation": 1, "type": "ALIVE"}
+```
+
+where `type` is `ALIVE`, `SUSPECTED`, or `CONFIRMED`.
+
+### Example
+
+A `DISCOVERY_REQUEST` from `node-1` to `node-2`:
+
+```
+body   = {"source":"node-1","target":"node-2"}                          (37 bytes)
+header = 00 02 00 00 | 00 25 | 00 00 00 01 | 00 00 01 9a 0c a6 0c 00 | 00 00 00 00
+         ver type cmp ser  len    messageId     timestamp (ms)          checksum
+```
+
+On the wire:
+
+```json
+{"source":"node-1","target":"node-2","payload":"AAIAAAAlAAAAAQAAAZoMpgwAAAAAAHsic291cmNlIjoibm9kZS0xIiwidGFyZ2V0Ijoibm9kZS0yIn0="}
+```
