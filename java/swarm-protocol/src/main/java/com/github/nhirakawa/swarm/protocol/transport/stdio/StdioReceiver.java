@@ -11,6 +11,7 @@ import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import com.github.nhirakawa.swarm.protocol.serde.HeaderDeserializer;
 import com.github.nhirakawa.swarm.protocol.transport.SwarmMessageReceiver;
+import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -84,8 +85,23 @@ public class StdioReceiver
 			envelope.get("payload").asText()
 		);
 
-		byte[] headerBytes = Arrays.copyOf(payloadBytes, HEADER_SIZE);
+		Preconditions.checkArgument(
+			payloadBytes.length >= HEADER_SIZE,
+			"Expected at least %s bytes for header, got %s",
+			HEADER_SIZE,
+			payloadBytes.length
+		);
+
+		byte[] headerBytes = Arrays.copyOfRange(payloadBytes, 0, HEADER_SIZE);
 		MessageHeader header = headerDeserializer.deserialize(headerBytes);
+
+		int bodyLength = payloadBytes.length - HEADER_SIZE;
+		Preconditions.checkArgument(
+			bodyLength == header.payloadLength(),
+			"Header payloadLength is %s but body is %s bytes",
+			header.payloadLength(),
+			bodyLength
+		);
 
 		byte[] bodyBytes = Arrays.copyOfRange(
 			payloadBytes,
