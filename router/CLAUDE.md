@@ -6,14 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 cargo build          # compile
-cargo run -- router --config <path>   # run the router
+cargo run -- --config <path>   # run the router
 cargo test           # run all tests
 cargo clippy         # lint
 ```
 
 ## What this is
 
-A Rust implementation of the **SWIM protocol** — a router/coordinator that spawns node processes and routes messages between them over stdin/stdout using newline-delimited JSON.
+A language-neutral test harness for **SWIM protocol** implementations — a router/coordinator written in Rust that spawns node processes and routes messages between them over stdin/stdout using newline-delimited JSON.
 
 ## Architecture
 

@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::process::Stdio;
 use std::time::Duration;
 
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use tokio::io::{AsyncBufReadExt, BufReader};
 
 const MULTICAST_TARGET: &str = "MULTICAST";
@@ -14,42 +14,30 @@ const ROUTER_SOURCE: &str = "__router__";
 const STATUS_POLL_INTERVAL: Duration = Duration::from_secs(5);
 
 #[derive(Debug, Parser)]
-#[command(name = "swarm")]
+#[command(name = "swarm-router")]
 struct Cli {
-    #[command(subcommand)]
-    command: Command,
-}
-
-#[derive(Debug, Subcommand)]
-enum Command {
-    Router {
-        #[arg(short, long)]
-        config: PathBuf,
-    },
+    #[arg(short, long)]
+    config: PathBuf,
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    match cli.command {
-        Command::Router { config } => {
-            let raw = std::fs::read_to_string(&config)?;
-            let config: config::Config = serde_json::from_str(&raw)?;
+    let raw = std::fs::read_to_string(&cli.config)?;
+    let config: config::Config = serde_json::from_str(&raw)?;
 
-            let registry = registry::start();
+    let registry = registry::start();
 
-            for node in &config.nodes {
-                spawn_node(&config, node, &registry).await?;
-            }
-
-            for node in &config.nodes {
-                start_status_poller(node.id.clone(), node.admin_port, registry.clone());
-            }
-
-            tokio::signal::ctrl_c().await?;
-        }
+    for node in &config.nodes {
+        spawn_node(&config, node, &registry).await?;
     }
+
+    for node in &config.nodes {
+        start_status_poller(node.id.clone(), node.admin_port, registry.clone());
+    }
+
+    tokio::signal::ctrl_c().await?;
 
     Ok(())
 }

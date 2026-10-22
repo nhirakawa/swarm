@@ -1,16 +1,14 @@
-# swarm
+# swarm-router
 
-This directory holds the Rust implementation of `swarm`, as well as an inter-process communication router. Only the router is currently implemented.
+This directory holds `swarm-router`, an inter-process communication router that spawns members of a `swarm` cluster (in any implementation language) and routes messages between them.
 
-## Commands
+## Overview
 
-### `router`
+The router is responsible for spawning members of a `swarm` cluster and routing messages between them. When enabled, an admin UI is hosted by an HTTP API; each node's state is proxied through the router. The router can dynamically create new nodes and force nodes to shutdown. Property-based testing may be implemented across heterogeneous implementations.
 
-The `router` command is responsible for spawning members of a `swarm` cluster and routing messages between them. When enabled, an admin UI is hosted by an HTTP API; each node's state is proxied through the router. The router can dynamically create new nodes and force nodes to shutdown. Property-based testing may be implemented across heterogeneous implementations.
+## Implementations
 
-#### Implementations
-
-Implementations that are supported by `router` are expected to conform to a standard interface. Implementations are specified in a JSON configuration file with two top-level fields: `implementations` and `nodes`.
+Implementations that are supported by the router are expected to conform to a standard interface. Implementations are specified in a JSON configuration file with two top-level fields: `implementations` and `nodes`.
 
 **`implementations`** is a map from an arbitrary name to an implementation descriptor:
 
@@ -49,7 +47,7 @@ Example:
 }
 ```
 
-##### CLI Arguments
+### CLI Arguments
 
 The router itself accepts:
 
@@ -67,7 +65,7 @@ Each supported implementation MUST support the following CLI arguments, which th
 
 Additional arguments may be specified in the configuration file under `implementations[name].args` (applied to every node using that implementation) or `nodes[i].args` (applied to a specific node). Node-level args override implementation-level args with the same key.
 
-##### HTTP API
+### HTTP API
 
 Each supported implementation MUST expose the following HTTP endpoints on the port passed as `--admin-port`.
 
