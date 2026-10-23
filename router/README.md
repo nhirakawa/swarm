@@ -137,9 +137,9 @@ Nodes MUST NOT write anything other than protocol messages to stdout. Send all l
 Each message is a single line of UTF-8 JSON terminated by `\n`:
 
 ```json
-{"source": "node-1@1", "target": "node-2@1", "packet": "<base64>"}
-{"source": "node-1@1", "target": "__all__", "packet": "<base64>"}
-{"source": "node-1@1", "target": "__router__", "control": {"kind": "ready"}}
+{"source": "node-1", "target": "node-2", "packet": "<base64>"}
+{"source": "node-1", "target": "__all__", "packet": "<base64>"}
+{"source": "node-1", "target": "__router__", "control": {"kind": "ready"}}
 ```
 
 > **Note:** This section describes the target format. The router and the Java node still use a single `payload` field and `MULTICAST` discovery until the migration lands.
@@ -151,7 +151,7 @@ Each message is a single line of UTF-8 JSON terminated by `\n`:
 | `packet` | string | Standard (RFC 4648, padded) base64 encoding of a framed protocol message. Sent node → node |
 | `control` | object | A control message tagged by `kind`. Sent between a node and the router |
 
-Every line has exactly one of `packet` or `control`, and receivers branch on which field is present, never on `source` or `target`. `__router__` is the router's own address: the `target` of every node → router `control` line and the `source` of every router → node one. The line format has no version field, because the router and its nodes always ship together.
+Every line has exactly one of `packet` or `control`, and receivers branch on which field is present, never on `source` or `target`. Node IDs starting with `__` are reserved for router addresses. `__router__` is the router's own address: the `target` of every node → router `control` line and the `source` of every router → node one. The line format has no version field, because the router and its nodes always ship together.
 
 The router forwards `packet` lines unchanged to the target's stdin and never decodes them. `__all__` is the broadcast address: the router copies a `packet` sent to `__all__` to every Ready node except the sender, and simulated partitions apply to each copy separately. It drops and logs:
 
@@ -240,16 +240,16 @@ where `type` is `ALIVE`, `SUSPECTED`, or `CONFIRMED`.
 
 ### Example
 
-A `DISCOVERY_REQUEST` from `node-1@1` to `node-2@1`:
+A `DISCOVERY_REQUEST` from `node-1` to `node-2`:
 
 ```
-body   = {"source":"node-1@1","target":"node-2@1"}                      (41 bytes)
-header = 00 02 00 00 | 00 29 | 00 00 00 01 | 00 00 01 9a 0c a6 0c 00 | 00 00 00 00
+body   = {"source":"node-1","target":"node-2"}                          (37 bytes)
+header = 00 02 00 00 | 00 25 | 00 00 00 01 | 00 00 01 9a 0c a6 0c 00 | 00 00 00 00
          ver type cmp ser  len    messageId     timestamp (ms)          checksum
 ```
 
 On the wire:
 
 ```json
-{"source":"node-1@1","target":"node-2@1","packet":"AAIAAAApAAAAAQAAAZoMpgwAAAAAAHsic291cmNlIjoibm9kZS0xQDEiLCJ0YXJnZXQiOiJub2RlLTJAMSJ9"}
+{"source":"node-1","target":"node-2","packet":"AAIAAAAlAAAAAQAAAZoMpgwAAAAAAHsic291cmNlIjoibm9kZS0xIiwidGFyZ2V0Ijoibm9kZS0yIn0="}
 ```
