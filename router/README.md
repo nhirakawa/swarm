@@ -137,9 +137,9 @@ Nodes MUST NOT write anything other than protocol messages to stdout. Send all l
 Each message is a single line of UTF-8 JSON terminated by `\n`:
 
 ```json
-{"source": "node-1#0", "target": "node-2#0", "packet": "<base64>"}
-{"source": "node-1#0", "target": "__all__", "packet": "<base64>"}
-{"source": "node-1#0", "target": "__router__", "control": {"kind": "ready"}}
+{"source": "node-1@1", "target": "node-2@1", "packet": "<base64>"}
+{"source": "node-1@1", "target": "__all__", "packet": "<base64>"}
+{"source": "node-1@1", "target": "__router__", "control": {"kind": "ready"}}
 ```
 
 > **Note:** This section describes the target format. The router and the Java node still use a single `payload` field and `MULTICAST` discovery until the migration lands.
@@ -240,10 +240,10 @@ where `type` is `ALIVE`, `SUSPECTED`, or `CONFIRMED`.
 
 ### Example
 
-A `DISCOVERY_REQUEST` from `node-1#0` to `node-2#0`:
+A `DISCOVERY_REQUEST` from `node-1@1` to `node-2@1`:
 
 ```
-body   = {"source":"node-1#0","target":"node-2#0"}                      (41 bytes)
+body   = {"source":"node-1@1","target":"node-2@1"}                      (41 bytes)
 header = 00 02 00 00 | 00 29 | 00 00 00 01 | 00 00 01 9a 0c a6 0c 00 | 00 00 00 00
          ver type cmp ser  len    messageId     timestamp (ms)          checksum
 ```
@@ -251,5 +251,5 @@ header = 00 02 00 00 | 00 29 | 00 00 00 01 | 00 00 01 9a 0c a6 0c 00 | 00 00 00 
 On the wire:
 
 ```json
-{"source":"node-1#0","target":"node-2#0","packet":"AAIAAAApAAAAAQAAAZoMpgwAAAAAAHsic291cmNlIjoibm9kZS0xIzAiLCJ0YXJnZXQiOiJub2RlLTIjMCJ9"}
+{"source":"node-1@1","target":"node-2@1","packet":"AAIAAAApAAAAAQAAAZoMpgwAAAAAAHsic291cmNlIjoibm9kZS0xQDEiLCJ0YXJnZXQiOiJub2RlLTJAMSJ9"}
 ```
