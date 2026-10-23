@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swarm Router</title>
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --text: #1f1f1d;
+    --muted: #6b6b66;
+    --border: #e2e1dc;
+    --accent: #2f6fd6;
+    --alive-bg: #e3f3e1;
+    --alive-fg: #1f6b2a;
+    --suspected-bg: #fbf0d6;
+    --suspected-fg: #8a5a00;
+    --confirmed-bg: #fbe3e1;
+    --confirmed-fg: #a1261b;
+    --none-bg: #f0efec;
+    --danger: #b4281d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161615;
+      --surface: #1f1f1d;
+      --text: #ecebe6;
+      --muted: #9c9b95;
+      --border: #34332f;
+      --accent: #6b9ef0;
+      --alive-bg: #1d3420;
+      --alive-fg: #8fd49a;
+      --suspected-bg: #3a2f14;
+      --suspected-fg: #f0c463;
+      --confirmed-bg: #3f1d1a;
+      --confirmed-fg: #f19a90;
+      --none-bg: #2a2926;
+      --danger: #f08378;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; }
+  h1 { font-size: 20px; margin: 0; margin-right: auto; }
+  h2 { font-size: 15px; margin: 0 0 4px; }
+  .hint { color: var(--muted); margin: 0 0 12px; font-size: 13px; }
+  section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { font-weight: 600; color: var(--muted); font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  .muted { color: var(--muted); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+  .ready, .ALIVE { background: var(--alive-bg); color: var(--alive-fg); }
+  .spawned, .SUSPECTED { background: var(--suspected-bg); color: var(--suspected-fg); }
+  .exited, .CONFIRMED { background: var(--confirmed-bg); color: var(--confirmed-fg); }
+  .unknown { background: var(--none-bg); color: var(--muted); }
+  button {
+    font: inherit;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: 0.4; cursor: default; }
+  button.danger { color: var(--danger); }
+  .actions { display: flex; gap: 6px; }
+  label { display: inline-flex; align-items: center; gap: 6px; }
+  select { font: inherit; font-size: 13px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; }
+  #status { font-size: 13px; color: var(--muted); }
+  #status.error { color: var(--danger); }
+  .matrix td { text-align: center; }
+  .matrix td:first-child, .matrix th:first-child { text-align: left; }
+  .cell { display: inline-block; min-width: 90px; padding: 3px 6px; border-radius: 6px; font-size: 12px; }
+  .cell small { opacity: 0.75; margin-left: 4px; }
+  .self { border: 1px dashed var(--border); color: var(--muted); }
+  .stale td:first-child::after { content: " (stale)"; color: var(--muted); font-weight: 400; }
+  .history { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .history input[type=range] { flex: 1; min-width: 160px; }
+  #viewing { font-size: 13px; color: var(--muted); min-width: 150px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Swarm router</h1>
+    <span id="status">Loading…</span>
+    <label><input type="checkbox" id="auto" checked> Auto-refresh</label>
+    <select id="interval" aria-label="Refresh interval">
+      <option value="1000">1s</option>
+      <option value="2000" selected>2s</option>
+      <option value="5000">5s</option>
+      <option value="10000">10s</option>
+    </select>
+    <button id="refresh">Refresh</button>
+  </header>
+
+  <section>
+    <h2>Nodes</h2>
+    <p class="hint">Process state as the router sees it. Kill simulates a crash; Stop sends SIGTERM first.</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Node</th><th>State</th><th>Spawns</th><th>Incarnation</th><th>Reply</th><th>Last exit</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="nodes"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Membership</h2>
+    <p class="hint">Each row is one node's view of the cluster: the status and incarnation it holds for every other node.</p>
+    <div class="history">
+      <input type="range" id="scrubber" min="0" max="0" value="0" aria-label="Fetch history">
+      <span id="viewing">Live</span>
+      <button id="live" disabled>Back to live</button>
+    </div>
+    <div class="scroll">
+      <table class="matrix">
+        <thead id="matrix-head"></thead>
+        <tbody id="matrix-body"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+  // Fetches kept for the membership history. The router keeps only the latest
+  // snapshot, so history lives here and is lost on reload.
+  const MAX_HISTORY = 500;
+
+  const history = [];
+  let viewIndex = null; // null follows the latest fetch
+  let fetching = false;
+  let timer = null;
+
+  const $ = (id) => document.getElementById(id);
+
+  function el(tag, props = {}, ...children) {
+    const node = document.createElement(tag);
+    for (const [key, value] of Object.entries(props)) {
+      if (key === "class") node.className = value;
+      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+      else node[key] = value;
+    }
+    for (const child of children) {
+      if (child != null) node.append(child);
+    }
+    return node;
+  }
+
+  function setStatus(text, isError = false) {
+    $("status").textContent = text;
+    $("status").classList.toggle("error", isError);
+  }
+
+  async function refresh() {
+    if (fetching) return;
+    fetching = true;
+    try {
+      const response = await fetch("/nodes");
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || response.statusText);
+      history.push({ at: new Date(), nodes: body.nodes });
+      if (history.length > MAX_HISTORY) {
+        history.shift();
+        if (viewIndex !== null) viewIndex = Math.max(0, viewIndex - 1);
+      }
+      setStatus("Updated " + history.at(-1).at.toLocaleTimeString());
+      render();
+    } catch (e) {
+      setStatus("Fetch failed: " + e.message, true);
+    } finally {
+      fetching = false;
+    }
+  }
+
+  async function act(id, action) {
+    try {
+      const response = await fetch(`/nodes/${encodeURIComponent(id)}/${action}`, { method: "POST" });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || response.statusText);
+      }
+      setStatus(`${action} ${id}: accepted`);
+    } catch (e) {
+      setStatus(`${action} ${id} failed: ${e.message}`, true);
+    }
+    // The action only starts the change; give the process a moment before looking.
+    setTimeout(refresh, 300);
+  }
+
+  function describeExit(exit) {
+    if (!exit) return el("span", { class: "muted" }, "—");
+    const reasons = { never_ready: "never ready", killed: "killed", stopped: "stopped" };
+    const how = exit.signal != null ? `signal ${exit.signal}` : exit.code != null ? `code ${exit.code}` : null;
+    const what = reasons[exit.reason] || "exited on its own";
+    return how ? `${what} (${how})` : what;
+  }
+
+  function describeReply(status) {
+    if (!status) return el("span", { class: "muted" }, "—");
+    if (status.replied) return "fresh";
+    if (!status.snapshot) return el("span", { class: "muted" }, "no reply");
+    const seconds = Math.round(status.snapshot_age_ms / 1000);
+    return el("span", { class: "muted" }, `no reply · ${seconds}s old`);
+  }
+
+  function renderNodes(nodes) {
+    const rows = nodes.map((node) => {
+      const running = node.state !== "exited";
+      const snapshot = node.status && node.status.snapshot;
+      return el("tr", {},
+        el("td", { class: "mono" }, node.id),
+        el("td", {}, el("span", { class: `badge ${node.state}` }, node.state)),
+        el("td", {}, String(node.spawns)),
+        el("td", {}, snapshot ? String(snapshot.incarnation) : el("span", { class: "muted" }, "—")),
+        el("td", {}, describeReply(node.status)),
+        el("td", {}, node.state === "exited" ? describeExit(node.exit) : el("span", { class: "muted" }, "—")),
+        el("td", {}, el("div", { class: "actions" },
+          el("button", { disabled: !running, onclick: () => act(node.id, "stop") }, "Stop"),
+          el("button", { class: "danger", disabled: !running, onclick: () => act(node.id, "kill") }, "Kill"),
+          el("button", { disabled: running, onclick: () => act(node.id, "restart") }, "Restart"),
+        )),
+      );
+    });
+    $("nodes").replaceChildren(...rows);
+  }
+
+  function statusCell(member) {
+    if (!member) return el("span", { class: "cell unknown" }, "not known");
+    return el("span", { class: `cell ${member.type}` }, member.type.toLowerCase(), el("small", {}, `#${member.incarnation}`));
+  }
+
+  function renderMatrix(entry) {
+    const ids = entry.nodes.map((node) => node.id);
+    $("matrix-head").replaceChildren(el("tr", {},
+      el("th", {}, "Observer"),
+      ...ids.map((id) => el("th", { class: "mono" }, id)),
+    ));
+
+    const rows = entry.nodes.map((observer) => {
+      const status = observer.status;
+      const snapshot = status && status.snapshot;
+      const row = el("tr", { class: status && !status.replied && snapshot ? "stale" : "" },
+        el("td", { class: "mono" }, observer.id));
+      if (!snapshot) {
+        row.append(el("td", { colSpan: ids.length, class: "muted" },
+          observer.state === "exited" ? "exited" : "no snapshot yet"));
+        return row;
+      }
+      const members = new Map(snapshot.memberStatuses.map((member) => [member.address, member]));
+      for (const id of ids) {
+        const cell = id === observer.id
+          ? el("span", { class: "cell self" }, "self", el("small", {}, `#${snapshot.incarnation}`))
+          : statusCell(members.get(id));
+        row.append(el("td", {}, cell));
+      }
+      return row;
+    });
+    $("matrix-body").replaceChildren(...rows);
+  }
+
+  function renderHistory() {
+    const scrubber = $("scrubber");
+    scrubber.max = String(Math.max(0, history.length - 1));
+    scrubber.value = String(viewIndex ?? history.length - 1);
+    scrubber.disabled = history.length < 2;
+    $("live").disabled = viewIndex === null;
+    const entry = history[viewIndex ?? history.length - 1];
+    $("viewing").textContent = viewIndex === null
+      ? "Live"
+      : `${entry.at.toLocaleTimeString()} (${history.length - 1 - viewIndex} fetches ago)`;
+  }
+
+  function render() {
+    if (history.length === 0) return;
+    renderNodes(history.at(-1).nodes);
+    renderMatrix(history[viewIndex ?? history.length - 1]);
+    renderHistory();
+  }
+
+  function schedule() {
+    clearInterval(timer);
+    timer = $("auto").checked ? setInterval(refresh, Number($("interval").value)) : null;
+  }
+
+  $("refresh").addEventListener("click", refresh);
+  $("auto").addEventListener("change", schedule);
+  $("interval").addEventListener("change", schedule);
+  $("scrubber").addEventListener("input", (event) => {
+    const index = Number(event.target.value);
+    viewIndex = index === history.length - 1 ? null : index;
+    render();
+  });
+  $("live").addEventListener("click", () => {
+    viewIndex = null;
+    render();
+  });
+
+  refresh();
+  schedule();
+</script>
+</body>
+</html>

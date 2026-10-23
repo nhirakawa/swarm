@@ -1,6 +1,6 @@
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::Serialize;
@@ -8,6 +8,9 @@ use serde_json::{Value, json};
 
 use crate::nodes::{ActionError, Exit, Supervisor};
 use crate::registry::{NodeState, RegistryHandle};
+
+/// The admin UI: one self-contained page that calls the API below.
+const ADMIN_PAGE: &str = include_str!("../assets/admin.html");
 
 #[derive(Clone)]
 struct AdminState {
@@ -17,6 +20,7 @@ struct AdminState {
 
 pub fn router(supervisor: Supervisor, registry: RegistryHandle) -> Router {
     Router::new()
+        .route("/", get(|| async { Html(ADMIN_PAGE) }))
         .route("/nodes", get(list_nodes))
         .route("/nodes/{id}/restart", post(restart))
         .route("/nodes/{id}/kill", post(kill))
@@ -145,6 +149,17 @@ mod tests {
         assert_eq!(nodes[1]["state"], "exited");
         assert_eq!(nodes[1]["exit"], json!({"code": null, "signal": 9, "reason": "killed"}));
         assert_eq!(nodes[1]["status"], Value::Null);
+    }
+
+    #[tokio::test]
+    async fn serves_the_admin_page() {
+        let harness = start(&[]).await;
+        let app = router(harness.supervisor.clone(), harness.registry.clone());
+
+        let request = Request::builder().uri("/").body(Body::empty()).unwrap();
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(response.headers()["content-type"].to_str().unwrap().starts_with("text/html"));
     }
 
     #[tokio::test]

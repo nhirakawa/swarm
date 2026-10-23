@@ -102,10 +102,13 @@ A node answers a `status_request` control message with a JSON snapshot of its cu
 
 ## Admin API
 
-The router serves an HTTP API on `--admin-host` and `--admin-port`. Nodes do not need an HTTP server of their own.
+The router serves an HTTP API and admin UI on `--admin-host` and `--admin-port`; open `http://127.0.0.1:8080/` for the UI. Nodes do not need an HTTP server of their own.
+
+The UI lists each node's process state with Stop, Kill and Restart buttons, and shows a membership matrix: one row per node, giving the status and incarnation it holds for every other node. It refreshes on an interval you can change or turn off, and keeps every fetch it has received, so you can scrub back through how membership changed. That history lives in the page and is lost on reload.
 
 | Endpoint | Description |
 |---|---|
+| `GET /` | The admin UI |
 | `GET /nodes` | Fetch status from every Ready node and list every config node |
 | `POST /nodes/{id}/restart` | Start a fresh process for an Exited node under the same address, with every Ready node as `--peer` |
 | `POST /nodes/{id}/kill` | Send SIGKILL, to simulate a crash |
