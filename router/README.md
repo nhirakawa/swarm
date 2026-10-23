@@ -138,6 +138,7 @@ Each message is a single line of UTF-8 JSON terminated by `\n`:
 
 ```json
 {"source": "node-1#0", "target": "node-2#0", "packet": "<base64>"}
+{"source": "node-1#0", "target": "__all__", "packet": "<base64>"}
 {"source": "node-1#0", "target": "__router__", "control": {"kind": "ready"}}
 ```
 
@@ -146,16 +147,16 @@ Each message is a single line of UTF-8 JSON terminated by `\n`:
 | Field | Type | Description |
 |---|---|---|
 | `source` | string | Address of the sender, or `__router__` |
-| `target` | string | Address of the recipient, or `__router__` |
+| `target` | string | Address of the recipient, `__router__`, or `__all__` |
 | `packet` | string | Standard (RFC 4648, padded) base64 encoding of a framed protocol message. Sent node → node |
 | `control` | object | A control message tagged by `kind`. Sent between a node and the router |
 
 Every line has exactly one of `packet` or `control`, and receivers branch on which field is present, never on `source` or `target`. `__router__` is the router's own address: the `target` of every node → router `control` line and the `source` of every router → node one. The line format has no version field, because the router and its nodes always ship together.
 
-The router forwards `packet` lines unchanged to the target's stdin and never decodes them. It drops and logs:
+The router forwards `packet` lines unchanged to the target's stdin and never decodes them. `__all__` is the broadcast address: the router copies a `packet` sent to `__all__` to every Ready node except the sender, and simulated partitions apply to each copy separately. It drops and logs:
 
 - lines that are not valid JSON, or that have both body fields or neither;
-- a `control` addressed to a node, or a `packet` addressed to `__router__`;
+- a `control` addressed to a node or to `__all__`, or a `packet` addressed to `__router__`;
 - messages whose `target` is not a registered node.
 
 A write to a node's stdin that does not finish within 5 seconds is abandoned.
@@ -165,12 +166,12 @@ A write to a node's stdin that does not finish within 5 seconds is abandoned.
 | `kind` | Direction | Other fields in `control` | Meaning |
 |---|---|---|---|
 | `ready` | node → router | none | Node has initialized and can accept protocol messages. Sent once |
-| `discover` | node → router | none | Request for the current active set. Sent repeatedly during join, then periodically at a lower rate |
-| `members` | router → node | `nodes`: array of node addresses | Reply to `discover` |
 | `status_request` | router → node | `id`: integer | Ask for a state snapshot |
 | `status` | node → router | `id` (echoed), `snapshot`: object | Reply to `status_request`; `snapshot` uses the `GET /status` schema above |
 
 Receivers ignore unknown `kind` values.
+
+Control messages cover only the process and observation. Everything nodes say to each other, discovery included, travels as packets: a node broadcasts `DISCOVERY_REQUEST` to `__all__` repeatedly while joining, then periodically at a lower rate so it can find peers again after a partition heals, and merges the `DISCOVERY_RESPONSE` replies.
 
 ### Packet Frame
 
