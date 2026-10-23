@@ -53,9 +53,12 @@ The router itself accepts:
 | Argument | Description |
 |---|---|
 | `--config <path>` | Path to the JSON configuration file (required) |
+| `--admin-host <host>` | Host or IP address the admin HTTP API listens on. Default `127.0.0.1` |
+| `--admin-port <port>` | Port the admin HTTP API listens on. Default `8080` |
 | `--ready-timeout <duration>` | How long a node has to send `ready` before the router kills it, e.g. `30s` or `500ms`. Default `30s` |
 | `--status-timeout <duration>` | How long a status fetch waits for each node's `status` reply. Default `2s` |
 | `--status-debounce <duration>` | How long after a status fetch finishes that new requests are answered from the cached snapshots instead of asking the nodes again. Default `1s` |
+| `--stop-grace <duration>` | How long Stop waits after SIGTERM before sending SIGKILL. Default `5s` |
 
 Each supported implementation MUST support the following CLI arguments, which the router passes automatically when spawning nodes:
 
@@ -97,6 +100,51 @@ A node answers a `status_request` control message with a JSON snapshot of its cu
 | `memberStatuses[].type` | string | SWIM membership status: `ALIVE`, `SUSPECTED`, or `CONFIRMED` (dead) |
 | `memberStatuses[].incarnation` | integer | Peer's incarnation number as last observed |
 
+## Admin API
+
+The router serves an HTTP API on `--admin-host` and `--admin-port`. Nodes do not need an HTTP server of their own.
+
+| Endpoint | Description |
+|---|---|
+| `GET /nodes` | Fetch status from every Ready node and list every config node |
+| `POST /nodes/{id}/restart` | Start a fresh process for an Exited node under the same address, with every Ready node as `--peer` |
+| `POST /nodes/{id}/kill` | Send SIGKILL, to simulate a crash |
+| `POST /nodes/{id}/stop` | Send SIGTERM, then SIGKILL if the node has not exited after `--stop-grace` |
+
+Actions return `202 Accepted` once started; `GET /nodes` shows when the node has actually exited or become ready. They return `404` for an unknown node and `409` when the node is in the wrong state: restart needs an Exited node, and kill and stop need a running one. Errors have a JSON body `{"error": "<message>"}`.
+
+`GET /nodes` returns the nodes in config order:
+
+```json
+{
+  "nodes": [
+    {
+      "id": "node-1",
+      "state": "ready",
+      "spawns": 1,
+      "exit": null,
+      "status": {"replied": true, "snapshot": {"localAddress": "node-1", "...": "..."}, "snapshot_age_ms": 18}
+    },
+    {
+      "id": "node-2",
+      "state": "exited",
+      "spawns": 1,
+      "exit": {"code": null, "signal": 9, "reason": "killed"},
+      "status": null
+    }
+  ]
+}
+```
+
+| Field | Description |
+|---|---|
+| `state` | `spawned` (waiting for `ready`), `ready`, or `exited` |
+| `spawns` | How many processes the router has started for this node |
+| `exit` | The last process's exit while the node is Exited: its exit `code` or `signal`, and `reason` — `never_ready`, `killed`, `stopped`, or `null` if it exited on its own |
+| `status.replied` | Whether the node answered this fetch within `--status-timeout` |
+| `status.snapshot` | The node's latest status snapshot, from an earlier fetch if it did not reply to this one |
+| `status.snapshot_age_ms` | How long ago that snapshot arrived |
+
 ## Line Protocol
 
 The router and each node exchange protocol messages over the node's standard streams:
@@ -119,7 +167,7 @@ Each message is a single line of UTF-8 JSON terminated by `\n`:
 {"source": "node-1", "target": "__router__", "control": {"kind": "ready"}}
 ```
 
-> **Note:** The router sends `status_request` only when an admin client asks for status, which arrives with the router's admin API. It sends one request to every Ready node at once and keeps each node's latest snapshot.
+> **Note:** The router sends `status_request` only when an admin client calls `GET /nodes`. It sends one request to every Ready node at once and keeps each node's latest snapshot.
 
 | Field | Type | Description |
 |---|---|---|

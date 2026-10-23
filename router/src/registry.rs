@@ -95,6 +95,9 @@ enum RegistryRequest {
         line: Line,
         response: oneshot::Sender<usize>,
     },
+    ReadyNodes {
+        response: oneshot::Sender<Vec<NodeId>>,
+    },
     FetchStatus {
         response: oneshot::Sender<StatusView>,
     },
@@ -139,10 +142,14 @@ impl RegistryHandle {
         self.request(|response| RegistryRequest::Broadcast { line, response }).await
     }
 
+    /// Returns the IDs of every Ready node, sorted.
+    pub async fn ready_nodes(&self) -> anyhow::Result<Vec<NodeId>> {
+        self.request(|response| RegistryRequest::ReadyNodes { response }).await
+    }
+
     /// Sends `status_request` to every Ready node and waits for their replies or the
     /// timeout. Joins a fetch already in flight, and answers from the cache within the
     /// debounce window of the last one.
-    #[allow(dead_code)] // called by the admin API
     pub async fn fetch_status(&self) -> anyhow::Result<StatusView> {
         self.request(|response| RegistryRequest::FetchStatus { response }).await
     }
@@ -249,6 +256,14 @@ impl Registry {
                     }
                 }
                 let _ = response.send(delivered);
+            }
+            RegistryRequest::ReadyNodes { response } => {
+                let mut ready: Vec<NodeId> = self.nodes.iter()
+                    .filter(|(_, node)| node.state == NodeState::Ready)
+                    .map(|(node_id, _)| node_id.clone())
+                    .collect();
+                ready.sort();
+                let _ = response.send(ready);
             }
             RegistryRequest::FetchStatus { response } => {
                 self.fetch_status(response).await;
@@ -451,6 +466,16 @@ mod tests {
         let delivered = registry.broadcast(packet("node-1", BROADCAST_ADDRESS)).await.unwrap();
         assert_eq!(delivered, 1);
         assert!(ready.next_line().await.unwrap().is_some());
+    }
+
+    #[tokio::test]
+    async fn lists_only_ready_nodes() {
+        let registry = start(SETTINGS);
+        let _node_2 = register_ready(&registry, "node-2").await;
+        let _node_1 = register_ready(&registry, "node-1").await;
+        let _spawned = register(&registry, "node-3").await;
+
+        assert_eq!(registry.ready_nodes().await.unwrap(), vec!["node-1", "node-2"]);
     }
 
     #[tokio::test]
