@@ -137,32 +137,44 @@ Nodes MUST NOT write anything other than protocol messages to stdout. Send all l
 Each message is a single line of UTF-8 JSON terminated by `\n`:
 
 ```json
-{"source": "node-1", "target": "node-2", "payload": "<base64>"}
+{"source": "node-1#0", "target": "node-2#0", "packet": "<base64>"}
+{"source": "node-1#0", "target": "__router__", "control": {"kind": "ready"}}
 ```
+
+> **Note:** This section describes the target format. The router and the Java node still use a single `payload` field and `MULTICAST` discovery until the migration lands.
 
 | Field | Type | Description |
 |---|---|---|
-| `source` | string | Node ID of the sender |
-| `target` | string | Node ID of the recipient, or `MULTICAST` (see below) |
-| `payload` | string | Standard (RFC 4648, padded) base64 encoding of a framed message |
+| `source` | string | Address of the sender, or `__router__` |
+| `target` | string | Address of the recipient, or `__router__` |
+| `packet` | string | Standard (RFC 4648, padded) base64 encoding of a framed protocol message. Sent node → node |
+| `control` | object | A control message tagged by `kind`. Sent between a node and the router |
 
-The router reads only `source` and `target`. It forwards the envelope unchanged to the target's stdin and never decodes `payload`. Lines that are not valid envelopes are dropped silently. So are messages whose `target` is not a registered node. A write to a node's stdin that does not finish within 5 seconds is abandoned.
+Every line has exactly one of `packet` or `control`, and receivers branch on which field is present, never on `source` or `target`. `__router__` is the router's own address: the `target` of every node → router `control` line and the `source` of every router → node one. The line format has no version field, because the router and its nodes always ship together.
 
-### Multicast
+The router forwards `packet` lines unchanged to the target's stdin and never decodes them. It drops and logs:
 
-When `target` is `MULTICAST`, the router does not forward the message. Instead it replies to the sender with:
+- lines that are not valid JSON, or that have both body fields or neither;
+- a `control` addressed to a node, or a `packet` addressed to `__router__`;
+- messages whose `target` is not a registered node.
 
-```json
-{"source": "__router__", "target": "<sender>", "payload": "[\"node-1\",\"node-3\"]"}
-```
+A write to a node's stdin that does not finish within 5 seconds is abandoned.
 
-Here `payload` is a JSON-encoded array of the node IDs the router currently considers active, based on its admin-port polling. It is **not** base64 and has no frame header.
+### Control Messages
 
-> **Note:** The Java `StdioReceiver` expects every `payload` to be a base64 frame, so it currently fails to decode this reply and logs an error. Java nodes discover peers through `--peer` instead.
+| `kind` | Direction | Other fields in `control` | Meaning |
+|---|---|---|---|
+| `ready` | node → router | none | Node has initialized and can accept protocol messages. Sent once |
+| `discover` | node → router | none | Request for the current active set. Sent repeatedly during join, then periodically at a lower rate |
+| `members` | router → node | `nodes`: array of node addresses | Reply to `discover` |
+| `status_request` | router → node | `id`: integer | Ask for a state snapshot |
+| `status` | node → router | `id` (echoed), `snapshot`: object | Reply to `status_request`; `snapshot` uses the `GET /status` schema above |
 
-### Payload Frame
+Receivers ignore unknown `kind` values.
 
-The decoded `payload` is a fixed 22-byte header followed by the message body. All multi-byte integers are big-endian.
+### Packet Frame
+
+The decoded `packet` is a fixed 22-byte header followed by the message body. All multi-byte integers are big-endian.
 
 | Offset | Size | Field | Description |
 |---|---|---|---|
@@ -227,16 +239,16 @@ where `type` is `ALIVE`, `SUSPECTED`, or `CONFIRMED`.
 
 ### Example
 
-A `DISCOVERY_REQUEST` from `node-1` to `node-2`:
+A `DISCOVERY_REQUEST` from `node-1#0` to `node-2#0`:
 
 ```
-body   = {"source":"node-1","target":"node-2"}                          (37 bytes)
-header = 00 02 00 00 | 00 25 | 00 00 00 01 | 00 00 01 9a 0c a6 0c 00 | 00 00 00 00
+body   = {"source":"node-1#0","target":"node-2#0"}                      (41 bytes)
+header = 00 02 00 00 | 00 29 | 00 00 00 01 | 00 00 01 9a 0c a6 0c 00 | 00 00 00 00
          ver type cmp ser  len    messageId     timestamp (ms)          checksum
 ```
 
 On the wire:
 
 ```json
-{"source":"node-1","target":"node-2","payload":"AAIAAAAlAAAAAQAAAZoMpgwAAAAAAHsic291cmNlIjoibm9kZS0xIiwidGFyZ2V0Ijoibm9kZS0yIn0="}
+{"source":"node-1#0","target":"node-2#0","packet":"AAIAAAApAAAAAQAAAZoMpgwAAAAAAHsic291cmNlIjoibm9kZS0xIzAiLCJ0YXJnZXQiOiJub2RlLTIjMCJ9"}
 ```
