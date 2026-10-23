@@ -69,6 +69,7 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
 				terminationCallback
 			)
 		);
+		updateSnapshot();
 	}
 
 	@Override
@@ -121,14 +122,7 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
 		}
 		swarmProtocolState = transition.getNextSwarmProtocolState();
 
-		stateSnapshot.set(
-			StateSnapshot.builder()
-				.setLocalAddress(swarmConfig.getLocalAddress())
-				.setProtocolPeriodId(swarmProtocolState.context().protocolPeriodId())
-				.setIncarnation(swarmProtocolState.context().incarnation())
-				.addAllMemberStatuses(swarmProtocolState.getMemberStatuses())
-				.build()
-		);
+		updateSnapshot();
 
 		for (StateMachineMessage response : transition.getResponsesToSend()) {
 			try {
@@ -141,6 +135,17 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
 				break;
 			}
 		}
+	}
+
+	private void updateSnapshot() {
+		stateSnapshot.set(
+			StateSnapshot.builder()
+				.setLocalAddress(swarmConfig.getLocalAddress())
+				.setProtocolPeriodId(swarmProtocolState.context().protocolPeriodId())
+				.setIncarnation(swarmProtocolState.context().incarnation())
+				.addAllMemberStatuses(swarmProtocolState.getMemberStatuses())
+				.build()
+		);
 	}
 
 	@Override

@@ -8,6 +8,7 @@ import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -54,11 +55,7 @@ public abstract class SwarmProtocolState {
 				.put(pingRequest.source(), MemberStatus.alive(pingRequest.source(), 0));
 		}
 
-		for (MemberStatus memberStatus : pingRequest.gossip()) {
-			if (!memberStatus.address().equals(self)) {
-				context.memberRegistry().put(memberStatus.address(), memberStatus);
-			}
-		}
+		mergeMemberStatuses(pingRequest.gossip());
 
 		List<StateMachineMessage> refutations = buildRefutationPings(
 			pingRequest.gossip()
@@ -83,24 +80,68 @@ public abstract class SwarmProtocolState {
 		);
 	}
 
+	/**
+	 * Merges member statuses learned from a peer into the registry. Statuses about
+	 * this node are skipped: those are refuted, never stored.
+	 */
+	final void mergeMemberStatuses(List<MemberStatus> memberStatuses) {
+		SwarmAddress self = context.swarmConfig().getLocalAddress();
+		for (MemberStatus memberStatus : memberStatuses) {
+			if (!memberStatus.address().equals(self)) {
+				context.memberRegistry().put(memberStatus.address(), memberStatus);
+			}
+		}
+	}
+
+	/**
+	 * If peers suspect or have confirmed this node at its current incarnation or
+	 * later, raises the incarnation past theirs and builds pings that gossip the
+	 * new ALIVE status.
+	 * <p>
+	 * Refuting a confirmation counts toward the flapping limit; past it, the node
+	 * terminates instead of refuting.
+	 */
 	final List<StateMachineMessage> buildRefutationPings(
 		List<MemberStatus> gossip
 	) {
 		var self = context.swarmConfig().getLocalAddress();
-		boolean suspected = gossip
+		Optional<MemberStatus> accusation = gossip
 			.stream()
-			.anyMatch(
-				s ->
-					s instanceof MemberStatus.Suspected &&
-					s.address().equals(self) &&
-					s.incarnation() >= context.incarnation()
-			);
-		if (!suspected) {
+			.filter(s -> s.address().equals(self))
+			.filter(s -> !(s instanceof MemberStatus.Alive))
+			.filter(s -> s.incarnation() >= context.incarnation())
+			.max(Comparator.comparingLong(MemberStatus::incarnation));
+		if (accusation.isEmpty()) {
 			return List.of();
 		}
 
-		context.incrementIncarnation();
+		if (
+			accusation.get() instanceof MemberStatus.Confirmed &&
+			context
+				.refutationTracker()
+				.recordAndCheckExceeded(
+					context.swarmConfig().getMaxRefutations(),
+					context.swarmConfig().getRefutationWindow()
+				)
+		) {
+			LOG.warn(
+				"Local node {} was confirmed dead more than {} times within {} — terminating",
+				self,
+				context.swarmConfig().getMaxRefutations(),
+				context.swarmConfig().getRefutationWindow()
+			);
+			context.terminationCallback().onRepeatedlyConfirmed();
+			return List.of();
+		}
+
+		context.refuteAbove(accusation.get().incarnation());
 		long newIncarnation = context.incarnation();
+		LOG.info(
+			"Refuting {} for local node {} at incarnation {}",
+			accusation.get().type(),
+			self,
+			newIncarnation
+		);
 
 		List<MemberStatus> refuteGossip = new ArrayList<>();
 		refuteGossip.add(MemberStatus.alive(self, newIncarnation));
@@ -173,11 +214,26 @@ public abstract class SwarmProtocolState {
 	}
 
 	Optional<Transition> applyDiscoveryResponse(DiscoveryResponse response) {
-		// Default: ignore discovery responses when not initializing
 		LOG.debug(
-			"Ignoring discovery response source {} - not initializing",
-			response.source()
+			"Merging discovery response from {} with {} members",
+			response.source(),
+			response.memberList().size()
 		);
-		return Optional.empty();
+
+		mergeMemberStatuses(response.memberList());
+
+		List<StateMachineMessage> refutations = buildRefutationPings(
+			response.memberList()
+		);
+		if (refutations.isEmpty()) {
+			return Optional.empty();
+		}
+
+		return Optional.of(
+			Transition.builder()
+				.setNextSwarmProtocolState(this)
+				.addAllResponsesToSend(refutations)
+				.build()
+		);
 	}
 }

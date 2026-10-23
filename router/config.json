@@ -13,18 +13,15 @@
   "nodes": [
     {
       "id": "node-1",
-      "implementation": "java",
-      "admin_port": 8081
+      "implementation": "java"
     },
     {
       "id": "node-2",
-      "implementation": "java",
-      "admin_port": 8082
+      "implementation": "java"
     },
     {
       "id": "node-3",
-      "implementation": "java",
-      "admin_port": 8083
+      "implementation": "java"
     }
   ]
 }

@@ -1,35 +1,57 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::time::Duration;
 
-use tokio::io::AsyncWriteExt;
-use tokio::process::ChildStdin;
+use tokio::io::{AsyncWrite, AsyncWriteExt};
 use tokio::sync::{mpsc, oneshot};
 
-use crate::message::Message;
+use crate::message::Line;
 
 pub type NodeId = String;
+
+/// A node's stdin, boxed so tests can substitute an in-memory pipe.
+pub type NodeWriter = Box<dyn AsyncWrite + Send + Unpin>;
+
+const WRITE_TIMEOUT: Duration = Duration::from_secs(5);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NodeState {
+    Spawned,
+    Ready,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Delivery {
+    Delivered,
+    UnknownTarget,
+    WriteFailed,
+}
+
+struct Node {
+    writer: NodeWriter,
+    state: NodeState,
+}
 
 enum RegistryRequest {
     Register {
         node_id: NodeId,
-        stdin: ChildStdin,
+        writer: NodeWriter,
         response: oneshot::Sender<()>,
     },
-    #[allow(dead_code)]
+    MarkReady {
+        node_id: NodeId,
+        response: oneshot::Sender<bool>,
+    },
     Deregister {
         node_id: NodeId,
         response: oneshot::Sender<bool>,
     },
     Route {
-        message: Message,
-        response: oneshot::Sender<bool>,
+        line: Line,
+        response: oneshot::Sender<Delivery>,
     },
-    UpdateActive {
-        node_id: NodeId,
-        active: bool,
-    },
-    ListActive {
-        response: oneshot::Sender<Vec<NodeId>>,
+    Broadcast {
+        line: Line,
+        response: oneshot::Sender<usize>,
     },
 }
 
@@ -39,44 +61,38 @@ pub struct RegistryHandle {
 }
 
 impl RegistryHandle {
-    pub async fn register(&self, node_id: NodeId, stdin: ChildStdin) -> anyhow::Result<()> {
-        let (tx, rx) = oneshot::channel();
-        self.sender
-            .send(RegistryRequest::Register { node_id, stdin, response: tx })
-            .await?;
-        rx.await?;
-        Ok(())
+    pub async fn register(&self, node_id: NodeId, writer: NodeWriter) -> anyhow::Result<()> {
+        self.request(|response| RegistryRequest::Register { node_id, writer, response }).await
     }
 
-    #[allow(dead_code)]
+    /// Moves a Spawned node to Ready. Returns false if the node is unknown or already Ready.
+    pub async fn mark_ready(&self, node_id: NodeId) -> anyhow::Result<bool> {
+        self.request(|response| RegistryRequest::MarkReady { node_id, response }).await
+    }
+
     pub async fn deregister(&self, node_id: NodeId) -> anyhow::Result<bool> {
-        let (tx, rx) = oneshot::channel();
-        self.sender
-            .send(RegistryRequest::Deregister { node_id, response: tx })
-            .await?;
-        Ok(rx.await?)
+        self.request(|response| RegistryRequest::Deregister { node_id, response }).await
     }
 
-    pub async fn route(&self, message: Message) -> anyhow::Result<bool> {
-        let (tx, rx) = oneshot::channel();
-        self.sender
-            .send(RegistryRequest::Route { message, response: tx })
-            .await?;
-        Ok(rx.await?)
+    /// Writes the line to the stdin of the node named by its target.
+    pub async fn route(&self, line: Line) -> anyhow::Result<Delivery> {
+        self.request(|response| RegistryRequest::Route { line, response }).await
     }
 
-    pub async fn update_active(&self, node_id: NodeId, active: bool) -> anyhow::Result<()> {
-        self.sender
-            .send(RegistryRequest::UpdateActive { node_id, active })
-            .await?;
-        Ok(())
+    /// Writes the line to every Ready node except its source. Returns how many writes succeeded.
+    pub async fn broadcast(&self, line: Line) -> anyhow::Result<usize> {
+        self.request(|response| RegistryRequest::Broadcast { line, response }).await
     }
 
-    pub async fn list_active(&self) -> anyhow::Result<Vec<NodeId>> {
+    async fn request<T>(
+        &self,
+        build: impl FnOnce(oneshot::Sender<T>) -> RegistryRequest,
+    ) -> anyhow::Result<T> {
         let (tx, rx) = oneshot::channel();
         self.sender
-            .send(RegistryRequest::ListActive { response: tx })
-            .await?;
+            .send(build(tx))
+            .await
+            .map_err(|_| anyhow::anyhow!("registry has stopped"))?;
         Ok(rx.await?)
     }
 }
@@ -88,43 +104,135 @@ pub fn start() -> RegistryHandle {
 }
 
 async fn run(mut receiver: mpsc::Receiver<RegistryRequest>) {
-    let mut nodes: HashMap<NodeId, ChildStdin> = HashMap::new();
-    let mut active: HashSet<NodeId> = HashSet::new();
+    let mut nodes: HashMap<NodeId, Node> = HashMap::new();
 
     while let Some(request) = receiver.recv().await {
         match request {
-            RegistryRequest::Register { node_id, stdin, response } => {
-                nodes.insert(node_id, stdin);
+            RegistryRequest::Register { node_id, writer, response } => {
+                nodes.insert(node_id, Node { writer, state: NodeState::Spawned });
                 let _ = response.send(());
             }
+            RegistryRequest::MarkReady { node_id, response } => {
+                let transitioned = match nodes.get_mut(&node_id) {
+                    Some(node) if node.state == NodeState::Spawned => {
+                        node.state = NodeState::Ready;
+                        true
+                    }
+                    _ => false,
+                };
+                let _ = response.send(transitioned);
+            }
             RegistryRequest::Deregister { node_id, response } => {
-                let existed = nodes.remove(&node_id).is_some();
-                active.remove(&node_id);
-                let _ = response.send(existed);
+                let _ = response.send(nodes.remove(&node_id).is_some());
             }
-            RegistryRequest::Route { message, response } => {
-                if let Some(stdin) = nodes.get_mut(&message.target) {
-                    let mut line = serde_json::to_string(&message).unwrap();
-                    line.push('\n');
-                    let write = stdin.write_all(line.as_bytes());
-                    let delivered = tokio::time::timeout(Duration::from_secs(5), write)
-                        .await
-                        .is_ok_and(|r| r.is_ok());
-                    let _ = response.send(delivered);
-                } else {
-                    let _ = response.send(false);
+            RegistryRequest::Route { line, response } => {
+                let delivery = match nodes.get_mut(&line.target) {
+                    Some(node) => {
+                        if write_line(&mut node.writer, &line).await {
+                            Delivery::Delivered
+                        } else {
+                            Delivery::WriteFailed
+                        }
+                    }
+                    None => Delivery::UnknownTarget,
+                };
+                let _ = response.send(delivery);
+            }
+            RegistryRequest::Broadcast { line, response } => {
+                let mut delivered = 0;
+                for (node_id, node) in nodes.iter_mut() {
+                    if *node_id == line.source || node.state != NodeState::Ready {
+                        continue;
+                    }
+                    if write_line(&mut node.writer, &line).await {
+                        delivered += 1;
+                    } else {
+                        eprintln!("Broadcast from {} to {} failed", line.source, node_id);
+                    }
                 }
-            }
-            RegistryRequest::UpdateActive { node_id, active: is_active } => {
-                if is_active {
-                    active.insert(node_id);
-                } else {
-                    active.remove(&node_id);
-                }
-            }
-            RegistryRequest::ListActive { response } => {
-                let _ = response.send(active.iter().cloned().collect());
+                let _ = response.send(delivered);
             }
         }
+    }
+}
+
+async fn write_line(writer: &mut NodeWriter, line: &Line) -> bool {
+    let mut encoded = serde_json::to_string(line).expect("lines always serialize");
+    encoded.push('\n');
+    tokio::time::timeout(WRITE_TIMEOUT, writer.write_all(encoded.as_bytes()))
+        .await
+        .is_ok_and(|r| r.is_ok())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::message::{BROADCAST_ADDRESS, Body};
+    use tokio::io::{AsyncBufReadExt, BufReader, DuplexStream, Lines};
+
+    async fn register(registry: &RegistryHandle, id: &str) -> Lines<BufReader<DuplexStream>> {
+        let (writer, reader) = tokio::io::duplex(4096);
+        registry.register(id.to_string(), Box::new(writer)).await.unwrap();
+        BufReader::new(reader).lines()
+    }
+
+    fn packet(source: &str, target: &str) -> Line {
+        Line {
+            source: source.to_string(),
+            target: target.to_string(),
+            body: Body::Packet("AAIA".to_string()),
+        }
+    }
+
+    #[tokio::test]
+    async fn routes_to_target() {
+        let registry = start();
+        let mut node_2 = register(&registry, "node-2").await;
+
+        let line = packet("node-1", "node-2");
+        assert_eq!(registry.route(line.clone()).await.unwrap(), Delivery::Delivered);
+
+        let received: Line = serde_json::from_str(&node_2.next_line().await.unwrap().unwrap()).unwrap();
+        assert_eq!(received, line);
+    }
+
+    #[tokio::test]
+    async fn reports_unknown_target() {
+        let registry = start();
+        assert_eq!(registry.route(packet("node-1", "node-9")).await.unwrap(), Delivery::UnknownTarget);
+    }
+
+    #[tokio::test]
+    async fn broadcasts_to_ready_nodes_except_sender() {
+        let registry = start();
+        let _sender = register(&registry, "node-1").await;
+        let mut ready = register(&registry, "node-2").await;
+        let _spawned = register(&registry, "node-3").await;
+
+        assert!(registry.mark_ready("node-1".to_string()).await.unwrap());
+        assert!(registry.mark_ready("node-2".to_string()).await.unwrap());
+
+        let delivered = registry.broadcast(packet("node-1", BROADCAST_ADDRESS)).await.unwrap();
+        assert_eq!(delivered, 1);
+        assert!(ready.next_line().await.unwrap().is_some());
+    }
+
+    #[tokio::test]
+    async fn mark_ready_only_transitions_once() {
+        let registry = start();
+        let _node = register(&registry, "node-1").await;
+
+        assert!(registry.mark_ready("node-1".to_string()).await.unwrap());
+        assert!(!registry.mark_ready("node-1".to_string()).await.unwrap());
+        assert!(!registry.mark_ready("node-9".to_string()).await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn deregistered_nodes_are_unknown() {
+        let registry = start();
+        let _node = register(&registry, "node-2").await;
+
+        assert!(registry.deregister("node-2".to_string()).await.unwrap());
+        assert_eq!(registry.route(packet("node-1", "node-2")).await.unwrap(), Delivery::UnknownTarget);
     }
 }

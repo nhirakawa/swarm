@@ -63,7 +63,13 @@ public sealed interface MemberStatus
 						yield this;
 					}
 				}
-				case Confirmed(SwarmAddress ignored1, long ignored2) -> memberStatus;
+				case Confirmed(SwarmAddress ignored, long otherIncarnation) -> {
+					if (otherIncarnation >= incarnation) {
+						yield memberStatus;
+					} else {
+						yield this;
+					}
+				}
 			};
 		}
 
@@ -97,7 +103,13 @@ public sealed interface MemberStatus
 					SwarmAddress ignored,
 					long otherIncarnation
 				) -> new Suspected(address, Math.max(incarnation, otherIncarnation));
-				case Confirmed(SwarmAddress ignored1, long ignored2) -> memberStatus;
+				case Confirmed(SwarmAddress ignored, long otherIncarnation) -> {
+					if (otherIncarnation >= incarnation) {
+						yield memberStatus;
+					} else {
+						yield this;
+					}
+				}
 			};
 		}
 
@@ -117,6 +129,10 @@ public sealed interface MemberStatus
 			return "CONFIRMED";
 		}
 
+		/**
+		 * A confirmed member comes back only with a higher incarnation, which the
+		 * member itself produces when it refutes its confirmation.
+		 */
 		@Override
 		public MemberStatus merge(MemberStatus memberStatus) {
 			if (
@@ -124,6 +140,8 @@ public sealed interface MemberStatus
 					Confirmed(SwarmAddress ignored, long otherIncarnation)
 			) {
 				return new Confirmed(address, Math.max(incarnation, otherIncarnation));
+			} else if (memberStatus.incarnation() > incarnation) {
+				return memberStatus;
 			} else {
 				return this;
 			}

@@ -4,7 +4,7 @@ This directory holds `swarm-router`, an inter-process communication router that 
 
 ## Overview
 
-The router is responsible for spawning members of a `swarm` cluster and routing messages between them. When enabled, an admin UI is hosted by an HTTP API; each node's state is proxied through the router. The router can dynamically create new nodes and force nodes to shutdown. Property-based testing may be implemented across heterogeneous implementations.
+The router is responsible for spawning members of a `swarm` cluster and routing messages between them. When enabled, the router hosts an admin UI and HTTP API, and fetches each node's state over its stdin/stdout. The router can dynamically create new nodes and force nodes to shutdown. Property-based testing may be implemented across heterogeneous implementations.
 
 ## Implementations
 
@@ -21,9 +21,8 @@ Implementations that are supported by the router are expected to conform to a st
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `id` | string | yes | Unique node ID within the cluster; passed as `--address` |
+| `id` | string | yes | Unique node ID within the cluster; passed as `--address`. May not start with `__`, which is reserved for router addresses |
 | `implementation` | string | yes | Key into `implementations` that identifies which executable to use |
-| `admin_port` | integer | yes | Port on which the node's HTTP admin API will listen; passed as `--admin-port` |
 | `args` | object (string → string) | no | Extra CLI arguments for this specific node; merged with (and override) the implementation-level `args` |
 
 Example:
@@ -40,9 +39,9 @@ Example:
     }
   },
   "nodes": [
-    { "id": "node-1", "implementation": "java", "admin_port": 8081 },
-    { "id": "node-2", "implementation": "java", "admin_port": 8082 },
-    { "id": "node-3", "implementation": "java", "admin_port": 8083 }
+    { "id": "node-1", "implementation": "java" },
+    { "id": "node-2", "implementation": "java" },
+    { "id": "node-3", "implementation": "java" }
   ]
 }
 ```
@@ -54,46 +53,22 @@ The router itself accepts:
 | Argument | Description |
 |---|---|
 | `--config <path>` | Path to the JSON configuration file (required) |
+| `--ready-timeout <duration>` | How long a node has to send `ready` before the router kills it, e.g. `30s` or `500ms`. Default `30s` |
 
 Each supported implementation MUST support the following CLI arguments, which the router passes automatically when spawning nodes:
 
 | Argument | Description |
 |---|---|
 | `--address <id>` | The node's string ID, unique within the cluster |
-| `--admin-port <port>` | Port on which the node hosts its HTTP admin API |
 | `--peer <id>` | A peer node ID; passed once per peer (may appear multiple times) |
 
 Additional arguments may be specified in the configuration file under `implementations[name].args` (applied to every node using that implementation) or `nodes[i].args` (applied to a specific node). Node-level args override implementation-level args with the same key.
 
-### HTTP API
+A node MUST exit when its stdin closes. A closed stdin means the router is gone, so this keeps nodes from outliving it.
 
-Each supported implementation MUST expose the following HTTP endpoints on the port passed as `--admin-port`.
+### Status Snapshot
 
----
-
-**`GET /health`**
-
-Liveness check. Returns `200` once the node has initialized, or `503` while it is still starting up.
-
-| Status | Body |
-|---|---|
-| `200 OK` | `{"status": "ok"}` |
-| `503 Service Unavailable` | `{"status": "starting"}` |
-
-The router polls this endpoint every 5 seconds and uses it to track which nodes are active.
-
----
-
-**`GET /status`**
-
-Returns a JSON snapshot of the node's current protocol state. Returns `503` while the node is still initializing (no snapshot available yet).
-
-| Status | Body |
-|---|---|
-| `200 OK` | See schema below |
-| `503 Service Unavailable` | *(empty body)* |
-
-Response schema:
+A node answers a `status_request` control message with a JSON snapshot of its current protocol state.
 
 ```json
 {
@@ -142,7 +117,7 @@ Each message is a single line of UTF-8 JSON terminated by `\n`:
 {"source": "node-1", "target": "__router__", "control": {"kind": "ready"}}
 ```
 
-> **Note:** This section describes the target format. The router and the Java node still use a single `payload` field and `MULTICAST` discovery until the migration lands.
+> **Note:** The router does not send `status_request` yet; that arrives with the router's admin API.
 
 | Field | Type | Description |
 |---|---|---|
@@ -156,6 +131,7 @@ Every line has exactly one of `packet` or `control`, and receivers branch on whi
 The router forwards `packet` lines unchanged to the target's stdin and never decodes them. `__all__` is the broadcast address: the router copies a `packet` sent to `__all__` to every Ready node except the sender, and simulated partitions apply to each copy separately. It drops and logs:
 
 - lines that are not valid JSON, or that have both body fields or neither;
+- lines whose `source` is not the address of the node that wrote them;
 - a `control` addressed to a node or to `__all__`, or a `packet` addressed to `__router__`;
 - messages whose `target` is not a registered node.
 
@@ -167,7 +143,7 @@ A write to a node's stdin that does not finish within 5 seconds is abandoned.
 |---|---|---|---|
 | `ready` | node → router | none | Node has initialized and can accept protocol messages. Sent once |
 | `status_request` | router → node | `id`: integer | Ask for a state snapshot |
-| `status` | node → router | `id` (echoed), `snapshot`: object | Reply to `status_request`; `snapshot` uses the `GET /status` schema above |
+| `status` | node → router | `id` (echoed), `snapshot`: object | Reply to `status_request`; `snapshot` uses the status snapshot schema above |
 
 Receivers ignore unknown `kind` values.
 
@@ -230,7 +206,7 @@ Bodies are JSON objects. The message type is carried only in the header, not in 
 | `target` | string | Recipient |
 | `memberList` | array of member status | Sender's view of cluster membership |
 
-A **member status** has the same shape as `memberStatuses[]` in `GET /status`:
+A **member status** has the same shape as `memberStatuses[]` in the status snapshot:
 
 ```json
 {"address": "node-3", "incarnation": 1, "type": "ALIVE"}

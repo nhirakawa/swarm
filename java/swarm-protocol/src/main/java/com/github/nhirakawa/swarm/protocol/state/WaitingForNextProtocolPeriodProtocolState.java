@@ -2,10 +2,12 @@ package com.github.nhirakawa.swarm.protocol.state;
 
 import com.github.nhirakawa.swarm.protocol.model.Transition;
 import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
+import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import com.github.nhirakawa.swarm.protocol.util.Jitter;
+import com.google.common.base.Stopwatch;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -43,23 +45,9 @@ public class WaitingForNextProtocolPeriodProtocolState
 			.memberRegistry()
 			.promoteExpiredSuspicions(context().swarmConfig().getSuspicionTimeout());
 
-		context().memberRegistry().evictConfirmedNodes();
-
-		SwarmAddress self = context().swarmConfig().getLocalAddress();
-		if (
-			context()
-				.memberRegistry()
-				.get(self)
-				.filter(s -> s instanceof MemberStatus.Confirmed)
-				.isPresent()
-		) {
-			LOG.warn(
-				"Local node {} has been confirmed dead — self-terminating",
-				self
-			);
-			context().terminationCallback().onSelfConfirmedDead();
-			return Optional.empty();
-		}
+		context()
+			.memberRegistry()
+			.evictConfirmedNodes(context().swarmConfig().getConfirmedRetention());
 
 		SwarmAddress pingTarget = context().memberRegistry().getPingTarget();
 
@@ -78,12 +66,26 @@ public class WaitingForNextProtocolPeriodProtocolState
 			gossip
 		);
 
-		Transition transition = Transition.builder()
+		Transition.Builder transition = Transition.builder()
 			.setNextSwarmProtocolState(newState)
-			.addResponsesToSend(pingRequest)
-			.build();
+			.addResponsesToSend(pingRequest);
 
-		return Optional.of(transition);
+		Stopwatch rediscoveryStopwatch = context().rediscoveryStopwatch();
+		if (
+			rediscoveryStopwatch.elapsed().toNanos() >=
+			context().swarmConfig().getRediscoveryInterval().toNanos()
+		) {
+			LOG.debug("Broadcasting rediscovery request");
+			rediscoveryStopwatch.reset().start();
+			transition.addResponsesToSend(
+				new DiscoveryRequest(
+					context().swarmConfig().getLocalAddress(),
+					context().swarmConfig().getMulticastAddress()
+				)
+			);
+		}
+
+		return Optional.of(transition.build());
 	}
 
 	@Override

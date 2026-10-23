@@ -4,7 +4,6 @@ import com.github.nhirakawa.swarm.protocol.state.StateSnapshot;
 import com.github.nhirakawa.swarm.runner.admin.http.AddNodeHandler;
 import com.github.nhirakawa.swarm.runner.admin.http.ClusterStateHandler;
 import com.github.nhirakawa.swarm.runner.admin.http.ContainerHandler;
-import com.github.nhirakawa.swarm.runner.admin.http.HealthHandler;
 import com.github.nhirakawa.swarm.runner.admin.http.ShutdownNodeHandler;
 import com.github.nhirakawa.swarm.runner.factory.SwarmServiceFactory;
 import com.github.nhirakawa.swarm.runner.model.NodeConfigModel;
@@ -53,7 +52,6 @@ public class AdminService extends AbstractIdleService {
 		Supplier<StateSnapshot> snapshotSupplier
 	) {
 		Javalin app = buildBaseApp()
-			.get("/health", new HealthHandler(snapshotSupplier))
 			.get("/status", new ClusterStateHandler(snapshotSupplier));
 		return new AdminService(config, app);
 	}

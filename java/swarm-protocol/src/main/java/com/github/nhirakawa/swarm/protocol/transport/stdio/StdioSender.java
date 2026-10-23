@@ -1,5 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.transport.stdio;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.github.nhirakawa.swarm.protocol.model.header.Compression;
@@ -17,6 +18,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -28,18 +30,24 @@ public class StdioSender
 	implements SwarmMessageSender
 {
 
+	private final StdioAddress localAddress;
 	private final BufferedWriter bufferedWriter;
-	private final BlockingQueue<StateMachineMessage> queue;
+	private final BlockingQueue<Outbound> queue;
 	private final ObjectWriter objectWriter;
 	private final HeaderSerializer headerSerializer;
 	private final AtomicLong messageIdCounter;
 
-	StdioSender(ObjectWriter objectWriter) {
-		this(System.out, objectWriter);
+	StdioSender(StdioAddress localAddress, ObjectWriter objectWriter) {
+		this(localAddress, System.out, objectWriter);
 	}
 
 	@VisibleForTesting
-	StdioSender(OutputStream outputStream, ObjectWriter objectWriter) {
+	StdioSender(
+		StdioAddress localAddress,
+		OutputStream outputStream,
+		ObjectWriter objectWriter
+	) {
+		this.localAddress = localAddress;
 		this.bufferedWriter = new BufferedWriter(
 			new OutputStreamWriter(outputStream)
 		);
@@ -52,15 +60,26 @@ public class StdioSender
 	@Override
 	protected void run() throws Exception {
 		while (isRunning()) {
-			StateMachineMessage message = queue.poll(100, TimeUnit.MILLISECONDS);
-			if (message == null) {
-				continue;
+			Outbound outbound = queue.poll(100, TimeUnit.MILLISECONDS);
+			switch (outbound) {
+				case null -> {}
+				case Packet(StateMachineMessage message) -> writeLine(
+					toPacketEnvelope(message)
+				);
+				case Control(Map<String, Object> control) -> writeLine(
+					new Envelope(
+						localAddress.asString(),
+						StdioAddress.ROUTER.asString(),
+						null,
+						control
+					)
+				);
 			}
-			sendMessage(message);
 		}
 	}
 
-	private void sendMessage(StateMachineMessage message) throws IOException {
+	private Envelope toPacketEnvelope(StateMachineMessage message)
+		throws IOException {
 		byte[] bodyBytes = objectWriter.writeValueAsBytes(message);
 		byte[] headerBytes = headerSerializer.serialize(
 			createHeader(message, bodyBytes.length)
@@ -76,13 +95,15 @@ public class StdioSender
 			bodyBytes.length
 		);
 
-		String payloadBase64 = Base64.getEncoder().encodeToString(payload);
-		Envelope envelope = new Envelope(
+		return new Envelope(
 			message.source().asString(),
 			message.target().asString(),
-			payloadBase64
+			Base64.getEncoder().encodeToString(payload),
+			null
 		);
+	}
 
+	private void writeLine(Envelope envelope) throws IOException {
 		bufferedWriter.write(objectWriter.writeValueAsString(envelope));
 		bufferedWriter.newLine();
 		bufferedWriter.flush();
@@ -112,12 +133,38 @@ public class StdioSender
 	@Override
 	public boolean send(StateMachineMessage message, Duration timeout)
 		throws TimeoutException, InterruptedException {
-		return queue.offer(message, timeout.toNanos(), TimeUnit.NANOSECONDS);
+		return queue.offer(
+			new Packet(message),
+			timeout.toNanos(),
+			TimeUnit.NANOSECONDS
+		);
 	}
 
+	/**
+	 * Queues a control message for the router. {@code control} must include its
+	 * {@code kind}.
+	 */
+	boolean sendControl(Map<String, Object> control, Duration timeout)
+		throws InterruptedException {
+		return queue.offer(
+			new Control(control),
+			timeout.toNanos(),
+			TimeUnit.NANOSECONDS
+		);
+	}
+
+	private sealed interface Outbound permits Packet, Control {}
+
+	private record Packet(StateMachineMessage message) implements Outbound {}
+
+	private record Control(Map<String, Object> control) implements Outbound {}
+
+	/** One line on stdout. Exactly one of {@code packet} and {@code control} is set. */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
 	private record Envelope(
 		@JsonProperty("source") String source,
 		@JsonProperty("target") String target,
-		@JsonProperty("payload") String payload
+		@JsonProperty("packet") String packet,
+		@JsonProperty("control") Map<String, Object> control
 	) {}
 }

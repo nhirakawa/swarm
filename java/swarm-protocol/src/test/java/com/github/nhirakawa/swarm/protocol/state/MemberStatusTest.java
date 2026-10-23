@@ -71,14 +71,24 @@ class MemberStatusTest {
 	}
 
 	@Test
-	void testAliveMergeWithConfirmed() {
+	void testAliveMergeWithConfirmed_confirmedEqualIncarnation() {
+		MemberStatus.Alive alive = new MemberStatus.Alive(ADDRESS, 5);
+		MemberStatus.Confirmed confirmed = new MemberStatus.Confirmed(ADDRESS, 5);
+
+		MemberStatus result = alive.merge(confirmed);
+
+		assertThat(result).isEqualTo(confirmed);
+	}
+
+	@Test
+	void testAliveMergeWithConfirmed_confirmedLowerIncarnation() {
 		MemberStatus.Alive alive = new MemberStatus.Alive(ADDRESS, 100);
 		MemberStatus.Confirmed confirmed = new MemberStatus.Confirmed(ADDRESS, 1);
 
 		MemberStatus result = alive.merge(confirmed);
 
-		// Confirmed always wins over Alive
-		assertThat(result).isEqualTo(confirmed);
+		// A stale confirmation does not override a newer refutation
+		assertThat(result).isEqualTo(alive);
 	}
 
 	@Test
@@ -142,35 +152,63 @@ class MemberStatusTest {
 	}
 
 	@Test
-	void testSuspectedMergeWithConfirmed() {
+	void testSuspectedMergeWithConfirmed_confirmedEqualIncarnation() {
+		MemberStatus.Suspected suspected = new MemberStatus.Suspected(ADDRESS, 5);
+		MemberStatus.Confirmed confirmed = new MemberStatus.Confirmed(ADDRESS, 5);
+
+		MemberStatus result = suspected.merge(confirmed);
+
+		assertThat(result).isEqualTo(confirmed);
+	}
+
+	@Test
+	void testSuspectedMergeWithConfirmed_confirmedLowerIncarnation() {
 		MemberStatus.Suspected suspected = new MemberStatus.Suspected(ADDRESS, 100);
 		MemberStatus.Confirmed confirmed = new MemberStatus.Confirmed(ADDRESS, 1);
 
 		MemberStatus result = suspected.merge(confirmed);
 
-		// Confirmed always wins over Suspected
-		assertThat(result).isEqualTo(confirmed);
+		assertThat(result).isEqualTo(suspected);
 	}
 
 	@Test
-	void testConfirmedMergeWithAlive() {
+	void testConfirmedMergeWithAlive_aliveHigherIncarnation() {
 		MemberStatus.Confirmed confirmed = new MemberStatus.Confirmed(ADDRESS, 1);
 		MemberStatus.Alive alive = new MemberStatus.Alive(ADDRESS, 100);
 
 		MemberStatus result = confirmed.merge(alive);
 
-		// Confirmed always wins over Alive
+		// A refutation at a higher incarnation brings the member back
+		assertThat(result).isEqualTo(alive);
+	}
+
+	@Test
+	void testConfirmedMergeWithAlive_aliveEqualIncarnation() {
+		MemberStatus.Confirmed confirmed = new MemberStatus.Confirmed(ADDRESS, 5);
+		MemberStatus.Alive alive = new MemberStatus.Alive(ADDRESS, 5);
+
+		MemberStatus result = confirmed.merge(alive);
+
 		assertThat(result).isEqualTo(confirmed);
 	}
 
 	@Test
-	void testConfirmedMergeWithSuspected() {
+	void testConfirmedMergeWithSuspected_suspectedHigherIncarnation() {
 		MemberStatus.Confirmed confirmed = new MemberStatus.Confirmed(ADDRESS, 1);
 		MemberStatus.Suspected suspected = new MemberStatus.Suspected(ADDRESS, 100);
 
 		MemberStatus result = confirmed.merge(suspected);
 
-		// Confirmed always wins over Suspected
+		assertThat(result).isEqualTo(suspected);
+	}
+
+	@Test
+	void testConfirmedMergeWithSuspected_suspectedEqualIncarnation() {
+		MemberStatus.Confirmed confirmed = new MemberStatus.Confirmed(ADDRESS, 5);
+		MemberStatus.Suspected suspected = new MemberStatus.Suspected(ADDRESS, 5);
+
+		MemberStatus result = confirmed.merge(suspected);
+
 		assertThat(result).isEqualTo(confirmed);
 	}
 

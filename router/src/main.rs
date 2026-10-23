@@ -8,16 +8,21 @@ use std::time::Duration;
 
 use clap::Parser;
 use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::process::Child;
+use tokio::sync::oneshot;
 
-const MULTICAST_TARGET: &str = "MULTICAST";
-const ROUTER_SOURCE: &str = "__router__";
-const STATUS_POLL_INTERVAL: Duration = Duration::from_secs(5);
+use message::{BROADCAST_ADDRESS, Body, Control, Line, ROUTER_ADDRESS};
+use registry::{Delivery, RegistryHandle};
 
 #[derive(Debug, Parser)]
 #[command(name = "swarm-router")]
 struct Cli {
     #[arg(short, long)]
     config: PathBuf,
+
+    /// How long a node has to send `ready` before the router kills it.
+    #[arg(long, value_parser = humantime::parse_duration, default_value = "30s")]
+    ready_timeout: Duration,
 }
 
 #[tokio::main]
@@ -25,16 +30,12 @@ async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     let raw = std::fs::read_to_string(&cli.config)?;
-    let config: config::Config = serde_json::from_str(&raw)?;
+    let config = config::Config::parse(&raw)?;
 
     let registry = registry::start();
 
     for node in &config.nodes {
-        spawn_node(&config, node, &registry).await?;
-    }
-
-    for node in &config.nodes {
-        start_status_poller(node.id.clone(), node.admin_port, registry.clone());
+        spawn_node(&config, node, &registry, cli.ready_timeout).await?;
     }
 
     tokio::signal::ctrl_c().await?;
@@ -45,11 +46,10 @@ async fn main() -> anyhow::Result<()> {
 async fn spawn_node(
     config: &config::Config,
     node: &config::NodeConfig,
-    registry: &registry::RegistryHandle,
+    registry: &RegistryHandle,
+    ready_timeout: Duration,
 ) -> anyhow::Result<()> {
-    let implementation = config.implementations.get(&node.implementation).ok_or_else(
-        || anyhow::anyhow!("Unknown implementation '{}' for node '{}'", node.implementation, node.id),
-    )?;
+    let implementation = &config.implementations[&node.implementation];
 
     let peers: Vec<&str> = config.nodes.iter()
         .filter(|n| n.id != node.id)
@@ -60,9 +60,8 @@ async fn spawn_node(
     merged_args.extend(node.args.clone());
 
     let mut cmd = tokio::process::Command::new(&implementation.executable);
-    cmd.stdin(Stdio::piped()).stdout(Stdio::piped());
+    cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).kill_on_drop(true);
     cmd.arg("--address").arg(&node.id);
-    cmd.arg("--admin-port").arg(node.admin_port.to_string());
     for (key, value) in &merged_args {
         cmd.arg(format!("--{}", key)).arg(value);
     }
@@ -75,48 +74,124 @@ async fn spawn_node(
     let stdin = child.stdin.take().expect("stdin was piped");
     let stdout = child.stdout.take().expect("stdout was piped");
 
-    registry.register(node.id.clone(), stdin).await?;
+    registry.register(node.id.clone(), Box::new(stdin)).await?;
 
-    let registry = registry.clone();
+    let (ready_tx, ready_rx) = oneshot::channel();
+
+    let node_id = node.id.clone();
+    let reader_registry = registry.clone();
     tokio::spawn(async move {
+        let mut ready_tx = Some(ready_tx);
         let mut lines = BufReader::new(stdout).lines();
         while let Ok(Some(line)) = lines.next_line().await {
-            if let Ok(msg) = serde_json::from_str::<message::Message>(&line) {
-                if msg.target == MULTICAST_TARGET {
-                    handle_multicast(msg.source, &registry).await;
-                } else {
-                    let _ = registry.route(msg).await;
-                }
-            }
+            handle_line(&node_id, &line, &reader_registry, &mut ready_tx).await;
         }
     });
+
+    tokio::spawn(supervise(node.id.clone(), child, ready_rx, ready_timeout, registry.clone()));
 
     Ok(())
 }
 
-async fn handle_multicast(requester: String, registry: &registry::RegistryHandle) {
-    let active = registry.list_active().await.unwrap_or_default();
-    let payload = serde_json::to_string(&active).unwrap_or_default();
-    let response = message::Message {
-        source: ROUTER_SOURCE.to_string(),
-        target: requester,
-        payload,
+/// Validates one stdout line from `node_id` and routes, broadcasts or handles it.
+async fn handle_line(
+    node_id: &str,
+    raw: &str,
+    registry: &RegistryHandle,
+    ready_tx: &mut Option<oneshot::Sender<()>>,
+) {
+    let line: Line = match serde_json::from_str(raw) {
+        Ok(line) => line,
+        Err(e) => {
+            eprintln!("Dropping line from {}: {}", node_id, e);
+            return;
+        }
     };
-    let _ = registry.route(response).await;
+
+    if line.source != node_id {
+        eprintln!("Dropping line from {}: source is '{}'", node_id, line.source);
+        return;
+    }
+
+    match (&line.body, line.target.as_str()) {
+        (Body::Control(control), ROUTER_ADDRESS) => {
+            handle_control(node_id, control, registry, ready_tx).await;
+        }
+        (Body::Control(_), target) => {
+            eprintln!("Dropping control from {}: addressed to '{}'", node_id, target);
+        }
+        (Body::Packet(_), ROUTER_ADDRESS) => {
+            eprintln!("Dropping packet from {}: addressed to the router", node_id);
+        }
+        (Body::Packet(_), BROADCAST_ADDRESS) => {
+            let _ = registry.broadcast(line).await;
+        }
+        (Body::Packet(_), _) => {
+            let target = line.target.clone();
+            match registry.route(line).await {
+                Ok(Delivery::Delivered) => {}
+                Ok(Delivery::UnknownTarget) => {
+                    eprintln!("Dropping packet from {}: unknown target '{}'", node_id, target);
+                }
+                Ok(Delivery::WriteFailed) | Err(_) => {
+                    eprintln!("Failed to deliver packet from {} to {}", node_id, target);
+                }
+            }
+        }
+    }
 }
 
-fn start_status_poller(node_id: String, status_port: u16, registry: registry::RegistryHandle) {
-    tokio::spawn(async move {
-        let client = reqwest::Client::new();
-        let url = format!("http://127.0.0.1:{}/status", status_port);
-        loop {
-            let active = client.get(&url)
-                .timeout(Duration::from_secs(2))
-                .send()
-                .await
-                .is_ok_and(|r| r.status().is_success());
-            let _ = registry.update_active(node_id.clone(), active).await;
-            tokio::time::sleep(STATUS_POLL_INTERVAL).await;
+async fn handle_control(
+    node_id: &str,
+    control: &Control,
+    registry: &RegistryHandle,
+    ready_tx: &mut Option<oneshot::Sender<()>>,
+) {
+    match control {
+        Control::Ready => {
+            if registry.mark_ready(node_id.to_string()).await.unwrap_or(false) {
+                eprintln!("Node {} is ready", node_id);
+                if let Some(tx) = ready_tx.take() {
+                    let _ = tx.send(());
+                }
+            } else {
+                eprintln!("Ignoring repeated ready from {}", node_id);
+            }
         }
-    });
+        Control::Status { id, .. } => {
+            // Nothing sends status_request yet; on-demand status fetching comes with the admin API.
+            eprintln!("Ignoring status {} from {}: no request pending", id, node_id);
+        }
+        Control::StatusRequest { .. } => {
+            eprintln!("Dropping status_request from {}: only the router sends it", node_id);
+        }
+        Control::Unknown => {}
+    }
+}
+
+/// Waits for the node's process to exit, killing it first if it does not send
+/// `ready` within `ready_timeout`, and then deregisters it.
+async fn supervise(
+    node_id: String,
+    mut child: Child,
+    ready_rx: oneshot::Receiver<()>,
+    ready_timeout: Duration,
+    registry: RegistryHandle,
+) {
+    let status = tokio::select! {
+        status = child.wait() => status,
+        Ok(()) = ready_rx => child.wait().await,
+        _ = tokio::time::sleep(ready_timeout) => {
+            eprintln!("Node {} did not send ready within {:?}; killing it", node_id, ready_timeout);
+            let _ = child.kill().await;
+            child.wait().await
+        }
+    };
+
+    match status {
+        Ok(status) => eprintln!("Node {} exited: {}", node_id, status),
+        Err(e) => eprintln!("Failed to wait for node {}: {}", node_id, e),
+    }
+
+    let _ = registry.deregister(node_id).await;
 }

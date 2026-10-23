@@ -38,6 +38,8 @@ class MemberRegistry {
 	private final Queue<SwarmAddress> pingSequence = new ArrayDeque<>();
 	private final Map<SwarmAddress, Stopwatch> suspicionStopwatches =
 		new HashMap<>();
+	private final Map<SwarmAddress, Stopwatch> confirmationStopwatches =
+		new HashMap<>();
 
 	MemberRegistry() {
 		this(Set.of(), Ticker.systemTicker());
@@ -101,6 +103,21 @@ class MemberRegistry {
 			suspicionStopwatches.put(swarmAddress, Stopwatch.createStarted(ticker));
 		} else if (wasAlreadySuspected && !isNowSuspected) {
 			suspicionStopwatches.remove(swarmAddress);
+		}
+
+		boolean wasAlreadyConfirmed =
+			oldCounted != null &&
+			oldCounted.memberStatus() instanceof MemberStatus.Confirmed;
+		boolean isNowConfirmed =
+			newCounted.memberStatus() instanceof MemberStatus.Confirmed;
+
+		if (!wasAlreadyConfirmed && isNowConfirmed) {
+			confirmationStopwatches.put(
+				swarmAddress,
+				Stopwatch.createStarted(ticker)
+			);
+		} else if (wasAlreadyConfirmed && !isNowConfirmed) {
+			confirmationStopwatches.remove(swarmAddress);
 		}
 	}
 
@@ -168,19 +185,17 @@ class MemberRegistry {
 		return toGossip.stream().map(Counted::memberStatus).toList();
 	}
 
-	void evictConfirmedNodes() {
-		int threshold = Math.max(
-			(int) Math.ceil(Math.log(registry.size() + 1) / Math.log(2)),
-			3
-		);
-
-		List<SwarmAddress> toEvict = registry
+	/**
+	 * Removes members that have been confirmed for at least {@code retention}.
+	 * <p>
+	 * Until then a confirmed member stays, so its status keeps spreading and stale
+	 * ALIVE gossip at the same incarnation cannot bring it back.
+	 */
+	void evictConfirmedNodes(Duration retention) {
+		List<SwarmAddress> toEvict = confirmationStopwatches
 			.entrySet()
 			.stream()
-			.filter(
-				e -> e.getValue().memberStatus() instanceof MemberStatus.Confirmed
-			)
-			.filter(e -> e.getValue().gossipCount() >= threshold)
+			.filter(e -> e.getValue().elapsed().toNanos() >= retention.toNanos())
 			.map(Map.Entry::getKey)
 			.toList();
 
@@ -189,6 +204,7 @@ class MemberRegistry {
 			sortedByGossipCount.remove(counted);
 			pingSequence.remove(address);
 			suspicionStopwatches.remove(address);
+			confirmationStopwatches.remove(address);
 		}
 	}
 

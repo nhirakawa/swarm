@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,18 +40,38 @@ public class StdioReceiver
 	private final BlockingQueue<StateMachineMessage> queue;
 	private final ObjectReader objectReader;
 	private final HeaderDeserializer headerDeserializer;
+	private final Consumer<JsonNode> controlHandler;
+	private final Runnable endOfInputListener;
 
-	StdioReceiver(ObjectReader objectReader) {
-		this(System.in, objectReader);
+	private volatile boolean stopping = false;
+
+	StdioReceiver(
+		ObjectReader objectReader,
+		Consumer<JsonNode> controlHandler,
+		Runnable endOfInputListener
+	) {
+		this(System.in, objectReader, controlHandler, endOfInputListener);
 	}
 
-	StdioReceiver(InputStream inputStream, ObjectReader objectReader) {
+	/**
+	 * @param controlHandler receives the {@code control} object of each control line
+	 * @param endOfInputListener runs once when stdin reaches end of input, which
+	 *     means the router is gone
+	 */
+	StdioReceiver(
+		InputStream inputStream,
+		ObjectReader objectReader,
+		Consumer<JsonNode> controlHandler,
+		Runnable endOfInputListener
+	) {
 		this.bufferedReader = new BufferedReader(
 			new InputStreamReader(inputStream)
 		);
 		this.queue = new ArrayBlockingQueue<>(100);
 		this.objectReader = objectReader;
 		this.headerDeserializer = new HeaderDeserializer();
+		this.controlHandler = controlHandler;
+		this.endOfInputListener = endOfInputListener;
 	}
 
 	@Override
@@ -73,17 +94,36 @@ public class StdioReceiver
 				}
 			}
 		} catch (IOException e) {
-			if (isRunning()) {
+			if (isRunning() && !stopping) {
 				throw e;
 			}
+		}
+
+		if (!stopping) {
+			LOG.info("Reached end of input on stdin");
+			endOfInputListener.run();
 		}
 	}
 
 	private void processLine(String line) throws Exception {
 		JsonNode envelope = objectReader.readTree(line);
-		byte[] payloadBytes = Base64.getDecoder().decode(
-			envelope.get("payload").asText()
+		boolean hasPacket = envelope.has("packet");
+		boolean hasControl = envelope.has("control");
+		Preconditions.checkArgument(
+			hasPacket != hasControl,
+			"Expected exactly one of packet or control, got %s",
+			line
 		);
+
+		if (hasControl) {
+			controlHandler.accept(envelope.get("control"));
+		} else {
+			processPacket(envelope.get("packet").asText());
+		}
+	}
+
+	private void processPacket(String packet) throws Exception {
+		byte[] payloadBytes = Base64.getDecoder().decode(packet);
 
 		Preconditions.checkArgument(
 			payloadBytes.length >= HEADER_SIZE,
@@ -133,11 +173,10 @@ public class StdioReceiver
 
 	@Override
 	protected void triggerShutdown() {
-		try {
-			bufferedReader.close();
-		} catch (IOException e) {
-			LOG.error("Could not close BufferedReader", e);
-		}
+		// Closing the reader here would block: BufferedReader.close() waits for the
+		// lock that a blocked readLine() holds. The reading thread instead exits on
+		// the next line or at end of input, or when the process exits.
+		stopping = true;
 	}
 
 	@Override

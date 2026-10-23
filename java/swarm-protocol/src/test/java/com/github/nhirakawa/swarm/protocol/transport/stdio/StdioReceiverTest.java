@@ -2,6 +2,7 @@ package com.github.nhirakawa.swarm.protocol.transport.stdio;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -18,12 +19,15 @@ import com.google.common.primitives.Bytes;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
 class StdioReceiverTest {
@@ -88,10 +92,65 @@ class StdioReceiverTest {
 		assertThat(receiver.receive(Duration.ofMillis(10))).isEmpty();
 	}
 
+	@Test
+	void testDispatchesControlToHandler() throws Exception {
+		List<JsonNode> controls = new ArrayList<>();
+
+		runReceiver(
+			"{\"source\":\"__router__\",\"target\":\"node-1\",\"control\":{\"kind\":\"status_request\",\"id\":7}}",
+			controls::add,
+			() -> {}
+		);
+
+		assertThat(controls).hasSize(1);
+		assertThat(controls.get(0).get("kind").asText()).isEqualTo("status_request");
+		assertThat(controls.get(0).get("id").asLong()).isEqualTo(7);
+	}
+
+	@Test
+	void testDropsLineWithBothOrNeitherBody() throws Exception {
+		byte[] body = OBJECT_MAPPER.writeValueAsBytes(MESSAGE);
+		String packet = Base64.getEncoder().encodeToString(
+			Bytes.concat(header(body.length), body)
+		);
+		List<JsonNode> controls = new ArrayList<>();
+
+		StdioReceiver receiver = runReceiver(
+			"{\"source\":\"node-1\",\"target\":\"node-2\",\"packet\":\"" +
+			packet +
+			"\",\"control\":{\"kind\":\"ready\"}}\n" +
+			"{\"source\":\"node-1\",\"target\":\"node-2\"}",
+			controls::add,
+			() -> {}
+		);
+
+		assertThat(receiver.receive(Duration.ofMillis(10))).isEmpty();
+		assertThat(controls).isEmpty();
+	}
+
+	@Test
+	void testNotifiesListenerAtEndOfInput() throws Exception {
+		AtomicBoolean ended = new AtomicBoolean(false);
+
+		runReceiver("", control -> {}, () -> ended.set(true));
+
+		assertThat(ended).isTrue();
+	}
+
 	private static StdioReceiver runReceiver(String input) throws Exception {
+		return runReceiver(input, control -> {}, () -> {});
+	}
+
+	private static StdioReceiver runReceiver(
+		String input,
+		Consumer<JsonNode> controlHandler,
+		Runnable endOfInputListener
+	) throws Exception {
 		StdioReceiver receiver = new StdioReceiver(
 			new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)),
-			OBJECT_MAPPER.reader()
+			OBJECT_MAPPER.reader(),
+			controlHandler,
+			endOfInputListener
 		);
 		// run() returns once the input stream is exhausted
 		receiver.startAsync().awaitTerminated(5, TimeUnit.SECONDS);
@@ -120,7 +179,7 @@ class StdioReceiverTest {
 				SOURCE.asString(),
 				"target",
 				TARGET.asString(),
-				"payload",
+				"packet",
 				Base64.getEncoder().encodeToString(frame)
 			)
 		);

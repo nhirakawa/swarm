@@ -41,6 +41,29 @@ public abstract class SwarmConfigModel {
 		return Duration.ofMillis(getMessageTimeout().toMillis() / 10);
 	}
 
+	/** How often a joined node broadcasts a discovery request, so healed partitions find each other. */
+	@Value.Default
+	public Duration getRediscoveryInterval() {
+		return Duration.ofMillis(getProtocolPeriod().toMillis() * 6);
+	}
+
+	/** How long a confirmed member stays in the registry before it is reaped. */
+	@Value.Default
+	public Duration getConfirmedRetention() {
+		return Duration.ofMillis(getProtocolPeriod().toMillis() * 6);
+	}
+
+	/** The most times a node may refute its own confirmation within {@link #getRefutationWindow()}. */
+	@Value.Default
+	public int getMaxRefutations() {
+		return 3;
+	}
+
+	@Value.Default
+	public Duration getRefutationWindow() {
+		return Duration.ofMillis(getProtocolPeriod().toMillis() * 30);
+	}
+
 	@Value.Default
 	public Set<SwarmAddress> getInitialGroup() {
 		return Set.of();
@@ -73,6 +96,30 @@ public abstract class SwarmConfigModel {
 			"Expected protocol period (%s) to be longer than message timeout (%s)",
 			getProtocolPeriod(),
 			getMessageTimeout()
+		);
+
+		Preconditions.checkArgument(
+			getRediscoveryInterval().compareTo(Duration.ZERO) > 0,
+			"Rediscovery interval must be positive: %s",
+			getRediscoveryInterval()
+		);
+
+		Preconditions.checkArgument(
+			getConfirmedRetention().compareTo(Duration.ZERO) >= 0,
+			"Confirmed retention must not be negative: %s",
+			getConfirmedRetention()
+		);
+
+		Preconditions.checkArgument(
+			getMaxRefutations() >= 0,
+			"Max refutations must not be negative: %s",
+			getMaxRefutations()
+		);
+
+		Preconditions.checkArgument(
+			getRefutationWindow().compareTo(Duration.ZERO) > 0,
+			"Refutation window must be positive: %s",
+			getRefutationWindow()
 		);
 
 		Preconditions.checkArgument(

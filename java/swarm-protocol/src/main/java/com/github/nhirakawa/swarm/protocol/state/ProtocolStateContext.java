@@ -19,6 +19,9 @@ final class ProtocolStateContext {
 	private final Stopwatch stopwatch;
 	private final MemberRegistry memberRegistry;
 	private final SwarmTerminationCallback terminationCallback;
+	// Like incarnation, these are shared by every context derived via next().
+	private final RefutationTracker refutationTracker;
+	private final Stopwatch rediscoveryStopwatch;
 
 	ProtocolStateContext(
 		SwarmConfig swarmConfig,
@@ -31,10 +34,34 @@ final class ProtocolStateContext {
 		this(
 			swarmConfig,
 			protocolPeriodId,
+			incarnation,
+			stopwatch,
+			memberRegistry,
+			terminationCallback,
+			new RefutationTracker(),
+			Stopwatch.createStarted()
+		);
+	}
+
+	ProtocolStateContext(
+		SwarmConfig swarmConfig,
+		long protocolPeriodId,
+		long incarnation,
+		Stopwatch stopwatch,
+		MemberRegistry memberRegistry,
+		SwarmTerminationCallback terminationCallback,
+		RefutationTracker refutationTracker,
+		Stopwatch rediscoveryStopwatch
+	) {
+		this(
+			swarmConfig,
+			protocolPeriodId,
 			new AtomicLong(incarnation),
 			stopwatch,
 			memberRegistry,
-			terminationCallback
+			terminationCallback,
+			refutationTracker,
+			rediscoveryStopwatch
 		);
 	}
 
@@ -44,7 +71,9 @@ final class ProtocolStateContext {
 		AtomicLong incarnation,
 		Stopwatch stopwatch,
 		MemberRegistry memberRegistry,
-		SwarmTerminationCallback terminationCallback
+		SwarmTerminationCallback terminationCallback,
+		RefutationTracker refutationTracker,
+		Stopwatch rediscoveryStopwatch
 	) {
 		this.swarmConfig = swarmConfig;
 		this.protocolPeriodId = protocolPeriodId;
@@ -52,6 +81,8 @@ final class ProtocolStateContext {
 		this.stopwatch = stopwatch;
 		this.memberRegistry = memberRegistry;
 		this.terminationCallback = terminationCallback;
+		this.refutationTracker = refutationTracker;
+		this.rediscoveryStopwatch = rediscoveryStopwatch;
 	}
 
 	ProtocolStateContext next() {
@@ -61,7 +92,9 @@ final class ProtocolStateContext {
 			incarnation,
 			stopwatch.reset().start(),
 			memberRegistry,
-			terminationCallback
+			terminationCallback,
+			refutationTracker,
+			rediscoveryStopwatch
 		);
 	}
 
@@ -77,8 +110,14 @@ final class ProtocolStateContext {
 		return incarnation.get();
 	}
 
-	void incrementIncarnation() {
-		incarnation.incrementAndGet();
+	/**
+	 * Raises this node's incarnation above {@code accusedIncarnation}, so that its
+	 * ALIVE status overrides the SUSPECTED or CONFIRMED status it is refuting.
+	 */
+	void refuteAbove(long accusedIncarnation) {
+		incarnation.updateAndGet(current ->
+			Math.max(current, accusedIncarnation) + 1
+		);
 	}
 
 	Duration elapsed() {
@@ -91,5 +130,13 @@ final class ProtocolStateContext {
 
 	SwarmTerminationCallback terminationCallback() {
 		return terminationCallback;
+	}
+
+	RefutationTracker refutationTracker() {
+		return refutationTracker;
+	}
+
+	Stopwatch rediscoveryStopwatch() {
+		return rediscoveryStopwatch;
 	}
 }

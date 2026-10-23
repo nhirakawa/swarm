@@ -96,9 +96,7 @@ public class WaitingForAckProtocolState extends SwarmProtocolState {
 				MemberStatus.alive(pingAck.source(), pingAck.incarnation())
 			);
 
-		for (MemberStatus memberStatus : pingAck.gossip()) {
-			context().memberRegistry().put(memberStatus.address(), memberStatus);
-		}
+		mergeMemberStatuses(pingAck.gossip());
 
 		List<StateMachineMessage> refutations = buildRefutationPings(
 			pingAck.gossip()

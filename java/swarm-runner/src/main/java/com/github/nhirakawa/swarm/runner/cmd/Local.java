@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -77,6 +78,34 @@ public class Local implements Callable<Integer> {
 	private int failureSubGroup;
 
 	@CommandLine.Option(
+		names = { "--rediscovery-interval" },
+		paramLabel = "DURATION",
+		description = "How often to broadcast a discovery request after joining (ISO-8601); defaults to 6 protocol periods"
+	)
+	private Duration rediscoveryInterval;
+
+	@CommandLine.Option(
+		names = { "--confirmed-retention" },
+		paramLabel = "DURATION",
+		description = "How long to keep a confirmed member before reaping it (ISO-8601); defaults to 6 protocol periods"
+	)
+	private Duration confirmedRetention;
+
+	@CommandLine.Option(
+		names = { "--max-refutations" },
+		paramLabel = "N",
+		description = "Exit after refuting this node's own confirmation more than N times within the refutation window; defaults to 3"
+	)
+	private Integer maxRefutations;
+
+	@CommandLine.Option(
+		names = { "--refutation-window" },
+		paramLabel = "DURATION",
+		description = "Window for --max-refutations (ISO-8601); defaults to 30 protocol periods"
+	)
+	private Duration refutationWindow;
+
+	@CommandLine.Option(
 		names = { "--admin-port" },
 		paramLabel = "PORT",
 		description = "Port for the admin HTTP server (omit to disable)"
@@ -114,6 +143,7 @@ public class Local implements Callable<Integer> {
 
 		ObjectMapper objectMapper = Json.buildForStdio();
 		StdioTransport transport = new StdioTransport(
+			localAddress,
 			objectMapper.writer(),
 			objectMapper.reader()
 		);
@@ -122,7 +152,7 @@ public class Local implements Callable<Integer> {
 			.map(StdioAddress::new)
 			.collect(Collectors.toSet());
 
-		SwarmConfig swarmConfig = SwarmConfig.builder()
+		SwarmConfig.Builder swarmConfigBuilder = SwarmConfig.builder()
 			.setLocalAddress(localAddress)
 			.setMulticastAddress(transport.getMulticastAddress())
 			.setProtocolPeriod(config.getProtocolPeriod())
@@ -131,11 +161,25 @@ public class Local implements Callable<Integer> {
 			.setFailureSubGroup(config.getFailureSubGroup())
 			.setProtocolPeriodJitter(config.getProtocolPeriodJitter())
 			.setMessageTimeoutJitter(config.getMessageTimeoutJitter())
-			.setInitialGroup(initialGroup)
-			.build();
+			.setInitialGroup(initialGroup);
+		Optional.ofNullable(rediscoveryInterval).ifPresent(
+			swarmConfigBuilder::setRediscoveryInterval
+		);
+		Optional.ofNullable(confirmedRetention).ifPresent(
+			swarmConfigBuilder::setConfirmedRetention
+		);
+		Optional.ofNullable(maxRefutations).ifPresent(
+			swarmConfigBuilder::setMaxRefutations
+		);
+		Optional.ofNullable(refutationWindow).ifPresent(
+			swarmConfigBuilder::setRefutationWindow
+		);
+		SwarmConfig swarmConfig = swarmConfigBuilder.build();
 
 		AtomicReference<SwarmService> serviceRef = new AtomicReference<>();
+		AtomicBoolean repeatedlyConfirmed = new AtomicBoolean(false);
 		SwarmTerminationCallback callback = () -> {
+			repeatedlyConfirmed.set(true);
 			SwarmService s = serviceRef.get();
 			if (s != null) {
 				s.stopAsync();
@@ -156,10 +200,17 @@ public class Local implements Callable<Integer> {
 			MoreExecutors.directExecutor()
 		);
 
+		transport.setSnapshotSupplier(swarmService::getSnapshot);
+		transport.setEndOfInputListener(() -> {
+			LOG.info("stdin closed; shutting down");
+			swarmService.stopAsync();
+		});
+
 		SwarmServiceRegistry registry = new SwarmServiceRegistry();
 		registry.add(swarmService);
 
-		swarmService.startAsync();
+		swarmService.startAsync().awaitRunning(Duration.ofSeconds(10));
+		transport.sendReady();
 		LOG.info("Swarm node {} started", address);
 
 		Optional<AdminService> adminService = createAndStartAdminService(
@@ -179,7 +230,7 @@ public class Local implements Callable<Integer> {
 
 		serviceObserver.awaitTerminated();
 
-		return 0;
+		return repeatedlyConfirmed.get() ? 1 : 0;
 	}
 
 	private Optional<AdminService> createAndStartAdminService(

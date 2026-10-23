@@ -1,7 +1,6 @@
 package com.github.nhirakawa.swarm.protocol.state;
 
 import com.github.nhirakawa.swarm.protocol.model.Transition;
-import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryResponse;
 import java.time.Duration;
@@ -80,21 +79,14 @@ public class InitializingProtocolState extends SwarmProtocolState {
 			attemptNumber + 1
 		);
 
-		SwarmAddress self = context().swarmConfig().getLocalAddress();
-
-		// Merge received member list into registry, skipping our own address
-		for (MemberStatus memberStatus : response.memberList()) {
-			if (!memberStatus.address().equals(self)) {
-				context().memberRegistry().put(memberStatus.address(), memberStatus);
-			}
-		}
+		Optional<Transition> transition = super.applyDiscoveryResponse(response);
 
 		LOG.info(
 			"Registry size after merge: {}",
 			context().memberRegistry().size()
 		);
 
-		return Optional.empty();
+		return transition;
 	}
 
 	@Override
