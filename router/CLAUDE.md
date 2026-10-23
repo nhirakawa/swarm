@@ -23,9 +23,9 @@ The entry point (`main.rs`) parses a JSON config, spawns one child process per n
 
 **Message** (`message.rs`): `Line { source, target, body: Body }` with `Body::Packet(String)` or `Body::Control(Control)`. A private `RawLine` wire type enforces "exactly one body field".
 
-**Registry** (`registry.rs`) is an actor: a background tokio task owns each node's stdin writer and lifecycle state (Spawned or Ready; Exited nodes are removed). `RegistryHandle` is cheaply cloneable and sends `Register`, `MarkReady`, `Deregister`, `Route`, and `Broadcast` requests with `oneshot` responses. Writers are boxed `AsyncWrite`s so tests can use `tokio::io::duplex`.
+**Registry** (`registry.rs`) is an actor: a background tokio task owns each node's stdin writer and lifecycle state (Spawned or Ready; Exited nodes are removed). `RegistryHandle` is cheaply cloneable and sends `Register`, `MarkReady`, `Deregister`, `Route`, and `Broadcast` requests with `oneshot` responses. It also runs status fetches: `fetch_status` sends one `status_request` id to every Ready node, `status_reply` records each node's snapshot, and the fetch finishes when all have replied or `--status-timeout` passes. Callers that arrive mid-fetch join it, and within `--status-debounce` of the last fetch they get the cached view. Writers are boxed `AsyncWrite`s so tests can use `tokio::io::duplex`.
 
-**Lifecycle** (`main.rs`): per node, a reader task validates stdout lines and handles `ready`; a supervisor task awaits `Child::wait()`, kills the node if `ready` does not arrive within `--ready-timeout`, and deregisters it on exit.
+**Lifecycle** (`main.rs`): per node, a reader task validates stdout lines and handles `ready` and `status`; a supervisor task awaits `Child::wait()`, kills the node if `ready` does not arrive within `--ready-timeout`, and deregisters it on exit.
 
 **Config** (`config.rs`): `implementations` (name → executable + args) and `nodes` (`id`, `implementation`, args). `Config::parse` rejects empty, duplicate, or `__`-prefixed IDs and unknown implementations.
 
@@ -33,5 +33,5 @@ The entry point (`main.rs`) parses a JSON config, spawns one child process per n
 
 - The registry actor serializes all node state access; no locks needed.
 - Nodes are identified only by string ID; the router does not decode packets or know about SWIM protocol internals.
-- Not yet implemented: the admin HTTP API, on-demand `status_request` fetching, restarts, Kill/Stop, and simulated partitions.
+- Not yet implemented: the admin HTTP API (the only caller of `fetch_status`), restarts, Kill/Stop, and simulated partitions.
 - A slow node's stdin write (up to 5 s) blocks the registry actor, including broadcasts.

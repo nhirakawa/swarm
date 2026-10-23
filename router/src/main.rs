@@ -12,7 +12,7 @@ use tokio::process::Child;
 use tokio::sync::oneshot;
 
 use message::{BROADCAST_ADDRESS, Body, Control, Line, ROUTER_ADDRESS};
-use registry::{Delivery, RegistryHandle};
+use registry::{Delivery, RegistryHandle, StatusSettings};
 
 #[derive(Debug, Parser)]
 #[command(name = "swarm-router")]
@@ -23,6 +23,14 @@ struct Cli {
     /// How long a node has to send `ready` before the router kills it.
     #[arg(long, value_parser = humantime::parse_duration, default_value = "30s")]
     ready_timeout: Duration,
+
+    /// How long a status fetch waits for each node's reply.
+    #[arg(long, value_parser = humantime::parse_duration, default_value = "2s")]
+    status_timeout: Duration,
+
+    /// How long after a status fetch finishes that new requests are answered from its cache.
+    #[arg(long, value_parser = humantime::parse_duration, default_value = "1s")]
+    status_debounce: Duration,
 }
 
 #[tokio::main]
@@ -32,7 +40,10 @@ async fn main() -> anyhow::Result<()> {
     let raw = std::fs::read_to_string(&cli.config)?;
     let config = config::Config::parse(&raw)?;
 
-    let registry = registry::start();
+    let registry = registry::start(StatusSettings {
+        timeout: cli.status_timeout,
+        debounce: cli.status_debounce,
+    });
 
     for node in &config.nodes {
         spawn_node(&config, node, &registry, cli.ready_timeout).await?;
@@ -158,9 +169,10 @@ async fn handle_control(
                 eprintln!("Ignoring repeated ready from {}", node_id);
             }
         }
-        Control::Status { id, .. } => {
-            // Nothing sends status_request yet; on-demand status fetching comes with the admin API.
-            eprintln!("Ignoring status {} from {}: no request pending", id, node_id);
+        Control::Status { id, snapshot } => {
+            if !registry.status_reply(node_id.to_string(), *id, snapshot.clone()).await.unwrap_or(false) {
+                eprintln!("Ignoring status {} from {}: no request pending", id, node_id);
+            }
         }
         Control::StatusRequest { .. } => {
             eprintln!("Dropping status_request from {}: only the router sends it", node_id);

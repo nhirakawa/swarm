@@ -54,6 +54,8 @@ The router itself accepts:
 |---|---|
 | `--config <path>` | Path to the JSON configuration file (required) |
 | `--ready-timeout <duration>` | How long a node has to send `ready` before the router kills it, e.g. `30s` or `500ms`. Default `30s` |
+| `--status-timeout <duration>` | How long a status fetch waits for each node's `status` reply. Default `2s` |
+| `--status-debounce <duration>` | How long after a status fetch finishes that new requests are answered from the cached snapshots instead of asking the nodes again. Default `1s` |
 
 Each supported implementation MUST support the following CLI arguments, which the router passes automatically when spawning nodes:
 
@@ -117,7 +119,7 @@ Each message is a single line of UTF-8 JSON terminated by `\n`:
 {"source": "node-1", "target": "__router__", "control": {"kind": "ready"}}
 ```
 
-> **Note:** The router does not send `status_request` yet; that arrives with the router's admin API.
+> **Note:** The router sends `status_request` only when an admin client asks for status, which arrives with the router's admin API. It sends one request to every Ready node at once and keeps each node's latest snapshot.
 
 | Field | Type | Description |
 |---|---|---|
