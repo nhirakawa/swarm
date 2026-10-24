@@ -174,7 +174,9 @@ public class SwarmStateMachine extends AbstractExecutionThreadService {
 	}
 
 	private Optional<Transition> applyPingAck(PingAck pingAck) {
-		return swarmProtocolState.applyPingAck(pingAck);
+		return swarmProtocolState
+			.applyRelayAck(pingAck)
+			.or(() -> swarmProtocolState.applyPingAck(pingAck));
 	}
 
 	private Optional<Transition> applyPingRequest(PingRequest pingRequest) {

@@ -12,7 +12,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,6 +45,11 @@ public abstract class SwarmProtocolState {
 
 	abstract Optional<Transition> applyTick();
 
+	/**
+	 * Acks a ping, or, when the sender asks this node to probe another member for
+	 * it, pings that member instead and forwards its ack later (see
+	 * {@link #applyRelayAck}).
+	 */
 	Optional<Transition> applyPing(PingRequest pingRequest) {
 		SwarmAddress self = context.swarmConfig().getLocalAddress();
 
@@ -62,17 +66,98 @@ public abstract class SwarmProtocolState {
 		);
 		List<MemberStatus> gossip = context.memberRegistry().getGossipPayload(3);
 
+		Optional<SwarmAddress> probeTarget = pingRequest
+			.proxyFor()
+			.filter(target -> !target.equals(self));
+		StateMachineMessage response;
+		if (probeTarget.isPresent()) {
+			long pingId = context
+				.pingRelays()
+				.start(
+					pingRequest.source(),
+					probeTarget.get(),
+					pingRequest.protocolPeriodId(),
+					context.swarmConfig().getProtocolPeriod()
+				);
+			response = new PingRequest(
+				self,
+				probeTarget.get(),
+				Optional.empty(),
+				pingId,
+				gossip
+			);
+		} else {
+			// The ack echoes the ping's ID so a proxy can match it to its relay.
+			response = new PingAck(
+				self,
+				pingRequest.source(),
+				Optional.empty(),
+				pingRequest.protocolPeriodId(),
+				context.incarnation(),
+				gossip
+			);
+		}
+
+		return Optional.of(
+			Transition.builder()
+				.setNextSwarmProtocolState(this)
+				.addResponsesToSend(response)
+				.addAllResponsesToSend(refutations)
+				.build()
+		);
+	}
+
+	/**
+	 * If the ack answers a probe this node is running for another member, records
+	 * the target as alive and forwards the ack to the requester, naming the target
+	 * in {@code proxyFor}. The ack is then not passed on to the current state, since
+	 * it answers the relayed ping and not one of this node's own.
+	 */
+	final Optional<Transition> applyRelayAck(PingAck pingAck) {
+		if (pingAck.proxyFor().isPresent()) {
+			return Optional.empty();
+		}
+
+		Optional<PingRelays.Relay> relay = context
+			.pingRelays()
+			.complete(
+				pingAck.source(),
+				pingAck.protocolPeriodId(),
+				context.swarmConfig().getProtocolPeriod()
+			);
+		if (relay.isEmpty()) {
+			return Optional.empty();
+		}
+
+		context
+			.memberRegistry()
+			.put(
+				pingAck.source(),
+				MemberStatus.alive(pingAck.source(), pingAck.incarnation())
+			);
+		mergeMemberStatuses(pingAck.gossip());
+
+		List<StateMachineMessage> refutations = buildRefutationPings(
+			pingAck.gossip()
+		);
+
+		LOG.debug(
+			"Relaying ack from {} to {}",
+			pingAck.source(),
+			relay.get().requester()
+		);
+
 		return Optional.of(
 			Transition.builder()
 				.setNextSwarmProtocolState(this)
 				.addResponsesToSend(
 					new PingAck(
 						context.swarmConfig().getLocalAddress(),
-						pingRequest.source(),
-						Optional.empty(),
-						ThreadLocalRandom.current().nextLong(),
-						context.incarnation(),
-						gossip
+						relay.get().requester(),
+						Optional.of(pingAck.source()),
+						relay.get().requesterPeriodId(),
+						pingAck.incarnation(),
+						pingAck.gossip()
 					)
 				)
 				.addAllResponsesToSend(refutations)

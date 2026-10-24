@@ -244,8 +244,8 @@ Bodies are JSON objects. The message type is carried only in the header, not in 
 |---|---|---|
 | `source` | string | Sender |
 | `target` | string | Recipient |
-| `proxyFor` | string \| null | For an indirect ping, the node on whose behalf this ping is sent |
-| `protocolPeriodId` | integer | Sender's current protocol period |
+| `proxyFor` | string \| null | For an indirect ping, the member the recipient should probe on the sender's behalf |
+| `protocolPeriodId` | integer | Sender's ID for this ping, echoed by the ack |
 | `gossip` | array of member status | Piggybacked membership updates |
 
 **`PING_ACK`**
@@ -254,10 +254,12 @@ Bodies are JSON objects. The message type is carried only in the header, not in 
 |---|---|---|
 | `source` | string | Sender |
 | `target` | string | Recipient |
-| `proxyFor` | string \| null | Echoes `proxyFor` from the request being acknowledged |
-| `protocolPeriodId` | integer | Protocol period of the request being acknowledged |
-| `incarnation` | integer | Sender's incarnation number |
+| `proxyFor` | string \| null | For a relayed ack, the probed member that acknowledged |
+| `protocolPeriodId` | integer | `protocolPeriodId` of the request being acknowledged |
+| `incarnation` | integer | Incarnation of the acknowledging member: the sender's, or for a relayed ack the probed member's |
 | `gossip` | array of member status | Piggybacked membership updates |
+
+An indirect probe takes three hops. When A gets no ack from T, it sends B a `PING_REQUEST` with `proxyFor: T`. B does not ack A directly; it pings T with a `PING_REQUEST` of its own, using a fresh `protocolPeriodId`. When T acks that ID, B sends A a `PING_ACK` with `proxyFor: T`, A's original `protocolPeriodId`, and T's incarnation and gossip.
 
 **`DISCOVERY_REQUEST`**
 

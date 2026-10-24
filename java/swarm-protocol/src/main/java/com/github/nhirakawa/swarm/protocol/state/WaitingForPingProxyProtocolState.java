@@ -65,26 +65,31 @@ public class WaitingForPingProxyProtocolState extends SwarmProtocolState {
 		return Optional.of(transition);
 	}
 
+	/**
+	 * Accepts an ack for the target relayed by one of the proxies, or a late ack
+	 * from the target itself.
+	 */
 	@Override
 	public Optional<Transition> applyPingAck(PingAck pingAck) {
 		if (pingAck.proxyFor().isEmpty()) {
-			LOG.warn("Expected proxy-for but did not find one - {}", pingAck);
-
-			return Optional.empty();
-		}
-
-		if (!pingAck.proxyFor().get().equals(pingTarget)) {
+			if (!pingAck.source().equals(pingTarget)) {
+				LOG.debug(
+					"Received ACK source {}, expecting relayed ACK for {}",
+					pingAck.source(),
+					pingTarget
+				);
+				return Optional.empty();
+			}
+		} else if (!pingAck.proxyFor().get().equals(pingTarget)) {
 			LOG.warn(
 				"Expected proxy-for to be {} but was {} - {}",
-				pingAck.proxyFor().get(),
 				pingTarget,
+				pingAck.proxyFor().get(),
 				pingAck
 			);
 
 			return Optional.empty();
-		}
-
-		if (!proxyTargets.contains(pingAck.source())) {
+		} else if (!proxyTargets.contains(pingAck.source())) {
 			LOG.warn(
 				"{} was not one of the expected proxy targets ({}) - {}",
 				pingAck.source(),

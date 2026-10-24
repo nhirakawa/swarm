@@ -100,6 +100,30 @@ public class WaitingForPingProxyProtocolStateTest {
 	}
 
 	@Test
+	public void itAcceptsALateDirectAckFromTheTarget() {
+		Optional<Transition> transition = protocolState.applyPingAck(
+			new PingAck(TARGET, LOCAL, Optional.empty(), 4L, 2L, List.of())
+		);
+
+		assertThat(transition).isPresent();
+		assertThat(transition.get().getNextSwarmProtocolState()).isInstanceOf(
+			WaitingForNextProtocolPeriodProtocolState.class
+		);
+		assertThat(protocolState.context().memberRegistry().get(TARGET)).contains(
+			MemberStatus.alive(TARGET, 2L)
+		);
+	}
+
+	@Test
+	public void itIgnoresADirectAckFromAnotherMember() {
+		Optional<Transition> transition = protocolState.applyPingAck(
+			new PingAck(OTHER_1, LOCAL, Optional.empty(), 4L, 0L, List.of())
+		);
+
+		assertThat(transition).isEmpty();
+	}
+
+	@Test
 	public void itDoesNothingIfAckIsNotFromProxy() {
 		Optional<Transition> transition = protocolState.applyPingAck(
 			new PingAck(OTHER_2, LOCAL, Optional.of(TARGET), 4L, 0L, List.of())

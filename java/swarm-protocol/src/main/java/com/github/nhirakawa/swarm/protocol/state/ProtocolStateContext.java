@@ -22,6 +22,7 @@ final class ProtocolStateContext {
 	// Like incarnation, these are shared by every context derived via next().
 	private final RefutationTracker refutationTracker;
 	private final Stopwatch rediscoveryStopwatch;
+	private final PingRelays pingRelays;
 
 	ProtocolStateContext(
 		SwarmConfig swarmConfig,
@@ -56,12 +57,37 @@ final class ProtocolStateContext {
 		this(
 			swarmConfig,
 			protocolPeriodId,
+			incarnation,
+			stopwatch,
+			memberRegistry,
+			terminationCallback,
+			refutationTracker,
+			rediscoveryStopwatch,
+			new PingRelays()
+		);
+	}
+
+	ProtocolStateContext(
+		SwarmConfig swarmConfig,
+		long protocolPeriodId,
+		long incarnation,
+		Stopwatch stopwatch,
+		MemberRegistry memberRegistry,
+		SwarmTerminationCallback terminationCallback,
+		RefutationTracker refutationTracker,
+		Stopwatch rediscoveryStopwatch,
+		PingRelays pingRelays
+	) {
+		this(
+			swarmConfig,
+			protocolPeriodId,
 			new AtomicLong(incarnation),
 			stopwatch,
 			memberRegistry,
 			terminationCallback,
 			refutationTracker,
-			rediscoveryStopwatch
+			rediscoveryStopwatch,
+			pingRelays
 		);
 	}
 
@@ -73,7 +99,8 @@ final class ProtocolStateContext {
 		MemberRegistry memberRegistry,
 		SwarmTerminationCallback terminationCallback,
 		RefutationTracker refutationTracker,
-		Stopwatch rediscoveryStopwatch
+		Stopwatch rediscoveryStopwatch,
+		PingRelays pingRelays
 	) {
 		this.swarmConfig = swarmConfig;
 		this.protocolPeriodId = protocolPeriodId;
@@ -83,6 +110,7 @@ final class ProtocolStateContext {
 		this.terminationCallback = terminationCallback;
 		this.refutationTracker = refutationTracker;
 		this.rediscoveryStopwatch = rediscoveryStopwatch;
+		this.pingRelays = pingRelays;
 	}
 
 	ProtocolStateContext next() {
@@ -94,7 +122,8 @@ final class ProtocolStateContext {
 			memberRegistry,
 			terminationCallback,
 			refutationTracker,
-			rediscoveryStopwatch
+			rediscoveryStopwatch,
+			pingRelays
 		);
 	}
 
@@ -138,5 +167,9 @@ final class ProtocolStateContext {
 
 	Stopwatch rediscoveryStopwatch() {
 		return rediscoveryStopwatch;
+	}
+
+	PingRelays pingRelays() {
+		return pingRelays;
 	}
 }
