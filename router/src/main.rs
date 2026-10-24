@@ -1,6 +1,7 @@
 mod admin;
 mod config;
 mod message;
+mod network;
 mod nodes;
 mod registry;
 

@@ -94,6 +94,16 @@
   .cell small { opacity: 0.75; margin-left: 4px; }
   .self { border: 1px dashed var(--border); color: var(--muted); }
   .stale td:first-child::after { content: " (stale)"; color: var(--muted); font-weight: 400; }
+  .cell.cut { outline: 2px dashed var(--danger); outline-offset: 1px; }
+  .groups { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 12px; }
+  .group-picker { display: inline-flex; align-items: center; gap: 6px; }
+  .segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .segmented button { border: none; border-radius: 0; padding: 3px 9px; }
+  .segmented button[aria-pressed=true] { background: var(--accent); color: var(--surface); }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .links { list-style: none; margin: 0; padding: 0; }
+  .links li { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+  .links li:last-child { border-bottom: none; }
   .history { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
   .history input[type=range] { flex: 1; min-width: 160px; }
   #viewing { font-size: 13px; color: var(--muted); min-width: 150px; }
@@ -128,8 +138,26 @@
   </section>
 
   <section>
+    <h2>Network</h2>
+    <p class="hint">Simulated faults between nodes. Blocked links drop packets, including each copy of a broadcast; control messages to the router still get through.</p>
+    <div class="groups" id="groups"></div>
+    <div class="row">
+      <button id="apply-partition">Apply partition</button>
+      <button id="heal">Heal all</button>
+    </div>
+    <div class="row">
+      <span>Block one way:</span>
+      <select id="block-source" aria-label="Source"></select>
+      <span>→</span>
+      <select id="block-target" aria-label="Target"></select>
+      <button id="block">Block</button>
+    </div>
+    <ul class="links" id="blocked"></ul>
+  </section>
+
+  <section>
     <h2>Membership</h2>
-    <p class="hint">Each row is one node's view of the cluster: the status and incarnation it holds for every other node.</p>
+    <p class="hint">Each row is one node's view of the cluster: the status and incarnation it holds for every other node. A dashed outline means packets between the two are blocked in at least one direction.</p>
     <div class="history">
       <input type="range" id="scrubber" min="0" max="0" value="0" aria-label="Fetch history">
       <span id="viewing">Live</span>
@@ -153,6 +181,10 @@
   let viewIndex = null; // null follows the latest fetch
   let fetching = false;
   let timer = null;
+  // The partition being edited: node ID → group index. Kept locally, not read back
+  // from the router, which only knows blocked links.
+  const groupOf = new Map();
+  const GROUPS = ["A", "B", "C", "D"];
 
   const $ = (id) => document.getElementById(id);
 
@@ -161,6 +193,7 @@
     for (const [key, value] of Object.entries(props)) {
       if (key === "class") node.className = value;
       else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+      else if (key.includes("-")) node.setAttribute(key, value);
       else node[key] = value;
     }
     for (const child of children) {
@@ -178,10 +211,8 @@
     if (fetching) return;
     fetching = true;
     try {
-      const response = await fetch("/nodes");
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || response.statusText);
-      history.push({ at: new Date(), nodes: body.nodes });
+      const [nodes, network] = await Promise.all([getJson("/nodes"), getJson("/network")]);
+      history.push({ at: new Date(), nodes: nodes.nodes, blocked: network.blocked });
       if (history.length > MAX_HISTORY) {
         history.shift();
         if (viewIndex !== null) viewIndex = Math.max(0, viewIndex - 1);
@@ -193,6 +224,38 @@
     } finally {
       fetching = false;
     }
+  }
+
+  async function getJson(url, options) {
+    const response = await fetch(url, options);
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error || response.statusText);
+    return body;
+  }
+
+  async function changeNetwork(description, url, options) {
+    try {
+      await getJson(url, options);
+      setStatus(description);
+    } catch (e) {
+      setStatus(`${description} failed: ${e.message}`, true);
+    }
+    refresh();
+  }
+
+  function applyPartition() {
+    const ids = history.at(-1).nodes.map((node) => node.id);
+    const groups = GROUPS.map((_, index) => ids.filter((id) => (groupOf.get(id) ?? 0) === index))
+      .filter((group) => group.length > 0);
+    changeNetwork("Partition applied", "/network/partition", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ groups }),
+    });
+  }
+
+  function linkUrl(source, target) {
+    return `/network/links/${encodeURIComponent(source)}/${encodeURIComponent(target)}`;
   }
 
   async function act(id, action) {
@@ -247,6 +310,35 @@
     $("nodes").replaceChildren(...rows);
   }
 
+  function renderNetwork(entry) {
+    const ids = entry.nodes.map((node) => node.id);
+
+    $("groups").replaceChildren(...ids.map((id) => el("span", { class: "group-picker" },
+      el("span", { class: "mono" }, id),
+      el("span", { class: "segmented" }, ...GROUPS.map((name, index) => el("button", {
+        "aria-pressed": String((groupOf.get(id) ?? 0) === index),
+        onclick: () => { groupOf.set(id, index); renderNetwork(history.at(-1)); },
+      }, name))),
+    )));
+
+    for (const select of [$("block-source"), $("block-target")]) {
+      const current = select.value;
+      select.replaceChildren(...ids.map((id) => el("option", { value: id }, id)));
+      if (ids.includes(current)) select.value = current;
+    }
+    if ($("block-source").value === $("block-target").value && ids.length > 1) {
+      $("block-target").value = ids.find((id) => id !== $("block-source").value);
+    }
+
+    const items = entry.blocked.map((link) => el("li", {},
+      el("span", { class: "mono" }, `${link.source} → ${link.target}`),
+      el("span", { class: "muted" }, `${link.dropped} dropped`),
+      el("button", { onclick: () => changeNetwork(`Unblocked ${link.source} → ${link.target}`,
+        linkUrl(link.source, link.target), { method: "DELETE" }) }, "Unblock"),
+    ));
+    $("blocked").replaceChildren(...(items.length ? items : [el("li", { class: "muted" }, "No blocked links: every packet is delivered.")]));
+  }
+
   function statusCell(member) {
     if (!member) return el("span", { class: "cell unknown" }, "not known");
     return el("span", { class: `cell ${member.type}` }, member.type.toLowerCase(), el("small", {}, `#${member.incarnation}`));
@@ -270,10 +362,16 @@
         return row;
       }
       const members = new Map(snapshot.memberStatuses.map((member) => [member.address, member]));
+      const cut = new Set(entry.blocked.flatMap((link) =>
+        link.source === observer.id ? [link.target] : link.target === observer.id ? [link.source] : []));
       for (const id of ids) {
         const cell = id === observer.id
           ? el("span", { class: "cell self" }, "self", el("small", {}, `#${snapshot.incarnation}`))
           : statusCell(members.get(id));
+        if (cut.has(id)) {
+          cell.classList.add("cut");
+          cell.title = "Packets between these nodes are blocked";
+        }
         row.append(el("td", {}, cell));
       }
       return row;
@@ -296,6 +394,7 @@
   function render() {
     if (history.length === 0) return;
     renderNodes(history.at(-1).nodes);
+    renderNetwork(history.at(-1));
     renderMatrix(history[viewIndex ?? history.length - 1]);
     renderHistory();
   }
@@ -306,6 +405,13 @@
   }
 
   $("refresh").addEventListener("click", refresh);
+  $("apply-partition").addEventListener("click", applyPartition);
+  $("heal").addEventListener("click", () => changeNetwork("Network healed", "/network", { method: "DELETE" }));
+  $("block").addEventListener("click", () => {
+    const source = $("block-source").value;
+    const target = $("block-target").value;
+    changeNetwork(`Blocked ${source} → ${target}`, linkUrl(source, target), { method: "PUT" });
+  });
   $("auto").addEventListener("change", schedule);
   $("interval").addEventListener("change", schedule);
   $("scrubber").addEventListener("input", (event) => {

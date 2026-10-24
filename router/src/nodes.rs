@@ -137,6 +137,11 @@ impl Supervisor {
         self.command(id, Command::Stop).await
     }
 
+    /// Every config node's ID, in config order.
+    pub fn node_ids(&self) -> Vec<NodeId> {
+        self.inner.config.nodes.iter().map(|node| node.id.clone()).collect()
+    }
+
     /// Every config node, in config order.
     pub fn records(&self) -> Vec<NodeRecord> {
         let slots = self.inner.slots.lock().unwrap();
@@ -358,7 +363,8 @@ async fn handle_line(
         (Body::Packet(_), _) => {
             let target = line.target.clone();
             match registry.route(line).await {
-                Ok(Delivery::Delivered) => {}
+                // Drops on blocked links are counted, not logged: a partition drops every packet.
+                Ok(Delivery::Delivered | Delivery::Blocked) => {}
                 Ok(Delivery::UnknownTarget) => {
                     eprintln!("Dropping packet from {}: unknown target '{}'", node_id, target);
                 }

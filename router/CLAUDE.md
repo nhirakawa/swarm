@@ -29,11 +29,12 @@ The entry point (`main.rs`) parses a JSON config, starts the registry and the no
 
 **Admin** (`admin.rs`): axum routes `GET /` (the UI, a self-contained page embedded from `assets/admin.html` with `include_str!`, which keeps fetch history client-side), `GET /nodes` (calls `fetch_status` and merges it with the supervisor's records) and `POST /nodes/{id}/{restart,kill,stop}`, which return 202, 404 or 409.
 
+**Network** (`network.rs`): the simulated network is a set of blocked directed links with per-link drop counts, owned by the registry actor and checked in `Route` and per copy in `Broadcast`. `NetworkChange` (partition, block, unblock, heal) is validated against the config IDs. Admin routes: `GET`/`DELETE /network`, `PUT /network/partition`, `PUT`/`DELETE /network/links/{source}/{target}`.
+
 **Config** (`config.rs`): `implementations` (name → executable + args) and `nodes` (`id`, `implementation`, args). `Config::parse` rejects empty, duplicate, or `__`-prefixed IDs and unknown implementations.
 
 ## Key design notes
 
 - The registry actor serializes routing and status state; the supervisor's slots are the only lock, never held across an await.
 - Nodes are identified only by string ID; the router does not decode packets or know about SWIM protocol internals.
-- Not yet implemented: simulated partitions.
 - A slow node's stdin write (up to 5 s) blocks the registry actor, including broadcasts.

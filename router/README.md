@@ -113,8 +113,23 @@ The UI lists each node's process state with Stop, Kill and Restart buttons, and 
 | `POST /nodes/{id}/restart` | Start a fresh process for an Exited node under the same address, with every Ready node as `--peer` |
 | `POST /nodes/{id}/kill` | Send SIGKILL, to simulate a crash |
 | `POST /nodes/{id}/stop` | Send SIGTERM, then SIGKILL if the node has not exited after `--stop-grace` |
+| `GET /network` | List the blocked links and how many packets each has dropped |
+| `PUT /network/partition` | Replace every block with a partition; body `{"groups": [["node-1"], ["node-2", "node-3"]]}` |
+| `PUT /network/links/{source}/{target}` | Block packets from `source` to `target`, one way only |
+| `DELETE /network/links/{source}/{target}` | Unblock that one direction |
+| `DELETE /network` | Heal: remove every block |
 
 Actions return `202 Accepted` once started; `GET /nodes` shows when the node has actually exited or become ready. They return `404` for an unknown node and `409` when the node is in the wrong state: restart needs an Exited node, and kill and stop need a running one. Errors have a JSON body `{"error": "<message>"}`.
+
+### Simulated Network
+
+The router can drop packets to simulate network faults. The model is a set of blocked *directed* links: a packet from `source` to `target` is dropped if that link is blocked, and each copy of a `__all__` broadcast is checked separately, so a broadcast never crosses a block. Control lines between a node and the router are never blocked.
+
+- A **partition** blocks every link between nodes in different groups, in both directions. Config nodes not listed in any group form one extra group, so `{"groups": [["node-1"]]}` isolates `node-1`.
+- A **one-way block** simulates an asymmetric link.
+- Blocks name addresses, so they survive restarts. Dropped packets are counted per link rather than logged.
+
+Network changes return `200` with the same body as `GET /network`, or `400` with an error for an unknown node, a node in two groups, or a link from a node to itself. In the UI, the Network section edits partitions and one-way blocks, and the membership matrix outlines cells whose link is blocked.
 
 `GET /nodes` returns the nodes in config order:
 

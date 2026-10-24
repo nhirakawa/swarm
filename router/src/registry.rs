@@ -7,6 +7,7 @@ use tokio::sync::{mpsc, oneshot};
 use tokio::time::Instant;
 
 use crate::message::{Body, Control, Line, ROUTER_ADDRESS};
+use crate::network::{BlockedLink, Network, NetworkChange};
 
 pub type NodeId = String;
 
@@ -24,6 +25,8 @@ pub enum NodeState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Delivery {
     Delivered,
+    /// Dropped by a simulated network block.
+    Blocked,
     UnknownTarget,
     WriteFailed,
 }
@@ -98,6 +101,11 @@ enum RegistryRequest {
     ReadyNodes {
         response: oneshot::Sender<Vec<NodeId>>,
     },
+    Network {
+        change: Option<NetworkChange>,
+        nodes: Vec<NodeId>,
+        response: oneshot::Sender<Result<Vec<BlockedLink>, String>>,
+    },
     FetchStatus {
         response: oneshot::Sender<StatusView>,
     },
@@ -137,9 +145,22 @@ impl RegistryHandle {
         self.request(|response| RegistryRequest::Route { line, response }).await
     }
 
-    /// Writes the line to every Ready node except its source. Returns how many writes succeeded.
+    /// Writes the line to every Ready node except its source, skipping blocked links.
+    /// Returns how many writes succeeded.
     pub async fn broadcast(&self, line: Line) -> anyhow::Result<usize> {
         self.request(|response| RegistryRequest::Broadcast { line, response }).await
+    }
+
+    /// Returns the blocked links and how many packets each has dropped.
+    pub async fn network(&self) -> anyhow::Result<Vec<BlockedLink>> {
+        let result = self.request(|response| RegistryRequest::Network { change: None, nodes: Vec::new(), response }).await?;
+        Ok(result.expect("reading the network never fails"))
+    }
+
+    /// Changes the simulated network. `nodes` are the IDs a change may name. Returns the
+    /// blocked links afterwards, or why the change was rejected.
+    pub async fn change_network(&self, change: NetworkChange, nodes: Vec<NodeId>) -> anyhow::Result<Result<Vec<BlockedLink>, String>> {
+        self.request(|response| RegistryRequest::Network { change: Some(change), nodes, response }).await
     }
 
     /// Returns the IDs of every Ready node, sorted.
@@ -177,6 +198,7 @@ pub fn start(status_settings: StatusSettings) -> RegistryHandle {
     // Fetch timers hold a weak sender, so the registry still stops once every handle is dropped.
     let registry = Registry {
         nodes: HashMap::new(),
+        network: Network::default(),
         status_settings,
         timer_sender: sender.downgrade(),
         next_status_id: 1,
@@ -189,6 +211,7 @@ pub fn start(status_settings: StatusSettings) -> RegistryHandle {
 
 struct Registry {
     nodes: HashMap<NodeId, Node>,
+    network: Network,
     status_settings: StatusSettings,
     timer_sender: mpsc::WeakSender<RegistryRequest>,
     next_status_id: u64,
@@ -232,6 +255,7 @@ impl Registry {
             }
             RegistryRequest::Route { line, response } => {
                 let delivery = match self.nodes.get_mut(&line.target) {
+                    Some(_) if !self.network.deliver(&line.source, &line.target) => Delivery::Blocked,
                     Some(node) => {
                         if write_line(&mut node.writer, &line).await {
                             Delivery::Delivered
@@ -249,6 +273,9 @@ impl Registry {
                     if *node_id == line.source || node.state != NodeState::Ready {
                         continue;
                     }
+                    if !self.network.deliver(&line.source, node_id) {
+                        continue;
+                    }
                     if write_line(&mut node.writer, &line).await {
                         delivered += 1;
                     } else {
@@ -264,6 +291,13 @@ impl Registry {
                     .collect();
                 ready.sort();
                 let _ = response.send(ready);
+            }
+            RegistryRequest::Network { change, nodes, response } => {
+                let result = match change {
+                    Some(change) => self.network.apply(change, &nodes),
+                    None => Ok(()),
+                };
+                let _ = response.send(result.map(|()| self.network.blocked()));
             }
             RegistryRequest::FetchStatus { response } => {
                 self.fetch_status(response).await;
@@ -466,6 +500,28 @@ mod tests {
         let delivered = registry.broadcast(packet("node-1", BROADCAST_ADDRESS)).await.unwrap();
         assert_eq!(delivered, 1);
         assert!(ready.next_line().await.unwrap().is_some());
+    }
+
+    #[tokio::test]
+    async fn blocked_links_drop_unicast_and_broadcast_copies() {
+        let registry = start(SETTINGS);
+        let _node_1 = register_ready(&registry, "node-1").await;
+        let mut node_2 = register_ready(&registry, "node-2").await;
+        let mut node_3 = register_ready(&registry, "node-3").await;
+        let nodes: Vec<NodeId> = vec!["node-1".into(), "node-2".into(), "node-3".into()];
+
+        let block = NetworkChange::Block(crate::network::Link { source: "node-1".into(), target: "node-2".into() });
+        registry.change_network(block, nodes).await.unwrap().unwrap();
+
+        assert_eq!(registry.route(packet("node-1", "node-2")).await.unwrap(), Delivery::Blocked);
+        assert_eq!(registry.broadcast(packet("node-1", BROADCAST_ADDRESS)).await.unwrap(), 1);
+        assert!(node_3.next_line().await.unwrap().is_some());
+        assert_no_line(&mut node_2).await;
+        assert_eq!(registry.route(packet("node-2", "node-1")).await.unwrap(), Delivery::Delivered);
+
+        let blocked = registry.network().await.unwrap();
+        assert_eq!(blocked.len(), 1);
+        assert_eq!(blocked[0].dropped, 2);
     }
 
     #[tokio::test]
