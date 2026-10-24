@@ -17,6 +17,7 @@ import com.github.nhirakawa.swarm.runner.service.LifecycleLogger;
 import com.github.nhirakawa.swarm.runner.service.ServiceObserver;
 import com.github.nhirakawa.swarm.runner.service.SwarmServiceRegistry;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.Service;
 import jakarta.inject.Inject;
 import java.time.Duration;
 import java.util.Arrays;
@@ -230,6 +231,10 @@ public class Local implements Callable<Integer> {
 
 		serviceObserver.awaitTerminated();
 
+		if (swarmService.state() == Service.State.FAILED) {
+			LOG.error("Swarm node {} failed", address, swarmService.failureCause());
+			return 1;
+		}
 		return repeatedlyConfirmed.get() ? 1 : 0;
 	}
 

@@ -75,8 +75,16 @@ class MemberRegistry {
 		return registry.size();
 	}
 
+	/**
+	 * Merges a status into the registry. A SUSPECTED or CONFIRMED status about a member
+	 * that is not in the registry is ignored, as in memberlist: otherwise gossip still
+	 * carrying a reaped member's confirmation would add it straight back.
+	 */
 	void put(SwarmAddress swarmAddress, MemberStatus memberStatus) {
 		Counted oldCounted = registry.get(swarmAddress);
+		if (oldCounted == null && !(memberStatus instanceof MemberStatus.Alive)) {
+			return;
+		}
 		if (oldCounted != null) {
 			sortedByGossipCount.remove(oldCounted);
 		}
@@ -135,12 +143,16 @@ class MemberRegistry {
 		}
 	}
 
-	SwarmAddress getPingTarget() {
+	/**
+	 * Returns the next member to ping, or empty if no member is eligible, for example
+	 * when every peer is confirmed from inside a partition.
+	 */
+	Optional<SwarmAddress> getPingTarget() {
 		while (!pingSequence.isEmpty()) {
 			SwarmAddress candidate = pingSequence.poll();
 			Counted counted = registry.get(candidate);
 			if (counted != null && counted.memberStatus.isEligibleForPing()) {
-				return candidate;
+				return Optional.of(candidate);
 			}
 		}
 		// Sequence exhausted — build a new shuffled sequence from all eligible nodes
@@ -152,7 +164,7 @@ class MemberRegistry {
 			.collect(Collectors.toCollection(ArrayList::new));
 		Collections.shuffle(eligible);
 		pingSequence.addAll(eligible);
-		return pingSequence.poll();
+		return Optional.ofNullable(pingSequence.poll());
 	}
 
 	/**

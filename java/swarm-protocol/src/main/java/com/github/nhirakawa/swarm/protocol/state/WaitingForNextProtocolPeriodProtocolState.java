@@ -5,7 +5,6 @@ import com.github.nhirakawa.swarm.protocol.model.address.SwarmAddress;
 import com.github.nhirakawa.swarm.protocol.model.internal.DiscoveryRequest;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingAck;
 import com.github.nhirakawa.swarm.protocol.model.internal.PingRequest;
-import com.github.nhirakawa.swarm.protocol.model.internal.StateMachineMessage;
 import com.github.nhirakawa.swarm.protocol.util.Jitter;
 import com.google.common.base.Stopwatch;
 import java.time.Duration;
@@ -49,29 +48,38 @@ public class WaitingForNextProtocolPeriodProtocolState
 			.memberRegistry()
 			.evictConfirmedNodes(context().swarmConfig().getConfirmedRetention());
 
-		SwarmAddress pingTarget = context().memberRegistry().getPingTarget();
+		Optional<SwarmAddress> pingTarget = context()
+			.memberRegistry()
+			.getPingTarget();
 
-		List<MemberStatus> gossip = context().memberRegistry().getGossipPayload(3);
+		Transition.Builder transition = Transition.builder();
+		if (pingTarget.isPresent()) {
+			List<MemberStatus> gossip = context().memberRegistry().getGossipPayload(3);
+			transition
+				.setNextSwarmProtocolState(
+					new WaitingForAckProtocolState(context().next(), pingTarget.get())
+				)
+				.addResponsesToSend(
+					new PingRequest(
+						context().swarmConfig().getLocalAddress(),
+						pingTarget.get(),
+						Optional.empty(),
+						context().protocolPeriodId(),
+						gossip
+					)
+				);
+		} else {
+			LOG.debug("No member is eligible for ping");
+			transition.setNextSwarmProtocolState(
+				new WaitingForNextProtocolPeriodProtocolState(context().next())
+			);
+		}
 
-		SwarmProtocolState newState = new WaitingForAckProtocolState(
-			context().next(),
-			pingTarget
-		);
-
-		StateMachineMessage pingRequest = new PingRequest(
-			context().swarmConfig().getLocalAddress(),
-			pingTarget,
-			Optional.empty(),
-			context().protocolPeriodId(),
-			gossip
-		);
-
-		Transition.Builder transition = Transition.builder()
-			.setNextSwarmProtocolState(newState)
-			.addResponsesToSend(pingRequest);
-
+		// With no one left to ping, the node is cut off, so it looks for peers every
+		// period, as during join, instead of waiting for the rediscovery interval.
 		Stopwatch rediscoveryStopwatch = context().rediscoveryStopwatch();
 		if (
+			pingTarget.isEmpty() ||
 			rediscoveryStopwatch.elapsed().toNanos() >=
 			context().swarmConfig().getRediscoveryInterval().toNanos()
 		) {

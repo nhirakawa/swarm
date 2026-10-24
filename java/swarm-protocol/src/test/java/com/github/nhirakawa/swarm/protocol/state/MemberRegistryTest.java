@@ -69,6 +69,32 @@ class MemberRegistryTest {
 	}
 
 	@Test
+	void itDoesNotResurrectEvictedNodeFromConfirmedGossip() {
+		FakeTicker ticker = new FakeTicker();
+		MemberRegistry registry = new MemberRegistry(Set.of(A), ticker);
+		registry.put(A, MemberStatus.confirmed(A, 0L));
+		ticker.write(RETENTION.toNanos());
+		registry.evictConfirmedNodes(RETENTION);
+
+		registry.put(A, MemberStatus.confirmed(A, 0L));
+		registry.put(A, MemberStatus.suspected(A, 0L));
+		assertThat(registry.get(A)).isEmpty();
+
+		registry.put(A, MemberStatus.alive(A, 0L));
+		assertThat(registry.get(A)).contains(MemberStatus.alive(A, 0L));
+	}
+
+	@Test
+	void itHasNoPingTargetWhenEveryMemberIsConfirmed() {
+		FakeTicker ticker = new FakeTicker();
+		MemberRegistry registry = new MemberRegistry(Set.of(A, B), ticker);
+		registry.put(A, MemberStatus.confirmed(A, 0L));
+		registry.put(B, MemberStatus.confirmed(B, 0L));
+
+		assertThat(registry.getPingTarget()).isEmpty();
+	}
+
+	@Test
 	void itDoesNotEvictRefutedNode() {
 		FakeTicker ticker = new FakeTicker();
 		MemberRegistry registry = new MemberRegistry(Set.of(A), ticker);

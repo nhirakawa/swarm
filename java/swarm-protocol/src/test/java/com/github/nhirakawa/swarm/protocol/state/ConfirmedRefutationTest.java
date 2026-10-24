@@ -134,6 +134,20 @@ class ConfirmedRefutationTest {
 			.noneMatch(DiscoveryRequest.class::isInstance);
 	}
 
+	@Test
+	void itBroadcastsDiscoveryEveryPeriodWhenNoMemberCanBePinged() {
+		registry.put(PEER, MemberStatus.confirmed(PEER, 0L));
+		ticker.write(SWARM_CONFIG.getProtocolPeriod().toNanos() * 2);
+
+		Optional<Transition> transition = state.applyTick();
+
+		assertThat(transition).isPresent();
+		assertThat(transition.get().getResponsesToSend())
+			.containsExactly(new DiscoveryRequest(LOCAL, MULTICAST));
+		assertThat(transition.get().getNextSwarmProtocolState())
+			.isInstanceOf(WaitingForNextProtocolPeriodProtocolState.class);
+	}
+
 	private static DiscoveryResponse confirmedAt(long incarnation) {
 		return new DiscoveryResponse(
 			PEER,

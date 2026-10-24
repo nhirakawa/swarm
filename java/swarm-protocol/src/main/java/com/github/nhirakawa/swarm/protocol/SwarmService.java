@@ -4,7 +4,11 @@ import com.github.nhirakawa.swarm.protocol.state.StateSnapshot;
 import com.github.nhirakawa.swarm.protocol.state.SwarmStateMachine;
 import com.github.nhirakawa.swarm.protocol.transport.SwarmTransport;
 import com.google.common.util.concurrent.AbstractIdleService;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.Service;
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
 public class SwarmService extends AbstractIdleService {
@@ -22,6 +26,17 @@ public class SwarmService extends AbstractIdleService {
 
 	@Override
 	protected void startUp() throws Exception {
+		// If either part fails, stop the whole service so the failure is not hidden
+		// behind a RUNNING state; shutDown then reports it.
+		Listener stopOnFailure = new Listener() {
+			@Override
+			public void failed(State from, Throwable failure) {
+				stopAsync();
+			}
+		};
+		swarmTransport.addListener(stopOnFailure, MoreExecutors.directExecutor());
+		stateMachine.addListener(stopOnFailure, MoreExecutors.directExecutor());
+
 		swarmTransport.startAsync();
 		stateMachine.startAsync();
 
@@ -29,13 +44,31 @@ public class SwarmService extends AbstractIdleService {
 		stateMachine.awaitRunning(Duration.ofSeconds(5));
 	}
 
+	/** Fails the service if the state machine or transport failed. */
 	@Override
 	protected void shutDown() throws Exception {
 		swarmTransport.stopAsync();
 		stateMachine.stopAsync();
 
-		swarmTransport.awaitTerminated(Duration.ofSeconds(5));
-		stateMachine.awaitTerminated(Duration.ofSeconds(5));
+		awaitStopped(swarmTransport);
+		awaitStopped(stateMachine);
+
+		for (Service part : List.of(swarmTransport, stateMachine)) {
+			if (part.state() == State.FAILED) {
+				throw new IllegalStateException(
+					part + " failed",
+					part.failureCause()
+				);
+			}
+		}
+	}
+
+	private static void awaitStopped(Service part) throws TimeoutException {
+		try {
+			part.awaitTerminated(Duration.ofSeconds(5));
+		} catch (IllegalStateException e) {
+			// Thrown when the part failed; checked above.
+		}
 	}
 
 	public String getName() {
